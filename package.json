@@ -1,0 +1,33 @@
+{
+  "name": "cottonbro",
+  "description": "",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.11.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "typecheck": "tsc -b"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Proprietary",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "eslint": "^9.36.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.2"
+  }
+}

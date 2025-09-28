@@ -1,0 +1,27 @@
+{
+  "name": "@cottonbro/api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env src/local.mts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.896.0",
+    "@aws-sdk/lib-dynamodb": "^3.896.0",
+    "@fastify/aws-lambda": "^6.1.1",
+    "@fastify/cors": "^10.1.0",
+    "aws-lambda-fastify": "^2.2.0",
+    "fastify": "^5.6.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@types/aws-lambda-fastify": "^1.4.5",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,44 @@
+# Node / pnpm
+node_modules/
+.pnpm-debug.log
+pnpm-debug.log*
+
+# Turbo
+.turbo/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Env files
+.env
+.env*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# CDK
+cdk.out/
+cdk.context.json
+
+# AWS SAM / Serverless (if used later)
+.aws-sam/
+.serverless/
