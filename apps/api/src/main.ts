@@ -8,22 +8,36 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { FastifyInstance } from 'fastify';
 
 async function bootstrap() {
-  const app = await NestFactory.create(
-    AppModule,
-    new FastifyAdapter({ logger: true }),
-  );
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  const adapter = new FastifyAdapter({
+    logger: isDev
+      ? {
+          level: 'info',
+          transport: {
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+              translateTime: 'SYS:standard',
+              singleLine: false,
+            },
+          },
+        }
+      : { level: 'info' },
+  });
+
+  const app = await NestFactory.create(AppModule, adapter);
 
   const fastify = app.getHttpAdapter().getInstance() as FastifyInstance;
 
   await fastify.register(fastifyCors, {
-    origin: [/localhost:\d+$/, /\.vercel\.app$/, /yourdomain\.com$/],
+    origin: true,
     credentials: true,
   });
   await fastify.register(fastifyHelmet);
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Swagger/OpenAPI
   const config = new DocumentBuilder()
     .setTitle('Cottonbro API')
     .setDescription('Internal API for web/admin')
@@ -33,9 +47,17 @@ async function bootstrap() {
   const doc = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('/docs', app, doc);
 
-  await app.listen(
-    process.env.PORT ? Number(process.env.PORT) : 3001,
-    '0.0.0.0',
-  );
+  const port = Number(process.env.PORT ?? 3001);
+  const host = process.env.HOST ?? '0.0.0.0';
+  await app.listen(port, host);
+
+  if (isDev) {
+    const url = await app.getUrl();
+    console.log(`🚀 API running at ${url} (Swagger at ${url}/docs)`);
+  }
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('Failed to bootstrap app', err);
+  process.exit(1);
+});
