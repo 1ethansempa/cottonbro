@@ -1,0 +1,4 @@
+{
+  "app": "node --enable-source-maps --loader ts-node/esm bin/infra.ts",
+  "context": { "aws:cdk:bundling-stacks": ["*"] }
+}

@@ -12,10 +12,7 @@ function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-6 py-12 
-             "
-    >
+    <div className="min-h-screen flex items-center justify-center px-6 py-12">
       {/* Card */}
       <div className="w-full max-w-md">
         <div className="relative rounded-2xl bg-white shadow-xl p-6 md:p-8">
@@ -147,7 +144,7 @@ function LoginPage() {
 
             <button
               type="submit"
-              className="mt-2 w-full rounded-lg bg-black text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60"
+              className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60"
             >
               Sign In
             </button>
