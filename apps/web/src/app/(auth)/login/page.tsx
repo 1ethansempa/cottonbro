@@ -31,7 +31,7 @@ function LoginPage() {
             <button
               type="button"
               onClick={onGoogle}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition"
+              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
             >
               {/* Official multicolor Google "G" */}
               <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -58,7 +58,7 @@ function LoginPage() {
             <button
               type="button"
               onClick={onApple}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition"
+              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
             >
               <svg
                 aria-hidden
@@ -154,7 +154,7 @@ function LoginPage() {
           <p className="mt-6 text-center text-sm text-gray-600">
             Don’t have an account?{" "}
             <a
-              href="/auth/register"
+              href="/signup"
               className="text-black hover:opacity-70 underline-offset-4 hover:underline"
             >
               Create one

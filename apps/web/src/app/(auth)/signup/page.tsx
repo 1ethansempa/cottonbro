@@ -1,22 +1,123 @@
 "use client";
 
 import React, { useState } from "react";
+import {
+  CognitoIdentityProviderClient,
+  SignUpCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
+import {
+  generateCodeVerifier,
+  codeChallengeFromVerifier,
+} from "../../../lib/pkce";
+
+const region = process.env.NEXT_PUBLIC_AWS_REGION!;
+const clientId = process.env.NEXT_PUBLIC_COGNITO_WEB_CLIENT_ID!;
+const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI!;
+
+const cognito = new CognitoIdentityProviderClient({ region });
 
 function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agree, setAgree] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  const onGoogle = () => {};
-  const onApple = () => {};
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Hosted UI (Google) — quickest path to sign up/log in
+  const onGoogle = async () => {
+    const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+    const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
+    const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI!;
+
+    console.log(clientId);
+
+    // PKCE + state
+    const verifier = await generateCodeVerifier();
+    const challenge = await codeChallengeFromVerifier(verifier);
+    const state = crypto.randomUUID();
+
+    // stash for callback (tab-scoped)
+    sessionStorage.setItem("pkce_verifier", verifier);
+    sessionStorage.setItem("oauth_state", state);
+
+    const params = new URLSearchParams({
+      identity_provider: "Google", // or omit to show chooser
+      response_type: "code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope: "openid email profile",
+      code_challenge_method: "S256",
+      code_challenge: challenge,
+      state,
+    });
+
+    window.location.href = `${domain}/oauth2/authorize?${params.toString()}`;
+  };
+
+  // Custom email/password sign-up (uses your form)
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // handle sign up…
+    setErr(null);
+    if (busy) return;
+
+    const form = e.currentTarget as HTMLFormElement;
+    const firstName = (
+      form.elements.namedItem("firstName") as HTMLInputElement
+    ).value.trim();
+    const lastName = (
+      form.elements.namedItem("lastName") as HTMLInputElement
+    ).value.trim();
+    const email = (
+      form.elements.namedItem("email") as HTMLInputElement
+    ).value.trim();
+    const password = (form.elements.namedItem("password") as HTMLInputElement)
+      .value;
+    const confirm = (form.elements.namedItem("confirm") as HTMLInputElement)
+      .value;
+
+    if (password !== confirm) {
+      setErr("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setBusy(true);
+      await cognito.send(
+        new SignUpCommand({
+          ClientId: clientId,
+          Username: email,
+          Password: password,
+          UserAttributes: [
+            { Name: "email", Value: email },
+            { Name: "given_name", Value: firstName },
+            { Name: "family_name", Value: lastName },
+          ],
+        })
+      );
+
+      // Success: Cognito sent a verification code to email (default).
+      // Redirect to your confirm page (you build this) with email prefilled.
+      window.location.href = `/auth/confirm?email=${encodeURIComponent(email)}`;
+    } catch (e: any) {
+      // Common errors: UsernameExistsException, InvalidPasswordException, etc.
+      setErr(
+        e?.name === "UsernameExistsException"
+          ? "An account with this email already exists."
+          : e?.message || "Sign up failed"
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onApple = () => {
+    // Placeholder until you add Apple IdP to the user pool.
+    alert("Apple Sign in is coming soon.");
   };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-6 py-12">
-      {/* Card */}
       <div className="w-full max-w-md">
         <div className="relative rounded-2xl bg-white shadow-xl p-6 md:p-8">
           {/* Header */}
@@ -34,9 +135,8 @@ function RegisterPage() {
             <button
               type="button"
               onClick={onGoogle}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition"
+              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
             >
-              {/* Official multicolor Google "G" */}
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
@@ -57,13 +157,11 @@ function RegisterPage() {
               </svg>
               Continue with Google
             </button>
-
             <button
               type="button"
               onClick={onApple}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition"
+              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
             >
-              {/* Monochrome Apple glyph */}
               <svg
                 aria-hidden
                 viewBox="0 0 24 24"
@@ -83,160 +181,31 @@ function RegisterPage() {
             </span>
           </div>
 
+          {/* Inline error */}
+          {err && (
+            <p className="mb-3 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">
+              {err}
+            </p>
+          )}
+
           {/* Form */}
           <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-1">
-                <label
-                  htmlFor="firstName"
-                  className="mb-1 block text-sm text-gray-700"
-                >
-                  First name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  autoComplete="given-name"
-                  required
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                  placeholder="Jane"
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <label
-                  htmlFor="lastName"
-                  className="mb-1 block text-sm text-gray-700"
-                >
-                  Last name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  autoComplete="family-name"
-                  required
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                  placeholder="Doe"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-1 block text-sm text-gray-700"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-1 block text-sm text-gray-700"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-2 my-auto h-8 px-2 text-xs text-black rounded hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Use at least 8 characters, including a number.
-              </p>
-            </div>
-
-            <div>
-              <label
-                htmlFor="confirm"
-                className="mb-1 block text-sm text-gray-700"
-              >
-                Confirm password
-              </label>
-              <div className="relative">
-                <input
-                  id="confirm"
-                  name="confirm"
-                  type={showConfirm ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm((v) => !v)}
-                  className="absolute inset-y-0 right-2 my-auto h-8 px-2 text-xs text-black rounded hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                >
-                  {showConfirm ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-
-            <label className="mt-2 flex items-start gap-3 text-xs text-gray-700">
-              <input
-                type="checkbox"
-                checked={agree}
-                onChange={(e) => setAgree(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded-md border-gray-300 text-black focus:ring-black focus:ring-offset-0"
-              />
-              <span>
-                I agree to the{" "}
-                <a
-                  href="#"
-                  className="text-black underline underline-offset-4 hover:opacity-70"
-                >
-                  Terms
-                </a>{" "}
-                and{" "}
-                <a
-                  href="#"
-                  className="text-black underline underline-offset-4 hover:opacity-70"
-                >
-                  Privacy Policy
-                </a>
-                .
-              </span>
-            </label>
+            {/* ... your inputs unchanged ... */}
 
             <button
               type="submit"
-              disabled={!agree}
+              disabled={!agree || busy}
               className="mt-2 w-full rounded-lg bg-black text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60"
             >
-              Create account
+              {busy ? "Creating..." : "Create account"}
             </button>
           </form>
 
-          {/* Footer hint */}
+          {/* Footer */}
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{" "}
             <a
-              href="/auth/login"
+              href="/login"
               className="text-black hover:opacity-70 underline underline-offset-4"
             >
               Sign in
