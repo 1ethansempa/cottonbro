@@ -12,11 +12,9 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // NEW: track form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // derived: enabled only when both present and not busy
   const canSubmit = !!email && !!password && !busy;
 
   const onGoogle = async () => {
@@ -68,13 +66,9 @@ function LoginPage() {
     }
   };
 
-  const onApple = () => {
-    window.alert("Apple sign-in is coming soon.");
-  };
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return; // guard
+    if (!canSubmit) return;
     setBusy(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -101,9 +95,9 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen w-full flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
-        <div className="relative rounded-2xl bg-white shadow-2xl p-6 md:p-8">
+        <div className="relative rounded-2xl bg-white shadow-xl p-6 md:p-8">
           {/* Header */}
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
@@ -115,7 +109,7 @@ function LoginPage() {
           </div>
 
           {/* OAuth */}
-          <div className="space-y-3">
+          <div>
             <button
               type="button"
               onClick={onGoogle}
@@ -123,15 +117,6 @@ function LoginPage() {
             >
               <GoogleIcon />
               Continue with Google
-            </button>
-
-            <button
-              type="button"
-              onClick={onApple}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
-            >
-              <AppleIcon />
-              Continue with Apple
             </button>
           </div>
 
@@ -192,7 +177,7 @@ function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 onInput={(e) =>
                   setPassword((e.target as HTMLInputElement).value)
-                } // helps with autofill
+                }
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
                 placeholder="••••••••"
               />
@@ -208,7 +193,6 @@ function LoginPage() {
             </button>
           </form>
 
-          {/* Footer hint */}
           <p className="mt-6 text-center text-sm text-gray-600">
             Don’t have an account?{" "}
             <a

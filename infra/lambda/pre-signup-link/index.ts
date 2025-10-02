@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// lambda/pre-signup-link.ts
 import {
   CognitoIdentityProviderClient,
   ListUsersCommand,
   AdminLinkProviderForUserCommand,
-  AdminUpdateUserAttributesCommand, // ← ADDED
+  AdminUpdateUserAttributesCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import type {
   PreSignUpTriggerHandler,
@@ -16,7 +15,6 @@ const cognito = new CognitoIdentityProviderClient({});
 export const handler: PreSignUpTriggerHandler = async (
   event: PreSignUpTriggerEvent
 ) => {
-  // Only run for federated providers (Google/Apple/etc.)
   if (event.triggerSource !== "PreSignUp_ExternalProvider") {
     return event;
   }
@@ -69,7 +67,7 @@ export const handler: PreSignUpTriggerHandler = async (
 
       if (existing?.Username) {
         try {
-          // 👉 Link federated account to the existing Cognito user
+          // Link federated account to the existing Cognito user
           await cognito.send(
             new AdminLinkProviderForUserCommand({
               UserPoolId: userPoolId,
@@ -85,7 +83,7 @@ export const handler: PreSignUpTriggerHandler = async (
             })
           );
 
-          // 👉 Immediately mark email as verified on the existing user
+          // Immediately mark email as verified on the existing user
           await cognito.send(
             new AdminUpdateUserAttributesCommand({
               UserPoolId: userPoolId,

@@ -1,7 +1,5 @@
-// lib/main-stack.ts
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -53,6 +51,10 @@ export class MainStack extends cdk.Stack {
           email: cognito.ProviderAttribute.GOOGLE_EMAIL,
           givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
           familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+          custom: {
+            // key is the Cognito user-pool attribute name
+            email_verified: cognito.ProviderAttribute.other("email_verified"),
+          },
         },
       }
     );
@@ -67,14 +69,13 @@ export class MainStack extends cdk.Stack {
       cognito.OAuthScope.PROFILE,
     ];
 
-    // ✅ PreSignUp trigger — NO refs to userPool in env or policy resources
+    //PreSignUp trigger — NO refs to userPool in env or policy resources
     const preSignUpFn = new NodejsFunction(this, "PreSignUpLinkFn", {
       entry: "lambda/pre-signup-link/index.ts",
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(10),
       bundling: { target: "node20" },
-      // ❌ no environment: { USER_POOL_ID: userPool.userPoolId }
       description:
         "PreSignUp trigger to link social identities to existing local users",
     });
@@ -86,6 +87,7 @@ export class MainStack extends cdk.Stack {
           "cognito-idp:ListUsers",
           "cognito-idp:AdminLinkProviderForUser",
           "cognito-idp:AdminUpdateUserAttributes",
+          "cognito-idp:AdminConfirmSignUp",
         ],
         resources: ["*"],
       })
@@ -94,7 +96,7 @@ export class MainStack extends cdk.Stack {
     // Attach trigger (UserPool -> Lambda edge only)
     userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, preSignUpFn);
 
-    // Web client (unchanged)
+    // Web client
     const webClient = new cognito.UserPoolClient(this, "WebClient", {
       userPool,
       userPoolClientName: "web-spa",
@@ -114,7 +116,7 @@ export class MainStack extends cdk.Stack {
     });
     webClient.node.addDependency(googleProvider);
 
-    // Admin client (unchanged)
+    // Admin client
     const adminClient = new cognito.UserPoolClient(this, "AdminClient", {
       userPool,
       userPoolClientName: "admin-spa",
@@ -134,7 +136,7 @@ export class MainStack extends cdk.Stack {
     });
     adminClient.node.addDependency(googleProvider);
 
-    // Dynamo/S3/API (unchanged)
+    // Dynamo/S3/API
     const table = new dynamodb.Table(this, "MainTable", {
       partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "sk", type: dynamodb.AttributeType.STRING },
@@ -176,7 +178,7 @@ export class MainStack extends cdk.Stack {
       integration: new apigwv2i.HttpLambdaIntegration("ApiInt", apiFn),
     });
 
-    // Outputs (unchanged)
+    // Outputs
     new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new cdk.CfnOutput(this, "WebClientId", {
       value: webClient.userPoolClientId,

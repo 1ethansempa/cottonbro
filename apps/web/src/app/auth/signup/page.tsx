@@ -10,7 +10,6 @@ import {
   codeChallengeFromVerifier,
 } from "../../../lib/pkce";
 import GoogleIcon from "../../../components/google-icon";
-import AppleIcon from "../../../components/apple-icon";
 
 const region = process.env.NEXT_PUBLIC_AWS_REGION!;
 const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
@@ -25,10 +24,9 @@ function RegisterPage() {
   const [err, setErr] = useState<string | null>(null);
 
   const onGoogle = async () => {
-    // Load environment variables (must match your Cognito app client setup)
-    const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!; // Cognito Hosted UI domain
-    const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!; // App client ID
-    const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI!; // Callback URL in your app
+    const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+    const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
+    const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI!;
 
     console.log(clientId);
 
@@ -63,7 +61,6 @@ function RegisterPage() {
     window.location.href = `${domain}/oauth2/authorize?${params.toString()}`;
   };
 
-  // Custom email/password sign-up (uses your form)
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErr(null);
@@ -115,11 +112,6 @@ function RegisterPage() {
     }
   };
 
-  const onApple = () => {
-    // Placeholder until you add Apple IdP to the user pool.
-    alert("Apple Sign in is coming soon.");
-  };
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
@@ -143,14 +135,6 @@ function RegisterPage() {
             >
               <GoogleIcon />
               Continue with Google
-            </button>
-            <button
-              type="button"
-              onClick={onApple}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
-            >
-              <AppleIcon />
-              Continue with Apple
             </button>
           </div>
 
