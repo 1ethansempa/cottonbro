@@ -12,15 +12,20 @@ export default function CallbackPage() {
     const verifier = sessionStorage.getItem("pkce_verifier");
 
     if (!code) {
-      setMsg("Missing authorization code.");
+      console.error("OAuth callback missing authorization code.");
+      setMsg("We couldn’t complete your sign-in. Please try again.");
       return;
     }
+
     if (!verifier) {
-      setMsg("Missing PKCE verifier. Please try signing in again.");
+      console.error("Missing PKCE verifier — possible lost sessionStorage.");
+      setMsg("Your sign-in session expired. Please try again.");
       return;
     }
+
     if (!state || state !== storedState) {
-      setMsg("State mismatch.");
+      console.error("OAuth state mismatch — possible CSRF or stale session.");
+      setMsg("Something went wrong with your sign-in. Please try again.");
       return;
     }
 

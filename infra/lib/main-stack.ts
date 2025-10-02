@@ -93,7 +93,7 @@ export class MainStack extends cdk.Stack {
           cognito.OAuthScope.EMAIL, // email claim
           cognito.OAuthScope.PROFILE, // basic profile claims
         ],
-        callbackUrls: ["http://localhost:5173/callback"], // Where Cognito redirects post-login
+        callbackUrls: ["http://localhost:5173/auth/callback"], // Where Cognito redirects post-login
         logoutUrls: ["http://localhost:5173/"], // Where to go after logout
       },
       preventUserExistenceErrors: true, // Prevent user enumeration via error messages

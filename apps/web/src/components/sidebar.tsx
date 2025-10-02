@@ -8,7 +8,7 @@ import { useEffect, useId, useState } from "react";
 const links = [
   { href: "/shop", label: "Shop" },
   { href: "/create-product", label: "Create Product" },
-  { href: "/login", label: "Login" },
+  { href: "/auth/login", label: "Login" },
 ];
 
 export default function Sidebar() {

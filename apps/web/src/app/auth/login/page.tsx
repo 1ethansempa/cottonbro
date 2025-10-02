@@ -1,14 +1,98 @@
 "use client";
 
 import React, { useState } from "react";
+import GoogleIcon from "../../../components/google-icon";
+import AppleIcon from "../../../components/apple-icon";
+import {
+  generateCodeVerifier,
+  codeChallengeFromVerifier,
+} from "../../../lib/pkce";
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const onGoogle = () => {};
-  const onApple = () => {};
-  const onSubmit = (e: React.FormEvent) => {
+  // Hosted UI (Google) + PKCE
+  const onGoogle = async () => {
+    try {
+      const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+      const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
+      const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI!;
+
+      const verifier = await generateCodeVerifier();
+      const challenge = await codeChallengeFromVerifier(verifier);
+      const state = crypto.randomUUID();
+
+      // keep these tab-scoped for the callback
+      sessionStorage.setItem("pkce_verifier", verifier);
+      sessionStorage.setItem("oauth_state", state);
+
+      const params = new URLSearchParams({
+        identity_provider: "Google",
+        response_type: "code",
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        scope: "openid email profile",
+        code_challenge_method: "S256",
+        code_challenge: challenge,
+        state,
+      });
+
+      // hard redirect to Cognito Hosted UI
+      window.location.href = `${domain.replace(/\/+$/, "")}/oauth2/authorize?${params.toString()}`;
+    } catch (err) {
+      console.error("Google OAuth start failed:", err);
+      window.alert("We couldn’t start Google sign-in. Please try again.");
+    }
+  };
+
+  // Leave Apple for later
+  const onApple = () => {
+    window.alert("Apple sign-in is coming soon.");
+  };
+
+  // Email/password -> server route sets HttpOnly cookies
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
+
+    const form = e.currentTarget as HTMLFormElement;
+    const email = (
+      form.elements.namedItem("email") as HTMLInputElement
+    ).value.trim();
+    const password = (form.elements.namedItem("password") as HTMLInputElement)
+      .value;
+
+    if (!email || !password) {
+      window.alert("Enter your email and password.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Login failed:", text);
+        window.alert(
+          text || "Sign in failed. Check your credentials and try again."
+        );
+        return;
+      }
+      // success
+      window.location.replace("/");
+    } catch (err) {
+      console.error("Login error:", err);
+      window.alert("Something went wrong signing you in. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -33,25 +117,7 @@ function LoginPage() {
               onClick={onGoogle}
               className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
             >
-              {/* Official multicolor Google "G" */}
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.49 12.27c0-.82-.07-1.42-.22-2.04H12v3.71h6.53c-.13 1.04-.84 2.62-2.42 3.68l-.02.11 3.51 2.73.24.02c2.2-2.03 3.47-5.02 3.47-8.21"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.07 7.94-2.91l-3.78-2.94c-1.01.7-2.36 1.19-4.16 1.19-3.18 0-5.88-2.14-6.84-5.11l-.1.01-3.7 2.86-.05.1C3.94 21.62 7.64 24 12 24"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.16 14.23a7.26 7.26 0 0 1-.4-2.23c0-.78.15-1.54.38-2.23l-.01-.15-3.74-2.9-.12.06A11.95 11.95 0 0 0 0 12c0 1.93.46 3.74 1.27 5.33l3.89-3.1"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c2.25 0 3.76.97 4.63 1.79l3.39-3.32C17.93 1.44 15.24 0 12 0 7.64 0 3.94 2.38 1.27 6.67l3.88 3.1c.98-2.97 3.66-5.02 6.85-5.02"
-                />
-              </svg>
+              <GoogleIcon />
               Continue with Google
             </button>
 
@@ -60,13 +126,7 @@ function LoginPage() {
               onClick={onApple}
               className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer"
             >
-              <svg
-                aria-hidden
-                viewBox="0 0 24 24"
-                className="h-5 w-5 fill-current"
-              >
-                <path d="M16.365 12.403c-.014-1.59.711-2.79 2.17-3.676-.814-1.176-2.046-1.82-3.673-1.934-1.539-.122-3.214.894-3.815.894-.633 0-2.087-.86-3.223-.86-2.34.037-4.834 1.92-4.834 5.73 0 1.124.206 2.283.618 3.48.55 1.59 2.533 5.486 4.594 5.424 1.08-.026 1.846-.776 3.246-.776 1.36 0 2.07.776 3.26.776 2.08-.03 3.88-3.53 4.41-5.127-2.79-1.32-2.753-4.06-2.753-4.93zM14.3 4.97c1.173-1.42 1.066-2.7 1.03-2.97-1.06.06-2.29.73-2.99 1.56-.77.89-1.15 1.98-1.06 3.12 1.14.08 2.29-.57 3.02-1.71z" />
-              </svg>
+              <AppleIcon />
               Continue with Apple
             </button>
           </div>
@@ -144,7 +204,7 @@ function LoginPage() {
 
             <button
               type="submit"
-              className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60"
+              className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 "
             >
               Sign In
             </button>
@@ -154,7 +214,7 @@ function LoginPage() {
           <p className="mt-6 text-center text-sm text-gray-600">
             Don’t have an account?{" "}
             <a
-              href="/signup"
+              href="/auth/signup"
               className="text-black hover:opacity-70 underline-offset-4 hover:underline"
             >
               Create one
