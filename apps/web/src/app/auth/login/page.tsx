@@ -12,18 +12,34 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Hosted UI (Google) + PKCE
+  // NEW: track form state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // derived: enabled only when both present and not busy
+  const canSubmit = !!email && !!password && !busy;
+
   const onGoogle = async () => {
     try {
-      const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
-      const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
-      const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI!;
-
+      const domain = (process.env.NEXT_PUBLIC_COGNITO_DOMAIN || "").replace(
+        /\/+$/,
+        ""
+      );
+      const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "";
+      const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI || "";
+      if (!domain || !clientId || !redirectUri) {
+        console.error({ domain, clientId, redirectUri });
+        alert("Auth is misconfigured. Check your client env vars.");
+        return;
+      }
+      if (!/^https?:\/\//.test(domain)) {
+        console.error("Cognito domain must include scheme");
+        alert("Cognito domain is invalid. See console.");
+        return;
+      }
       const verifier = await generateCodeVerifier();
       const challenge = await codeChallengeFromVerifier(verifier);
       const state = crypto.randomUUID();
-
-      // keep these tab-scoped for the callback
       sessionStorage.setItem("pkce_verifier", verifier);
       sessionStorage.setItem("oauth_state", state);
 
@@ -38,45 +54,35 @@ function LoginPage() {
         state,
       });
 
-      // hard redirect to Cognito Hosted UI
-      window.location.href = `${domain.replace(/\/+$/, "")}/oauth2/authorize?${params.toString()}`;
+      const authorizeUrl = `${domain}/oauth2/authorize?${params.toString()}`;
+      console.log("Authorize URL →", authorizeUrl);
+      console.log(
+        "redirect_uri →",
+        redirectUri,
+        "(must match Callback URLs exactly)"
+      );
+      window.location.href = authorizeUrl;
     } catch (err) {
       console.error("Google OAuth start failed:", err);
-      window.alert("We couldn’t start Google sign-in. Please try again.");
+      alert("We couldn’t start Google sign-in. Please try again.");
     }
   };
 
-  // Leave Apple for later
   const onApple = () => {
     window.alert("Apple sign-in is coming soon.");
   };
 
-  // Email/password -> server route sets HttpOnly cookies
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (busy) return;
-
-    const form = e.currentTarget as HTMLFormElement;
-    const email = (
-      form.elements.namedItem("email") as HTMLInputElement
-    ).value.trim();
-    const password = (form.elements.namedItem("password") as HTMLInputElement)
-      .value;
-
-    if (!email || !password) {
-      window.alert("Enter your email and password.");
-      return;
-    }
-
+    if (!canSubmit) return; // guard
     setBusy(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
-
       if (!res.ok) {
         const text = await res.text();
         console.error("Login failed:", text);
@@ -85,7 +91,6 @@ function LoginPage() {
         );
         return;
       }
-      // success
       window.location.replace("/");
     } catch (err) {
       console.error("Login error:", err);
@@ -97,9 +102,8 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-12">
-      {/* Card */}
       <div className="w-full max-w-md">
-        <div className="relative rounded-2xl bg-white shadow-xl p-6 md:p-8">
+        <div className="relative rounded-2xl bg-white shadow-2xl p-6 md:p-8">
           {/* Header */}
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
@@ -154,6 +158,9 @@ function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onInput={(e) => setEmail((e.target as HTMLInputElement).value)} // helps with autofill
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
                 placeholder="you@example.com"
               />
@@ -181,32 +188,23 @@ function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onInput={(e) =>
+                  setPassword((e.target as HTMLInputElement).value)
+                } // helps with autofill
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
                 placeholder="••••••••"
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs text-gray-700">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded-md border-gray-300 text-black focus:ring-black focus:ring-offset-0"
-                />
-                Remember me
-              </label>
-              <a
-                href="/auth/forgot-password"
-                className="text-xs text-black hover:opacity-70 underline-offset-4 hover:underline"
-              >
-                Forgot password?
-              </a>
-            </div>
-
             <button
               type="submit"
-              className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 "
+              disabled={!canSubmit}
+              aria-disabled={!canSubmit}
+              className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Sign In
+              {busy ? "Signing in…" : "Sign In"}
             </button>
           </form>
 
@@ -218,6 +216,14 @@ function LoginPage() {
               className="text-black hover:opacity-70 underline-offset-4 hover:underline"
             >
               Create one
+            </a>
+          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            <a
+              href="/auth/forgot-password"
+              className=" text-black hover:opacity-70 underline-offset-4 hover:underline"
+            >
+              Forgot password?
             </a>
           </p>
         </div>

@@ -186,7 +186,7 @@ function RegisterPage() {
                 autoComplete="name"
                 required
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                placeholder="John Doe"
+                placeholder="What would you like us to call you?"
               />
             </div>
 

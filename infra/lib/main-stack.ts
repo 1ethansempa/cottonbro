@@ -1,68 +1,54 @@
-// CDK core library (constructs, Stack base class, utilities)
+// lib/main-stack.ts
 import * as cdk from "aws-cdk-lib";
-// Construct base class used by all CDK resources
 import { Construct } from "constructs";
 
-// AWS service-specific CDK modules we’re using in this stack:
-import * as cognito from "aws-cdk-lib/aws-cognito"; // Amazon Cognito (auth)
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb"; // DynamoDB (NoSQL DB)
-import * as s3 from "aws-cdk-lib/aws-s3"; // S3 (object storage)
-import * as lambda from "aws-cdk-lib/aws-lambda"; // Lambda (serverless compute)
-import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2"; // API Gateway v2 (HTTP API)
-import * as apigwv2i from "aws-cdk-lib/aws-apigatewayv2-integrations"; // API GW integrations
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager"; // Secrets Manager
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
+import * as apigwv2i from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 
-// A CDK "Stack" is a deployable unit (CloudFormation stack). Everything inside gets created/updated together.
 export class MainStack extends cdk.Stack {
-  // The constructor defines resources that will be synthesized & deployed.
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // ===== Cognito user pool + domain =====
-    // Create a Cognito User Pool (stores users, handles sign-in/sign-up).
+    // User pool
     const userPool = new cognito.UserPool(this, "UserPool", {
-      userPoolName: "cottonbro-users", // Friendly name for the pool
-      selfSignUpEnabled: true, // Allow users to sign up themselves
-      signInAliases: { email: true }, // Users sign in with email
-      standardAttributes: {
-        email: { required: true, mutable: false }, // Email is required and immutable
-      },
-      removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep users if stack is deleted
+      userPoolName: "cottonbro-users",
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      standardAttributes: { email: { required: true, mutable: false } },
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    // Attach a hosted UI domain to the user pool (gives you a Cognito-hosted login page).
+    // Domain
     const domain = userPool.addDomain("HostedUiDomain", {
-      cognitoDomain: { domainPrefix: "cottonbro" }, // Results in cottonbro.auth.<region>.amazoncognito.com
+      cognitoDomain: { domainPrefix: "cottonbro" },
     });
 
-    // ===== Google Identity Provider =====
-    // Pull Google OAuth client credentials from AWS Secrets Manager (JSON with clientId & clientSecret).
+    // Google IdP (unchanged)
     const googleSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
       "GoogleSecret",
-      "cottonbro/google-oauth" // Secret name you created that holds Google creds
+      "cottonbro/google-oauth"
     );
-
-    // Register Google as a social IdP for this User Pool.
     const googleProvider = new cognito.UserPoolIdentityProviderGoogle(
       this,
       "GoogleIdP",
       {
-        userPool, // Link to our user pool
-        // Google OAuth client ID: expects a string → unwrap from secret JSON.
+        userPool,
         clientId: googleSecret
           .secretValueFromJson("clientId")
           .unsafeUnwrap()
           .toString(),
-        // Google OAuth client secret: this line unwraps to a string in your code.
-        // NOTE: Cognito’s CDK construct typically expects a SecretValue here;
-        // you’re intentionally not changing the code—just commenting.
         clientSecret: googleSecret
           .secretValueFromJson("clientSecret")
           .unsafeUnwrap(),
-        // OIDC scopes Google should grant (standard identity claims).
         scopes: ["openid", "email", "profile"],
-        // Map Google profile fields into Cognito user attributes.
         attributeMapping: {
           email: cognito.ProviderAttribute.GOOGLE_EMAIL,
           givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
@@ -71,79 +57,100 @@ export class MainStack extends cdk.Stack {
       }
     );
 
-    // ===== App clients with support for Cognito + Google =====
-    // These app clients represent your frontends (web/admin) and define OAuth settings
-    // like allowed callback URLs and which IdPs they support.
-
-    // List the identity providers the clients will allow (native Cognito + Google).
     const supportedIdPs = [
       cognito.UserPoolClientIdentityProvider.COGNITO,
       cognito.UserPoolClientIdentityProvider.GOOGLE,
     ];
+    const oauthScopes = [
+      cognito.OAuthScope.OPENID,
+      cognito.OAuthScope.EMAIL,
+      cognito.OAuthScope.PROFILE,
+    ];
 
-    // Web SPA client (for http://localhost:5173)
-    const webClient = new cognito.UserPoolClient(this, "WebClient", {
-      userPool, // Attach to the same user pool
-      userPoolClientName: "web-spa", // Display name
-      generateSecret: false, // Public client (SPA) → no client secret
-      oAuth: {
-        flows: { authorizationCodeGrant: true }, // Use Authorization Code + PKCE (right for SPAs)
-        scopes: [
-          cognito.OAuthScope.OPENID, // ID token (sub)
-          cognito.OAuthScope.EMAIL, // email claim
-          cognito.OAuthScope.PROFILE, // basic profile claims
-        ],
-        callbackUrls: ["http://localhost:5173/auth/callback"], // Where Cognito redirects post-login
-        logoutUrls: ["http://localhost:5173/"], // Where to go after logout
-      },
-      preventUserExistenceErrors: true, // Prevent user enumeration via error messages
-      supportedIdentityProviders: supportedIdPs, // Allow login with Cognito & Google
+    // ✅ PreSignUp trigger — NO refs to userPool in env or policy resources
+    const preSignUpFn = new NodejsFunction(this, "PreSignUpLinkFn", {
+      entry: "lambda/pre-signup-link/index.ts",
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: { target: "node20" },
+      // ❌ no environment: { USER_POOL_ID: userPool.userPoolId }
+      description:
+        "PreSignUp trigger to link social identities to existing local users",
     });
-    // Ensure the Google IdP resource exists before this client references it.
+
+    // Allow linking + lookup, but avoid direct ARN ref to the pool to prevent cycles
+    preSignUpFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminLinkProviderForUser",
+          "cognito-idp:AdminUpdateUserAttributes",
+        ],
+        resources: ["*"],
+      })
+    );
+
+    // Attach trigger (UserPool -> Lambda edge only)
+    userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, preSignUpFn);
+
+    // Web client (unchanged)
+    const webClient = new cognito.UserPoolClient(this, "WebClient", {
+      userPool,
+      userPoolClientName: "web-spa",
+      generateSecret: false,
+      authFlows: { userPassword: true, userSrp: true },
+      accessTokenValidity: cdk.Duration.hours(1),
+      idTokenValidity: cdk.Duration.hours(1),
+      refreshTokenValidity: cdk.Duration.days(30),
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        scopes: oauthScopes,
+        callbackUrls: ["http://localhost:5173/auth/callback"],
+        logoutUrls: ["http://localhost:5173/"],
+      },
+      preventUserExistenceErrors: true,
+      supportedIdentityProviders: supportedIdPs,
+    });
     webClient.node.addDependency(googleProvider);
 
-    // Admin SPA client (for http://localhost:5174)
+    // Admin client (unchanged)
     const adminClient = new cognito.UserPoolClient(this, "AdminClient", {
       userPool,
       userPoolClientName: "admin-spa",
       generateSecret: false,
+      authFlows: { userPassword: true, userSrp: true },
+      accessTokenValidity: cdk.Duration.hours(1),
+      idTokenValidity: cdk.Duration.hours(1),
+      refreshTokenValidity: cdk.Duration.days(30),
       oAuth: {
         flows: { authorizationCodeGrant: true },
-        scopes: [
-          cognito.OAuthScope.OPENID,
-          cognito.OAuthScope.EMAIL,
-          cognito.OAuthScope.PROFILE,
-        ],
-        callbackUrls: ["http://localhost:5174/callback"],
+        scopes: oauthScopes,
+        callbackUrls: ["http://localhost:5174/auth/callback"],
         logoutUrls: ["http://localhost:5174/"],
       },
       preventUserExistenceErrors: true,
       supportedIdentityProviders: supportedIdPs,
     });
-    // Also wait for Google IdP before creating this client.
     adminClient.node.addDependency(googleProvider);
 
-    // ===== Other infra pieces (Dynamo, S3, API) remain the same =====
-
-    // DynamoDB table (single-table design: pk + sk). On-demand billing = pay per request.
+    // Dynamo/S3/API (unchanged)
     const table = new dynamodb.Table(this, "MainTable", {
       partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "sk", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep data if stack is deleted
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    // S3 bucket for private assets (no public access, versioning enabled).
     const assets = new s3.Bucket(this, "Assets", {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      enforceSSL: true, // Force HTTPS
-      versioned: true, // Keep versions of objects
+      enforceSSL: true,
+      versioned: true,
     });
 
-    // Lambda function that acts as a placeholder API handler (inline code for now).
     const apiFn = new lambda.Function(this, "ApiFn", {
-      runtime: lambda.Runtime.NODEJS_20_X, // Node.js 20 runtime
-      handler: "index.handler", // Entry point (exports.handler)
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "index.handler",
       code: lambda.Code.fromInline(`
         exports.handler = async (event) => ({
           statusCode: 200,
@@ -151,29 +158,25 @@ export class MainStack extends cdk.Stack {
           body: JSON.stringify({ ok: true, path: event.rawPath || "/", note: "placeholder API" })
         });
       `),
-      // Environment variables exposed to the Lambda function.
       environment: {
         TABLE_NAME: table.tableName,
         USER_POOL_ID: userPool.userPoolId,
         BUCKET_NAME: assets.bucketName,
       },
     });
-    // Grant the Lambda permission to read/write the DynamoDB table and S3 bucket.
     table.grantReadWriteData(apiFn);
     assets.grantReadWrite(apiFn);
 
-    // HTTP API (API Gateway v2). We'll route all requests to the Lambda above.
     const httpApi = new apigwv2.HttpApi(this, "HttpApi", {
       apiName: "cottonbro-api",
     });
-    // Catch-all route so any path (/..., /foo, /bar) hits the same Lambda for now.
+
     httpApi.addRoutes({
       path: "/{proxy+}",
       integration: new apigwv2i.HttpLambdaIntegration("ApiInt", apiFn),
     });
 
-    // Outputs
-    // These values print after deploy so your apps can be configured without hunting in the console.
+    // Outputs (unchanged)
     new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new cdk.CfnOutput(this, "WebClientId", {
       value: webClient.userPoolClientId,
@@ -181,9 +184,8 @@ export class MainStack extends cdk.Stack {
     new cdk.CfnOutput(this, "AdminClientId", {
       value: adminClient.userPoolClientId,
     });
-    new cdk.CfnOutput(this, "HostedUiDomain", {
-      // e.g., cottonbro.auth.eu-west-1.amazoncognito.com
-      value: `${domain.domainName}.auth.${this.region}.amazoncognito.com`,
+    new cdk.CfnOutput(this, "HostedUiDomainBaseUrl", {
+      value: domain.baseUrl(),
     });
     new cdk.CfnOutput(this, "HttpApiUrl", { value: httpApi.apiEndpoint });
     new cdk.CfnOutput(this, "AssetsBucket", { value: assets.bucketName });

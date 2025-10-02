@@ -55,86 +55,92 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl p-6 md:p-8">
-        <h1 className="text-lg font-semibold mb-4">Reset your password</h1>
-        {msg && (
-          <p className="mb-3 rounded-md bg-gray-50 text-gray-700 text-sm px-3 py-2">
-            {msg}
-          </p>
-        )}
+    <div className="min-h-screen w-full flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md">
+        <div className="relative rounded-2xl bg-white shadow-xl p-6 md:p-8">
+          <h1 className="text-2xl font-semibold mb-4">Reset your password</h1>
 
-        {step === "request" ? (
-          <form onSubmit={request} className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-1 block text-sm text-gray-700"
+          {msg && (
+            <p className="mb-3 rounded-md bg-gray-50 text-gray-700 text-sm px-3 py-2">
+              {msg}
+            </p>
+          )}
+
+          {step === "request" ? (
+            <form onSubmit={request} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-1 block text-sm text-gray-700"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full rounded-lg bg-black text-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
               >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                placeholder="you@example.com"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full rounded-lg bg-black text-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-            >
-              {busy ? "Sending…" : "Send reset code"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={confirm} className="space-y-4">
-            <div>
-              <label
-                htmlFor="code"
-                className="mb-1 block text-sm text-gray-700"
+                {busy ? "Sending…" : "Send reset code"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={confirm} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="code"
+                  className="mb-1 block text-sm text-gray-700"
+                >
+                  Code
+                </label>
+                <input
+                  id="code"
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  placeholder="6-digit code"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1 block text-sm text-gray-700"
+                >
+                  New password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full rounded-lg bg-black text-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
               >
-                Code
-              </label>
-              <input
-                id="code"
-                required
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                placeholder="6-digit code"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-1 block text-sm text-gray-700"
-              >
-                New password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                placeholder="••••••••"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full rounded-lg bg-black text-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-            >
-              {busy ? "Updating…" : "Update password"}
-            </button>
-          </form>
-        )}
+                {busy ? "Updating…" : "Update password"}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
