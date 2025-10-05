@@ -20,7 +20,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*", "src/types/**/*.d.ts"]
     },
     "types": ["aws-lambda"]
   },
