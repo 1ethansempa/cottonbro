@@ -19,7 +19,7 @@ export default function Home() {
           </span>{" "}
           <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-[-0.02em] md:text-6xl">
             {" "}
-            Design & promote your own merch — we handle everything else.{" "}
+            Design merch — we handle everything else.{" "}
           </h1>{" "}
           <p className="mt-3 max-w-prose text-lg text-neutral-700">
             {" "}
@@ -45,10 +45,6 @@ export default function Home() {
               View demo{" "}
             </a>{" "}
           </div>{" "}
-          <p className="mt-3 text-sm text-neutral-600">
-            {" "}
-            No upfront cost • We handle fulfillment{" "}
-          </p>{" "}
         </div>{" "}
         {/* Mock preview */}{" "}
         <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-xl">
