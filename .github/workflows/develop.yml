@@ -1,0 +1,177 @@
+name: CI (develop)
+
+on:
+    pull_request:
+        branches: [develop]
+    push:
+        branches: [develop]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    id-token: write
+    actions: read
+
+concurrency:
+    group: develop-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    NODE_VERSION: "22"
+    AWS_REGION: eu-west-1
+    NEXT_TELEMETRY_DISABLED: "1"
+    CI: "true"
+
+jobs:
+    changes:
+        name: Detect changed areas
+        runs-on: ubuntu-latest
+        outputs:
+            web: ${{ steps.filter.outputs.web }}
+            infra: ${{ steps.filter.outputs.infra }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  token: ${{ github.token }}
+                  filters: |
+                      web:
+                        - 'apps/web/**'
+                        - 'pnpm-lock.yaml'
+                        - 'package.json'
+                      infra:
+                        - 'infra/**'
+                        - 'pnpm-lock.yaml'
+                        - 'package.json'
+
+    web_ci:
+        name: Web (Next.js) — lint, test, build
+        needs: changes
+        if: needs.changes.outputs.web == 'true'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+                  cache-dependency-path: pnpm-lock.yaml
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: Install deps (workspace)
+              run: pnpm install --frozen-lockfile
+
+            - name: Lint
+              run: pnpm -C apps/web run lint --if-present
+
+            - name: Test
+              run: pnpm -C apps/web run test --if-present -- --ci
+
+            - name: Build
+              env:
+                  NEXT_PUBLIC_APP_ENV: "ci"
+              run: pnpm -C apps/web run build
+
+            - name: Upload Next build artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: web-build-${{ github.sha }}
+                  path: |
+                      apps/web/.next
+                      apps/web/next.config.*
+                      apps/web/public
+                  if-no-files-found: ignore
+                  retention-days: 7
+
+    infra_cdk_synth:
+        name: Infra (CDK) — synth & diff
+        needs: changes
+        if: needs.changes.outputs.infra == 'true'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+                  cache-dependency-path: pnpm-lock.yaml
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: Install deps (workspace)
+              run: pnpm install --frozen-lockfile
+
+            - name: CDK version
+              run: npx cdk --version
+
+            - name: CDK synth
+              working-directory: infra
+              run: npx cdk synth --quiet
+
+            - name: Upload synthesized template(s)
+              uses: actions/upload-artifact@v4
+              with:
+                  name: cdk-synth-${{ github.sha }}
+                  path: infra/cdk.out
+                  retention-days: 7
+
+            - name: CDK diff (informational)
+              working-directory: infra
+              run: npx cdk diff || true
+
+    infra_cdk_deploy:
+        name: Infra (CDK) — deploy (push to develop only)
+        needs: [web_ci, infra_cdk_synth]
+        if: github.event_name == 'push' && needs.changes.outputs.infra == 'true'
+        runs-on: ubuntu-latest
+        environment:
+            name: develop
+            url: https://console.aws.amazon.com/cloudformation
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+                  cache-dependency-path: pnpm-lock.yaml
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: Install deps (workspace)
+              run: pnpm install --frozen-lockfile
+
+            - name: Configure AWS credentials (OIDC)
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEVELOP }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: CDK bootstrap (idempotent)
+              working-directory: infra
+              env:
+                  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+              run: npx cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_REGION || true
+
+            - name: CDK deploy (no approval)
+              working-directory: infra
+              run: npx cdk deploy --all --require-approval never
