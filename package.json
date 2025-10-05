@@ -6,7 +6,8 @@
   "packageManager": "pnpm@10.11.1",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "infra"
   ],
   "scripts": {
     "build": "turbo run build",
@@ -14,7 +15,8 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "smoke": "bash ./scripts/smoke.sh"
+    "smoke": "bash ./scripts/smoke.sh",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +25,8 @@
     "node": ">=20.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
     "@types/node": "^24.5.2",
     "aws-cdk": "^2.1029.3",
     "eslint": "^9.36.0",
