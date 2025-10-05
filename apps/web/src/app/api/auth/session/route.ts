@@ -1,40 +1,53 @@
-// app/api/auth/session/route.ts
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+function decodeBase64Url(input: string) {
+  const pad = (s: string) => s + "===".slice((4 - (s.length % 4)) % 4);
+  const base64 = pad(input.replace(/-/g, "+").replace(/_/g, "/"));
+  return Buffer.from(base64, "base64").toString("utf8");
+}
+
 function decodeJwt(token: string) {
-  const [, payload] = token.split(".");
-  return JSON.parse(Buffer.from(payload, "base64").toString("utf8"));
+  const parts = token.split(".");
+  if (parts.length < 2) throw new Error("Bad JWT");
+  const payload = JSON.parse(decodeBase64Url(parts[1]));
+  return payload;
 }
 
 export async function GET() {
   const c = await cookies();
-  const at = c.get("access_token")?.value;
-  const idt = c.get("id_token")?.value;
+  const idt = c.get("id_token")?.value ?? null;
+  const refresh = c.get("refresh_token")?.value ?? null;
 
-  if (!at && !idt) {
+  if (!idt && !refresh) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
-  // Light parse of ID token for profile (no signature verify here)
-  let profile: any = null;
-  if (idt) {
-    try {
-      profile = decodeJwt(idt);
-    } catch {}
+  if (!idt && refresh) {
+    return NextResponse.json({ authenticated: false, needsRefresh: true });
   }
 
-  return NextResponse.json({
-    authenticated: true,
-    user: profile
-      ? {
-          sub: profile.sub,
-          email: profile.email,
-          name:
-            profile.name ??
-            [profile.given_name, profile.family_name].filter(Boolean).join(" "),
-          picture: profile.picture,
-        }
-      : null,
-  });
+  try {
+    const p = decodeJwt(idt!);
+    const expMs = typeof p.exp === "number" ? p.exp * 1000 : null;
+
+    if (expMs && expMs <= Date.now()) {
+      return NextResponse.json({ authenticated: false, needsRefresh: true });
+    }
+
+    const user = p && {
+      sub: p.sub,
+      email: p.email,
+      name: p.name ?? [p.given_name, p.family_name].filter(Boolean).join(" "),
+      picture: p.picture,
+    };
+
+    return NextResponse.json({
+      authenticated: true,
+      user,
+      expiresAt: expMs,
+    });
+  } catch {
+    return new NextResponse("Bad token", { status: 400 });
+  }
 }

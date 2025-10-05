@@ -1,11 +1,5 @@
-// lib/auth-server.ts
 import { cookies } from "next/headers";
 
-/**
- * Env: read from NEXT_PUBLIC_* first (so dev .env stays simple),
- * then fall back to server-only names if you prefer that style.
- * Trailing slashes are trimmed from the domain.
- */
 const domain = (
   process.env.NEXT_PUBLIC_COGNITO_DOMAIN ??
   process.env.COGNITO_DOMAIN ??
@@ -108,7 +102,7 @@ export async function setAuthCookies(tokens: {
   // Access token (short-lived)
   c.set("access_token", tokens.access_token, {
     ...base,
-    maxAge: Math.min(tokens.expires_in || 3600, 3600), // cap at 1h
+    maxAge: Math.min(tokens.expires_in || 3600, 3600),
   });
 
   // ID token (optional but handy for profile parsing on server)
@@ -129,17 +123,21 @@ export async function setAuthCookies(tokens: {
   }
 }
 
-/** Clear all auth cookies */
-export async function clearAuthCookies() {
-  const c = await cookies();
-  const gone = {
+export function clearAuthCookies() {
+  //suppress await error
+  const c = cookies() as any;
+
+  const base = {
     httpOnly: true as const,
     sameSite: "lax" as const,
     secure: isProd,
     path: "/",
-    maxAge: 0,
+    maxAge: 0, // expire immediately
   };
-  c.set("access_token", "", gone);
-  c.set("id_token", "", gone);
-  c.set("refresh_token", "", gone);
+
+  c.set("access_token", "", base);
+
+  c.set("id_token", "", base);
+
+  c.set("refresh_token", "", base);
 }

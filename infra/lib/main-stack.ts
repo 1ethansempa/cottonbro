@@ -17,19 +17,18 @@ export class MainStack extends cdk.Stack {
     super(scope, id, props);
 
     // ========= User pool (NEW logical resource to avoid immutable conflicts) =========
-    const userPool = new cognito.UserPool(this, "UserPoolV2", {
-      userPoolName: "cottonbro-users-v2",
+    const userPool = new cognito.UserPool(this, "UserPool", {
+      userPoolName: "cottonbro-users",
       selfSignUpEnabled: true,
       signInAliases: { email: true },
-      // Keep email as a STANDARD attribute (not custom), and immutable (typical)
       standardAttributes: { email: { required: true, mutable: false } },
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.RETAIN, // keep users if stack deleted
     });
 
     // ========= Hosted UI domain =========
     // in your stack
     const domain = userPool.addDomain("HostedUiDomain", {
-      cognitoDomain: { domainPrefix: "cottonbro-app" }, // <- NEW, unique
+      cognitoDomain: { domainPrefix: "cottonbro" }, // <- NEW, unique
     });
 
     // ========= Google IdP =========
