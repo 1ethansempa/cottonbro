@@ -1,102 +1,169 @@
 export default function Home() {
+  const sampleProducts = [
+    {
+      id: "cottonbro-tee-white",
+      name: "CottonBro Tee — White",
+      price: "$29.99",
+      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Tee+White",
+    },
+    {
+      id: "cottonbro-hoodie-ivory",
+      name: "CottonBro Hoodie — Ivory",
+      price: "$59.99",
+      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Hoodie+Ivory",
+    },
+    {
+      id: "cottonbro-crop-top-sand",
+      name: "CottonBro Crop Top — Sand",
+      price: "$34.99",
+      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Crop+Top+Sand",
+    },
+    {
+      id: "cottonbro-beanie-navy",
+      name: "CottonBro Beanie — Navy",
+      price: "$19.99",
+      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Beanie+Navy",
+    },
+    {
+      id: "cottonbro-tank-emerald",
+      name: "CottonBro Tank — Emerald",
+      price: "$24.99",
+      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Tank+Emerald",
+    },
+    {
+      id: "cottonbro-sweatshirt-cream",
+      name: "CottonBro Sweatshirt — Cream",
+      price: "$49.99",
+      imageUrl:
+        "https://placehold.co/400x400.png?text=CottonBro+Sweatshirt+Cream",
+    },
+  ];
+
   return (
-    <main className="min-h-dvh text-black">
-      {" "}
-      {/* Background */}{" "}
+    <div className="min-h-dvh text-neutral-100 bg-neutral-950">
+      {/* Background */}
       <div
-        className="fixed inset-0 -z-10 bg-[url('/cream-bg.png')] bg-cover bg-center bg-fixed"
+        className="fixed inset-0 -z-10 bg-[radial-gradient(1200px_600px_at_20%_0%,rgba(120,119,198,0.12),transparent_60%),radial-gradient(900px_500px_at_80%_20%,rgba(56,189,248,0.12),transparent_60%)]"
         aria-hidden="true"
-      />{" "}
-      <div className="fixed inset-0 -z-10 bg-cream/90" aria-hidden="true" />{" "}
-      {/* Hero */}{" "}
-      <section className="mx-auto grid max-w-screen-xl grid-cols-1 gap-7 px-4 py-20 md:grid-cols-2">
-        {" "}
-        <div>
-          {" "}
-          <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-sm font-semibold shadow">
-            {" "}
-            Create • Sell • Get Paid{" "}
-          </span>{" "}
-          <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-[-0.02em] md:text-6xl">
-            {" "}
-            Design merch — we handle everything else.{" "}
-          </h1>{" "}
-          <p className="mt-3 max-w-prose text-lg text-neutral-700">
-            {" "}
-            Create custom tee shirts, hoodies,beanies, sweatshirts, crop tops,
-            tanks and more. Share your merch link, let fans order in their size
-            with a realistic 3D preview, and get paid — we take care of
-            printing, sales, and delivery.{" "}
-          </p>{" "}
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            {" "}
+      />
+      <div
+        className="fixed inset-0 -z-10 bg-black/40 backdrop-blur-[2px]"
+        aria-hidden="true"
+      />
+
+      {/* Hero */}
+      <section className="mx-auto max-w-screen-lg px-6 py-28 text-center">
+        <h1 className="text-4xl font-semibold leading-tight tracking-[-0.02em] md:text-6xl">
+          Design merch. We handle everything else.
+        </h1>
+
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-neutral-400">
+          Create custom t-shirts, hoodies, beanies, crop tops, and more. Let
+          fans order in their size, and get paid. We take care of printing,
+          sales, and delivery.
+        </p>
+
+        <div className="mt-8 flex justify-center gap-4">
+          <a
+            href="#signup"
+            className="rounded-full bg-white px-6 py-3 font-bold text-black shadow hover:bg-neutral-200 hover:shadow-lg"
+          >
+            Create Product →
+          </a>
+          <a
+            href="#live-demo"
+            className="rounded-full border border-white/15 bg-white/5 px-6 py-3 font-bold hover:bg-white/10"
+          >
+            View Shop
+          </a>
+        </div>
+
+        <div className="mt-16">
+          <img
+            src="/hero.png"
+            alt="CottonBro hero visual"
+            className="mx-auto w-full max-w-4xl rounded-2xl border border-white/10 bg-white/5 shadow-xl object-cover"
+          />
+        </div>
+      </section>
+
+      <section id="shop" className="mx-auto max-w-screen-xl px-6 py-24">
+        {/* Hero / Promo Banner */}
+        <div className="relative mb-12 overflow-hidden rounded-2xl shadow-lg">
+          <img
+            src="/shop-hero.png"
+            alt="Shop hero"
+            className="w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center">
+            <h2 className="text-4xl font-bold text-white">New Drop Incoming</h2>
             <a
-              href="#signup"
-              className="rounded-full bg-black px-6 py-3 font-bold text-white shadow hover:shadow-lg"
+              href="#collection"
+              className="mt-4 rounded-full bg-white px-6 py-3 text-black font-semibold hover:bg-neutral-200"
             >
-              {" "}
-              Start creating →{" "}
-            </a>{" "}
-            <a
-              href="#live-demo"
-              className="rounded-full border border-black/10 bg-white px-6 py-3 font-bold hover:shadow"
+              Explore the Drop
+            </a>
+          </div>
+        </div>
+
+        {/* Product Grid */}
+        <div
+          id="collection"
+          className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+        >
+          {sampleProducts.map((product) => (
+            <div
+              key={product.id}
+              className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow transition-transform duration-300 hover:-translate-y-1"
             >
-              {" "}
-              View demo{" "}
-            </a>{" "}
-          </div>{" "}
-        </div>{" "}
-        {/* Mock preview */}{" "}
-        <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-xl">
-          {" "}
-          <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-neutral-100">
-            {" "}
-            <div className="absolute left-4 top-4 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold shadow">
-              {" "}
-              3D Fit Preview · Unisex M{" "}
-            </div>{" "}
-            <img
-              src="/white-shirt.png"
-              alt="3D preview of merch design on model"
-              className="h-full w-full object-cover"
-            />{" "}
-          </div>{" "}
-          <div className="mt-4 flex gap-3">
-            {" "}
-            <a
-              href="#editor"
-              className="rounded-full border border-black/10 bg-white px-4 py-2 font-bold hover:shadow"
-            >
-              {" "}
-              Create Merch{" "}
-            </a>{" "}
-            <a
-              href="#publish"
-              className="rounded-full bg-black px-4 py-2 font-bold text-white shadow hover:shadow-lg"
-            >
-              {" "}
-              Publish Link{" "}
-            </a>{" "}
-          </div>{" "}
-        </div>{" "}
-      </section>{" "}
-      {/* Features */}{" "}
-      <section id="features" className="mx-auto max-w-screen-xl px-4">
-        {" "}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {" "}
+              <div className="aspect-square overflow-hidden">
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-white">
+                  {product.name}
+                </h3>
+                <p className="mt-1 text-neutral-400">{product.price}</p>
+              </div>
+              <a
+                href={`/product/${product.id}`}
+                className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/10"
+                aria-label={`View ${product.name}`}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="mx-auto max-w-screen-xl px-6 py-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">
+            Everything you need to launch your merch brand
+          </h2>
+          <p className="mt-3 text-neutral-400 max-w-2xl mx-auto">
+            From design to delivery — CottonBro handles the hard parts so you
+            can focus on your creativity.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             {
               title: "Design your merch",
-              copy: "Easily create and customize shirts, hoodies, crop tops, and more with your own assets and branding.",
+              copy: "Create and customize shirts, hoodies, crop tops, and more with your own assets and branding.",
             },
             {
               title: "3D fit preview",
-              copy: "Visualize how your designs look on realistic 3D models across different sizes and styles.",
+              copy: "See your designs come to life on realistic 3D models across sizes and styles.",
             },
             {
               title: "Publish your link",
-              copy: "Share a private proof or public store link. Let your fans view, order, and pay instantly.",
+              copy: "Share a private proof or a public store link — let your fans order instantly.",
             },
             {
               title: "Sell and earn",
@@ -104,34 +171,42 @@ export default function Home() {
             },
             {
               title: "We handle fulfillment",
-              copy: "We take care of printing, packing, and shipping — so you can focus on your brand.",
+              copy: "We print, pack, and ship — so you can focus on your brand.",
             },
             {
               title: "Track your success",
-              copy: "Monitor sales, orders, and payouts from your creator dashboard in real time.",
+              copy: "Monitor sales and payouts from your creator dashboard in real time.",
             },
-          ].map((f) => (
+          ].map((f, i) => (
             <article
               key={f.title}
-              className="rounded-xl border border-black/10 bg-white p-5 shadow"
+              className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-6 shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-white/10"
             >
-              {" "}
-              <h3 className="text-xl font-bold">{f.title}</h3>{" "}
-              <p className="mt-1 text-neutral-700">{f.copy}</p>{" "}
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg font-bold text-emerald-300">
+                  {i + 1}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-white">
+                    {f.title}
+                  </h3>
+                  <p className="mt-1 text-neutral-400 leading-relaxed">
+                    {f.copy}
+                  </p>
+                </div>
+              </div>
             </article>
-          ))}{" "}
-        </div>{" "}
-      </section>{" "}
-      {/* How it works */}{" "}
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
       <section id="workflow" className="mx-auto max-w-screen-xl px-4 py-14">
-        {" "}
-        <h2 className="text-3xl font-extrabold">How it works</h2>{" "}
-        <p className="mt-1 max-w-prose text-neutral-700">
-          {" "}
-          From idea to income in five steps.{" "}
-        </p>{" "}
+        <h2 className="text-3xl font-extrabold">How it works</h2>
+        <p className="mt-1 max-w-prose text-neutral-300">
+          From idea to income in five steps.
+        </p>
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-5">
-          {" "}
           {[
             {
               n: "1",
@@ -161,229 +236,37 @@ export default function Home() {
           ].map((s) => (
             <div
               key={s.n}
-              className="rounded-xl border border-black/10 bg-white p-5 shadow"
+              className="rounded-xl border border-white/10 bg-white/5 p-5 shadow"
             >
-              {" "}
-              <div className="mb-2 inline-grid size-9 place-items-center rounded-full border border-black/10 bg-cream font-extrabold">
-                {" "}
-                {s.n}{" "}
-              </div>{" "}
-              <h3 className="text-lg font-bold">{s.t}</h3>{" "}
-              <p className="mt-1 text-neutral-700">{s.d}</p>{" "}
+              <div className="mb-2 inline-grid size-9 place-items-center rounded-full border border-white/10 bg-white/5 font-extrabold">
+                {s.n}
+              </div>
+              <h3 className="text-lg font-bold">{s.t}</h3>
+              <p className="mt-1 text-neutral-300">{s.d}</p>
             </div>
-          ))}{" "}
-        </div>{" "}
-      </section>{" "}
-      {/* CTA */}{" "}
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
       <section id="publish" className="mx-auto max-w-screen-xl px-4 pb-16">
-        {" "}
-        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-black/10 bg-gradient-to-b from-black/5 to-black/0 p-6 shadow md:flex-row md:items-center">
-          {" "}
+        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-6 shadow md:flex-row md:items-center">
           <div>
-            {" "}
             <h2 className="text-2xl font-extrabold">
-              {" "}
-              Start creating. Start selling.{" "}
-            </h2>{" "}
-            <p className="mt-1 text-neutral-700">
-              {" "}
-              Launch your first merch collection today — we’ll handle the
-              rest.{" "}
-            </p>{" "}
-          </div>{" "}
+              Start creating. Start selling.
+            </h2>
+            <p className="mt-1 text-neutral-300">
+              Launch your first merch collection today — we’ll handle the rest.
+            </p>
+          </div>
           <a
             href="#signup"
-            className="rounded-full bg-black px-5 py-3 font-bold text-white shadow hover:shadow-lg"
+            className="rounded-full bg-white px-5 py-3 font-bold text-black shadow hover:shadow-lg hover:bg-neutral-200"
           >
-            {" "}
-            Create free account{" "}
-          </a>{" "}
-        </div>{" "}
-      </section>{" "}
-      {/* Footer */}{" "}
-      <footer className="border-t border-black/10 bg-cream/40 backdrop-blur-sm">
-        {" "}
-        <div className="mx-auto max-w-screen-xl px-4 py-14">
-          {" "}
-          <div className="grid grid-cols-1 gap-10 md:grid-cols-5">
-            {" "}
-            {/* Brand */}{" "}
-            <div className="md:col-span-2">
-              {" "}
-              <div className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
-                {" "}
-                <span
-                  className="size-8 rounded-lg border border-black/10 shadow-inner"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 30% 30%, #ffffff, #C8B89F)",
-                  }}
-                />{" "}
-                Cottonbro{" "}
-              </div>{" "}
-              <p className="mt-3 max-w-sm text-sm text-neutral-700">
-                {" "}
-                Empowering creators to design, sell, and deliver merch
-                effortlessly. We handle printing, fulfillment, and payouts — you
-                focus on your brand.{" "}
-              </p>{" "}
-              {/* Social icons (optional) */}{" "}
-              <div className="mt-4 flex gap-4">
-                {" "}
-                <a
-                  href="https://twitter.com"
-                  aria-label="Twitter"
-                  className="text-neutral-600 transition hover:text-black"
-                >
-                  {" "}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="size-5"
-                  >
-                    {" "}
-                    <path d="M22.46 6c-.77.35-1.6.58-2.46.69a4.24 4.24 0 0 0 1.88-2.34 8.49 8.49 0 0 1-2.69 1.03 4.23 4.23 0 0 0-7.21 3.86 12 12 0 0 1-8.72-4.42 4.23 4.23 0 0 0 1.31 5.65 4.22 4.22 0 0 1-1.91-.52v.05a4.23 4.23 0 0 0 3.39 4.15 4.25 4.25 0 0 1-1.9.07 4.24 4.24 0 0 0 3.96 2.94A8.5 8.5 0 0 1 2 19.54a12 12 0 0 0 6.29 1.84c7.55 0 11.68-6.26 11.68-11.68v-.53A8.36 8.36 0 0 0 22.46 6z" />{" "}
-                  </svg>{" "}
-                </a>{" "}
-                <a
-                  href="https://instagram.com"
-                  aria-label="Instagram"
-                  className="text-neutral-600 transition hover:text-black"
-                >
-                  {" "}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    className="size-5"
-                  >
-                    {" "}
-                    <path d="M7 2C4.243 2 2 4.243 2 7v10c0 2.757 2.243 5 5 5h10c2.757 0 5-2.243 5-5V7c0-2.757-2.243-5-5-5H7zm10 2a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h10zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm4.5-.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z" />{" "}
-                  </svg>{" "}
-                </a>{" "}
-              </div>{" "}
-            </div>{" "}
-            {/* Columns */}{" "}
-            <div>
-              {" "}
-              <h4 className="text-sm font-bold uppercase tracking-wide text-neutral-800">
-                {" "}
-                Product{" "}
-              </h4>{" "}
-              <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-                {" "}
-                <li>
-                  {" "}
-                  <a href="#features" className="hover:text-black">
-                    {" "}
-                    Features{" "}
-                  </a>{" "}
-                </li>{" "}
-                <li>
-                  {" "}
-                  <a href="#workflow" className="hover:text-black">
-                    {" "}
-                    How it works{" "}
-                  </a>{" "}
-                </li>{" "}
-                <li>
-                  {" "}
-                  <a href="#publish" className="hover:text-black">
-                    {" "}
-                    Sell{" "}
-                  </a>{" "}
-                </li>{" "}
-              </ul>{" "}
-            </div>{" "}
-            <div>
-              {" "}
-              <h4 className="text-sm font-bold uppercase tracking-wide text-neutral-800">
-                {" "}
-                Resources{" "}
-              </h4>{" "}
-              <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-                {" "}
-                <li>
-                  {" "}
-                  <a href="#live-demo" className="hover:text-black">
-                    {" "}
-                    Demo{" "}
-                  </a>{" "}
-                </li>{" "}
-                <li>
-                  {" "}
-                  <a href="#templates" className="hover:text-black">
-                    {" "}
-                    Templates{" "}
-                  </a>{" "}
-                </li>{" "}
-                <li>
-                  {" "}
-                  <a href="#docs" className="hover:text-black">
-                    {" "}
-                    Docs{" "}
-                  </a>{" "}
-                </li>{" "}
-              </ul>{" "}
-            </div>{" "}
-            <div>
-              {" "}
-              <h4 className="text-sm font-bold uppercase tracking-wide text-neutral-800">
-                {" "}
-                Company{" "}
-              </h4>{" "}
-              <ul className="mt-3 space-y-2 text-sm text-neutral-700">
-                {" "}
-                <li>
-                  {" "}
-                  <a href="#about" className="hover:text-black">
-                    {" "}
-                    About{" "}
-                  </a>{" "}
-                </li>{" "}
-                <li>
-                  {" "}
-                  <a href="#careers" className="hover:text-black">
-                    {" "}
-                    Careers{" "}
-                  </a>{" "}
-                </li>{" "}
-                <li>
-                  {" "}
-                  <a href="#contact" className="hover:text-black">
-                    {" "}
-                    Contact{" "}
-                  </a>{" "}
-                </li>{" "}
-              </ul>{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* Divider */}{" "}
-          <div className="mt-10 border-t border-black/10 pt-6 flex flex-col items-center justify-between gap-3 md:flex-row">
-            {" "}
-            <p className="text-sm text-neutral-600">
-              {" "}
-              © {new Date().getFullYear()} Cottonbro. All rights reserved.{" "}
-            </p>{" "}
-            <div className="flex gap-4 text-sm text-neutral-600">
-              {" "}
-              <a href="#privacy" className="hover:text-black">
-                {" "}
-                Privacy{" "}
-              </a>{" "}
-              <a href="#terms" className="hover:text-black">
-                {" "}
-                Terms{" "}
-              </a>{" "}
-              <a href="#cookies" className="hover:text-black">
-                {" "}
-                Cookies{" "}
-              </a>{" "}
-            </div>{" "}
-          </div>{" "}
-        </div>{" "}
-      </footer>{" "}
-    </main>
+            Create free account
+          </a>
+        </div>
+      </section>
+    </div>
   );
 }

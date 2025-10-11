@@ -1,11 +1,12 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { DM_Sans, Cedarville_Cursive } from "next/font/google";
+import { Questrial, Cedarville_Cursive } from "next/font/google";
 import AuthSessionKeeper from "../components/auth-session-keeper";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const questrial = Questrial({
+  variable: "--font-questrial",
   subsets: ["latin"],
+  weight: "400",
 });
 
 const cedarville = Cedarville_Cursive({
@@ -24,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`min-h-screen bg-white ${dmSans.variable} ${cedarville.variable}`}
+        className={`min-h-screen bg-white ${questrial.variable} ${cedarville.variable}`}
       >
         <AuthSessionKeeper />
         {children}
