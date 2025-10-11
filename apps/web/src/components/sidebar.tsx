@@ -8,7 +8,7 @@ import { useSession } from "../lib/use-session";
 
 const baseLinks = [
   { href: "/shop", label: "Shop" },
-  { href: "/create-product", label: "Create Product" },
+  { href: "#", label: "Create Product" },
 ];
 
 export default function Sidebar({
