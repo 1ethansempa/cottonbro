@@ -1,0 +1,33 @@
+service: cottonbro-api
+frameworkVersion: ">=4"
+
+provider:
+  name: aws
+  region: eu-west-1
+  runtime: nodejs20.x
+  architecture: arm64
+  stage: prod
+  httpApi:
+    cors: true
+  environment:
+    NODE_OPTIONS: "--enable-source-maps"
+
+functions:
+  http:
+    # Use TypeScript source; Serverless will build/bundle it
+    handler: apps/api/src/main-lambda.lambdaHandler
+    events:
+      - httpApi: "*"
+
+# Use built-in esbuild options
+build:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+    target: node20
+    platform: node
+    format: cjs
+    tsconfig: apps/api/tsconfig.json
+    external:
+      - "@aws-sdk/*" # keep AWS SDK out of bundle (available in Lambda)
