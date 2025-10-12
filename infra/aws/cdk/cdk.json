@@ -1,3 +1,3 @@
 {
-  "app": "node --enable-source-maps --loader ts-node/esm bin/cottonbro.ts"
+  "app": "tsx --tsconfig ./tsconfig.json bin/cottonbro.ts"
 }

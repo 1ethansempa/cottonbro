@@ -13,13 +13,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function asArray(v: unknown): string[] {
-  if (!v) return [];
-  return Array.isArray(v)
-    ? (v as string[])
-    : String(v)
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+  if (Array.isArray(v))
+    return v
+      .map(String)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  if (v == null) return [];
+  return String(v)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+function normalizeId(v: unknown): string | undefined {
+  const s = String(v ?? "").trim();
+  return s && s.toLowerCase() !== "null" && s.toLowerCase() !== "undefined"
+    ? s
+    : undefined;
 }
 
 export class CottonbroStack extends cdk.Stack {
@@ -27,35 +36,34 @@ export class CottonbroStack extends cdk.Stack {
     super(scope, id, props);
 
     // ===== Context =====
-    const domainPrefix = this.node.tryGetContext("domainPrefix") ?? "cottonbro";
+    const domainPrefix = (this.node.tryGetContext("domainPrefix") ??
+      "cottonbro") as string;
+
     const webCallbacks = asArray(
-      this.node.tryGetContext("webCallback") ?? [
-        "http://localhost:5173/api/auth/callback/cognito",
-      ]
+      this.node.tryGetContext("webCallback") ??
+        "http://localhost:5173/api/auth/callback/cognito"
     );
     const webLogouts = asArray(
-      this.node.tryGetContext("webLogout") ?? ["http://localhost:5173/"]
+      this.node.tryGetContext("webLogout") ?? "http://localhost:5173/"
     );
 
-    const existingUserPoolId: string | undefined =
-      this.node.tryGetContext("existingUserPoolId");
-
-    // Optional: only for pretty output when importing an existing pool
-    const existingHostedUiBaseUrl: string | undefined = this.node.tryGetContext(
-      "existingHostedUiBaseUrl"
+    // If set => import; if not set => create
+    const existingUserPoolId = normalizeId(
+      this.node.tryGetContext("existingUserPoolId")
+    );
+    const existingHostedUiBaseUrl = normalizeId(
+      this.node.tryGetContext("existingHostedUiBaseUrl")
     );
 
-    // Explicit switch: refuse accidental creation
-    const allowCreate = this.node.tryGetContext("allowCreate") === "true";
-    if (!existingUserPoolId && !allowCreate) {
-      throw new Error(
-        "Refusing to create a new Cognito User Pool. " +
-          "Pass -c existingUserPoolId=<POOL_ID> to import an existing pool, " +
-          "or -c allowCreate=true to explicitly create a new one."
-      );
-    }
+    // Log to STDERR so it shows even when stdout is redirected
+    console.error("CDK_CTX =>", {
+      domainPrefix,
+      webCallbacks,
+      webLogouts,
+      existingUserPoolId,
+    });
 
-    // ===== User Pool: import OR create (only if allowCreate) =====
+    // ===== User Pool: import OR create =====
     let userPoolL2: cognito.UserPool | undefined;
     const userPool: cognito.IUserPool = existingUserPoolId
       ? cognito.UserPool.fromUserPoolId(
@@ -68,26 +76,28 @@ export class CottonbroStack extends cdk.Stack {
           selfSignUpEnabled: true,
           signInAliases: { email: true },
           standardAttributes: {
-            email: { required: true, mutable: false },
+            // allow updates to avoid “Attribute cannot be updated” during social link without PreSignUp
+            email: { required: true, mutable: true },
           },
-          removalPolicy: cdk.RemovalPolicy.RETAIN,
+          autoVerify: { email: true },
+          // removalPolicy: cdk.RemovalPolicy.RETAIN, // uncomment if you prefer retain on delete
         }));
 
-    // ===== Hosted UI Domain (ONLY when creating a new pool) =====
+    // ===== Hosted UI Domain (ONLY when creating a new pool here) =====
     let hostedUiBaseUrl: string | undefined = existingHostedUiBaseUrl;
-    if (!existingUserPoolId && allowCreate && userPoolL2) {
+    if (!existingUserPoolId && userPoolL2) {
       const domain = userPoolL2.addDomain("HostedUiDomain", {
-        cognitoDomain: { domainPrefix }, // must be unique
+        cognitoDomain: { domainPrefix }, // must be unique per region
       });
       hostedUiBaseUrl = domain.baseUrl();
     }
 
-    // ===== Optional Google IdP (ONLY when creating a new pool) =====
+    // ===== Optional Google IdP (ONLY when creating a new pool here) =====
     let googleIdp: cognito.UserPoolIdentityProviderGoogle | undefined;
-    if (!existingUserPoolId && allowCreate && userPoolL2) {
+    if (!existingUserPoolId && userPoolL2) {
       try {
-        // Secret name: cottonbro/google-oauth
-        // JSON: { "clientId": "...", "clientSecret": "..." }
+        // Secret name in Secrets Manager:
+        //   cottonbro/google-oauth  with JSON: { "clientId": "...", "clientSecret": "..." }
         const secret = secretsmanager.Secret.fromSecretNameV2(
           this,
           "GoogleSecret",
@@ -100,7 +110,6 @@ export class CottonbroStack extends cdk.Stack {
           {
             userPool: userPoolL2,
             clientId: secret.secretValueFromJson("clientId").unsafeUnwrap(),
-            // clientSecret is deprecated; use clientSecretValue
             clientSecretValue: secret.secretValueFromJson("clientSecret"),
             scopes: ["openid", "email", "profile"],
             attributeMapping: {
@@ -111,7 +120,7 @@ export class CottonbroStack extends cdk.Stack {
           }
         );
       } catch {
-        // Secret missing or not accessible; skip Google IdP
+        // Secret missing or not accessible; skip IdP
       }
     }
 
@@ -126,44 +135,70 @@ export class CottonbroStack extends cdk.Stack {
       cognito.OAuthScope.PROFILE,
     ];
 
-    // ===== PreSignUp trigger (ONLY when creating a new pool) =====
-    if (!existingUserPoolId && allowCreate && userPoolL2) {
-      const preSignUpFn = new NodejsFunction(this, "PreSignUpLinkFn", {
-        entry: path.join(
-          __dirname,
-          "..",
-          "lambda",
-          "pre-signup-link",
-          "index.ts"
-        ),
-        runtime: lambda.Runtime.NODEJS_20_X,
-        memorySize: 256,
-        timeout: cdk.Duration.seconds(10),
-        bundling: {
-          target: "node20",
-          format: OutputFormat.ESM,
-          minify: true,
-        },
-        description:
-          "PreSignUp trigger to link social identities to existing local users",
-      });
+    // ===== PreSignUp trigger (ONLY when creating a new pool here) =====
+    // Compute the pool ARN for IAM scoping (works for both created or imported pool)
+    const poolArn = userPoolL2
+      ? userPoolL2.userPoolArn
+      : cdk.Stack.of(this).formatArn({
+          service: "cognito-idp",
+          resource: "userpool",
+          resourceName: existingUserPoolId!, // assert it's defined in import mode
+        });
 
-      preSignUpFn.addToRolePolicy(
-        new iam.PolicyStatement({
-          actions: [
-            "cognito-idp:ListUsers",
-            "cognito-idp:AdminLinkProviderForUser",
-            "cognito-idp:AdminUpdateUserAttributes",
-          ],
-          resources: ["*"],
-        })
-      );
+    // Create the function UNCONDITIONALLY (so you can update policy later too)
+    const preSignUpFn = new NodejsFunction(this, "PreSignUpLinkFn", {
+      entry: path.join(
+        __dirname,
+        "..",
+        "lambda",
+        "pre-signup-link",
+        "index.ts"
+      ),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: { target: "node20", format: OutputFormat.ESM, minify: true },
+      description:
+        "PreSignUp trigger to link social identities to existing local users",
+    });
 
+    // Always ensure logging (usually added by default, harmless if present)
+    preSignUpFn.role?.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AWSLambdaBasicExecutionRole"
+      )
+    );
+
+    // Attach the required Cognito admin permissions, scoped to your pool
+    preSignUpFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        resources: [poolArn],
+        actions: [
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:AdminUpdateUserAttributes",
+          "cognito-idp:AdminLinkProviderForUser",
+          "cognito-idp:DescribeUserPool",
+        ],
+      })
+    );
+
+    // Attach the PreSignUp trigger ONLY if we CREATED the pool in this stack.
+    // (Cognito doesn't let CDK attach triggers to an imported pool.)
+    if (userPoolL2) {
       userPoolL2.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, preSignUpFn);
+    } else {
+      // For imported pools, output the function ARN and pool ID so you can wire once via CLI:
+      new cdk.CfnOutput(this, "PreSignUpFnArn", {
+        value: preSignUpFn.functionArn,
+      });
+      new cdk.CfnOutput(this, "ImportedPoolId", { value: existingUserPoolId! });
+      // After deploy (one-time):
+      // aws cognito-idp update-user-pool \
+      //   --region eu-west-1 \
+      //   --user-pool-id <ImportedPoolId> \
+      //   --lambda-config PreSignUp=<PreSignUpFnArn>
     }
-    // If you imported a pool and still want a PreSignUp trigger,
-    // set it once via CLI:
-    // aws cognito-idp update-user-pool --user-pool-id <POOL_ID> --lambda-config PreSignUp=<LAMBDA_ARN>
 
     // ===== App client (works for imported OR new pool) =====
     const webClient = new cognito.UserPoolClient(this, "WebClient", {
