@@ -1,3 +1,4 @@
+// infra/aws/cdk/lib/cottonbro-stack.ts
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as cognito from "aws-cdk-lib/aws-cognito";
@@ -7,11 +8,16 @@ import { NodejsFunction, OutputFormat } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  AwsCustomResource,
+  AwsCustomResourcePolicy,
+  PhysicalResourceId,
+} from "aws-cdk-lib/custom-resources";
 
-// ESM-friendly __dirname/__filename
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/** helpers */
 function asArray(v: unknown): string[] {
   if (Array.isArray(v))
     return v
@@ -47,20 +53,22 @@ export class CottonbroStack extends cdk.Stack {
       this.node.tryGetContext("webLogout") ?? "http://localhost:5173/"
     );
 
-    // If set => import; if not set => create
     const existingUserPoolId = normalizeId(
       this.node.tryGetContext("existingUserPoolId")
+    );
+    const existingUserPoolClientId = normalizeId(
+      this.node.tryGetContext("existingUserPoolClientId")
     );
     const existingHostedUiBaseUrl = normalizeId(
       this.node.tryGetContext("existingHostedUiBaseUrl")
     );
 
-    // Log to STDERR so it shows even when stdout is redirected
     console.error("CDK_CTX =>", {
       domainPrefix,
       webCallbacks,
       webLogouts,
       existingUserPoolId,
+      existingUserPoolClientId,
     });
 
     // ===== User Pool: import OR create =====
@@ -75,15 +83,12 @@ export class CottonbroStack extends cdk.Stack {
           userPoolName: "cottonbro-users",
           selfSignUpEnabled: true,
           signInAliases: { email: true },
-          standardAttributes: {
-            // allow updates to avoid “Attribute cannot be updated” during social link without PreSignUp
-            email: { required: true, mutable: true },
-          },
+          standardAttributes: { email: { required: true, mutable: true } },
           autoVerify: { email: true },
-          // removalPolicy: cdk.RemovalPolicy.RETAIN, // uncomment if you prefer retain on delete
+          // removalPolicy: cdk.RemovalPolicy.RETAIN,
         }));
 
-    // ===== Hosted UI Domain (ONLY when creating a new pool here) =====
+    /** Hosted UI domain (only when creating a new pool here) */
     let hostedUiBaseUrl: string | undefined = existingHostedUiBaseUrl;
     if (!existingUserPoolId && userPoolL2) {
       const domain = userPoolL2.addDomain("HostedUiDomain", {
@@ -92,60 +97,87 @@ export class CottonbroStack extends cdk.Stack {
       hostedUiBaseUrl = domain.baseUrl();
     }
 
-    // ===== Optional Google IdP (ONLY when creating a new pool here) =====
-    let googleIdp: cognito.UserPoolIdentityProviderGoogle | undefined;
-    if (!existingUserPoolId && userPoolL2) {
-      try {
-        // Secret name in Secrets Manager:
-        //   cottonbro/google-oauth  with JSON: { "clientId": "...", "clientSecret": "..." }
-        const secret = secretsmanager.Secret.fromSecretNameV2(
-          this,
-          "GoogleSecret",
-          "cottonbro/google-oauth"
-        );
+    // ===== Google OAuth secret (usable for created or imported pool) =====
+    let googleClientId: string | undefined;
+    let googleClientSecret: string | undefined;
+    try {
+      const secret = secretsmanager.Secret.fromSecretNameV2(
+        this,
+        "GoogleSecret",
+        "cottonbro/google-oauth" // JSON: { "clientId": "...", "clientSecret": "..." }
+      );
+      googleClientId = secret.secretValueFromJson("clientId").unsafeUnwrap();
+      // toString() works whether it's lazy or plain
+      googleClientSecret =
+        secret.secretValueFromJson("clientSecret").unsafeUnwrap?.() ??
+        secret.secretValueFromJson("clientSecret").toString();
+    } catch {
+      // Secret missing or not accessible; proceed without Google
+    }
+    const googleConfigured = Boolean(googleClientId && googleClientSecret);
 
-        googleIdp = new cognito.UserPoolIdentityProviderGoogle(
-          this,
-          "GoogleIdP",
-          {
-            userPool: userPoolL2,
-            clientId: secret.secretValueFromJson("clientId").unsafeUnwrap(),
-            clientSecretValue: secret.secretValueFromJson("clientSecret"),
-            scopes: ["openid", "email", "profile"],
-            attributeMapping: {
-              email: cognito.ProviderAttribute.GOOGLE_EMAIL,
-              givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
-              familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+    // ===== Ensure/Update Google IdP (idempotent, created OR imported pool) =====
+    if (googleConfigured) {
+      new AwsCustomResource(this, "EnsureGoogleIdP", {
+        onCreate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "createIdentityProvider",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            ProviderName: "Google",
+            ProviderType: "Google",
+            ProviderDetails: {
+              client_id: googleClientId!,
+              client_secret: googleClientSecret!,
+              authorize_scopes: "openid profile email",
             },
-          }
-        );
-      } catch {
-        // Secret missing or not accessible; skip IdP
-      }
+            AttributeMapping: {
+              email: "email",
+              given_name: "given_name",
+              family_name: "family_name",
+              name: "name",
+              // picture: "picture",
+            },
+          },
+          physicalResourceId: PhysicalResourceId.of("google-idp"),
+          // tolerate "already exists" so update can run
+          ignoreErrorCodesMatching: ".*DuplicateProvider.*|.*already exists.*",
+        },
+        onUpdate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "updateIdentityProvider",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            ProviderName: "Google",
+            ProviderDetails: {
+              client_id: googleClientId!,
+              client_secret: googleClientSecret!,
+              authorize_scopes: "openid profile email",
+            },
+            AttributeMapping: {
+              email: "email",
+              given_name: "given_name",
+              family_name: "family_name",
+              name: "name",
+            },
+          },
+          physicalResourceId: PhysicalResourceId.of("google-idp"),
+        },
+        policy: AwsCustomResourcePolicy.fromStatements([
+          new iam.PolicyStatement({
+            actions: [
+              "cognito-idp:CreateIdentityProvider",
+              "cognito-idp:UpdateIdentityProvider",
+              "cognito-idp:DescribeIdentityProvider",
+            ],
+            resources: ["*"],
+          }),
+        ]),
+        installLatestAwsSdk: false,
+      });
     }
 
-    const supportedIdPs = [
-      cognito.UserPoolClientIdentityProvider.COGNITO,
-      ...(googleIdp ? [cognito.UserPoolClientIdentityProvider.GOOGLE] : []),
-    ];
-
-    const oauthScopes = [
-      cognito.OAuthScope.OPENID,
-      cognito.OAuthScope.EMAIL,
-      cognito.OAuthScope.PROFILE,
-    ];
-
-    // ===== PreSignUp trigger (ONLY when creating a new pool here) =====
-    // Compute the pool ARN for IAM scoping (works for both created or imported pool)
-    const poolArn = userPoolL2
-      ? userPoolL2.userPoolArn
-      : cdk.Stack.of(this).formatArn({
-          service: "cognito-idp",
-          resource: "userpool",
-          resourceName: existingUserPoolId!, // assert it's defined in import mode
-        });
-
-    // Create the function UNCONDITIONALLY (so you can update policy later too)
+    // ===== PreSignUp trigger function =====
     const preSignUpFn = new NodejsFunction(this, "PreSignUpLinkFn", {
       entry: path.join(
         __dirname,
@@ -162,17 +194,17 @@ export class CottonbroStack extends cdk.Stack {
         "PreSignUp trigger to link social identities to existing local users",
     });
 
-    // Always ensure logging (usually added by default, harmless if present)
+    // Logs
     preSignUpFn.role?.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName(
         "service-role/AWSLambdaBasicExecutionRole"
       )
     );
 
-    // Attach the required Cognito admin permissions, scoped to your pool
+    // Cognito admin permissions needed by the handler
     preSignUpFn.addToRolePolicy(
       new iam.PolicyStatement({
-        resources: [poolArn],
+        resources: ["*"], // most Admin* are not resource-scoped
         actions: [
           "cognito-idp:ListUsers",
           "cognito-idp:AdminGetUser",
@@ -183,54 +215,246 @@ export class CottonbroStack extends cdk.Stack {
       })
     );
 
-    // Attach the PreSignUp trigger ONLY if we CREATED the pool in this stack.
-    // (Cognito doesn't let CDK attach triggers to an imported pool.)
+    // Pool ARN (works for created OR imported)
+    const poolArn =
+      userPoolL2?.userPoolArn ??
+      cdk.Stack.of(this).formatArn({
+        service: "cognito-idp",
+        resource: "userpool",
+        resourceName: existingUserPoolId!, // defined in import mode
+      });
+
+    // Allow Cognito to invoke the Lambda
+    preSignUpFn.addPermission("InvokeByCognito", {
+      principal: new iam.ServicePrincipal("cognito-idp.amazonaws.com"),
+      sourceArn: poolArn,
+    });
+
+    // Attach PreSignUp trigger (L2 when created; custom resource when imported)
     if (userPoolL2) {
       userPoolL2.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, preSignUpFn);
-    } else {
-      // For imported pools, output the function ARN and pool ID so you can wire once via CLI:
-      new cdk.CfnOutput(this, "PreSignUpFnArn", {
-        value: preSignUpFn.functionArn,
-      });
-      new cdk.CfnOutput(this, "ImportedPoolId", { value: existingUserPoolId! });
-      // After deploy (one-time):
-      // aws cognito-idp update-user-pool \
-      //   --region eu-west-1 \
-      //   --user-pool-id <ImportedPoolId> \
-      //   --lambda-config PreSignUp=<PreSignUpFnArn>
+    } else if (existingUserPoolId) {
+      const attachPreSignUp = new AwsCustomResource(
+        this,
+        "AttachPreSignUpTrigger",
+        {
+          onCreate: {
+            service: "CognitoIdentityServiceProvider",
+            action: "updateUserPool",
+            parameters: {
+              UserPoolId: existingUserPoolId,
+              LambdaConfig: { PreSignUp: preSignUpFn.functionArn },
+            },
+            physicalResourceId: PhysicalResourceId.of(
+              `attach-presignup-${existingUserPoolId}`
+            ),
+          },
+          onUpdate: {
+            service: "CognitoIdentityServiceProvider",
+            action: "updateUserPool",
+            parameters: {
+              UserPoolId: existingUserPoolId,
+              LambdaConfig: { PreSignUp: preSignUpFn.functionArn },
+            },
+            physicalResourceId: PhysicalResourceId.of(
+              `attach-presignup-${existingUserPoolId}`
+            ),
+          },
+          policy: AwsCustomResourcePolicy.fromStatements([
+            new iam.PolicyStatement({
+              actions: [
+                "cognito-idp:UpdateUserPool",
+                "cognito-idp:DescribeUserPool",
+              ],
+              resources: ["*"],
+            }),
+          ]),
+          installLatestAwsSdk: false,
+        }
+      );
+      attachPreSignUp.node.addDependency(preSignUpFn);
     }
 
-    // ===== App client (works for imported OR new pool) =====
-    const webClient = new cognito.UserPoolClient(this, "WebClient", {
-      userPool,
-      userPoolClientName: "web-spa",
-      generateSecret: false, // public client (PKCE)
-      authFlows: { userPassword: true, userSrp: true },
-      accessTokenValidity: cdk.Duration.hours(1),
-      idTokenValidity: cdk.Duration.hours(1),
-      refreshTokenValidity: cdk.Duration.days(30),
-      oAuth: {
-        flows: { authorizationCodeGrant: true },
-        scopes: oauthScopes,
-        callbackUrls: webCallbacks,
-        logoutUrls: webLogouts,
-      },
-      preventUserExistenceErrors: true,
-      supportedIdentityProviders: supportedIdPs,
-    });
-    if (googleIdp) webClient.node.addDependency(googleIdp);
+    // ===== App client (create OR import) =====
+    let webClientIdOutput: string;
+
+    // helper: enforce explicit auth flows + Hosted UI settings on a client
+    const makeClientEnforcers = (
+      clientId: string,
+      label: "Created" | "Imported"
+    ) => {
+      const enforceFlows = new AwsCustomResource(
+        this,
+        `EnforceExplicitAuthFlows_${label}`,
+        {
+          onCreate: {
+            service: "CognitoIdentityServiceProvider",
+            action: "updateUserPoolClient",
+            parameters: {
+              UserPoolId: userPool.userPoolId,
+              ClientId: clientId,
+              ExplicitAuthFlows: [
+                "ALLOW_USER_PASSWORD_AUTH",
+                "ALLOW_USER_SRP_AUTH",
+                "ALLOW_REFRESH_TOKEN_AUTH",
+              ],
+            },
+            physicalResourceId: PhysicalResourceId.of(
+              `enforce-auth-flows-${clientId}`
+            ),
+          },
+          onUpdate: {
+            service: "CognitoIdentityServiceProvider",
+            action: "updateUserPoolClient",
+            parameters: {
+              UserPoolId: userPool.userPoolId,
+              ClientId: clientId,
+              ExplicitAuthFlows: [
+                "ALLOW_USER_PASSWORD_AUTH",
+                "ALLOW_USER_SRP_AUTH",
+                "ALLOW_REFRESH_TOKEN_AUTH",
+              ],
+            },
+            physicalResourceId: PhysicalResourceId.of(
+              `enforce-auth-flows-${clientId}`
+            ),
+          },
+          policy: AwsCustomResourcePolicy.fromStatements([
+            new iam.PolicyStatement({
+              actions: [
+                "cognito-idp:UpdateUserPoolClient",
+                "cognito-idp:DescribeUserPoolClient",
+              ],
+              resources: ["*"],
+            }),
+          ]),
+          installLatestAwsSdk: false,
+        }
+      );
+
+      const supportedIdPs = googleConfigured
+        ? ["COGNITO", "Google"]
+        : ["COGNITO"];
+
+      const enforceHostedUi = new AwsCustomResource(
+        this,
+        `EnforceHostedUi_${label}`,
+        {
+          onCreate: {
+            service: "CognitoIdentityServiceProvider",
+            action: "updateUserPoolClient",
+            parameters: {
+              UserPoolId: userPool.userPoolId,
+              ClientId: clientId,
+              CallbackURLs: webCallbacks,
+              LogoutURLs: webLogouts,
+              SupportedIdentityProviders: supportedIdPs,
+              AllowedOAuthFlows: ["code"],
+              AllowedOAuthScopes: ["openid", "email", "profile"],
+              AllowedOAuthFlowsUserPoolClient: true,
+              PreventUserExistenceErrors: "ENABLED",
+            },
+            physicalResourceId: PhysicalResourceId.of(
+              `enforce-hosted-ui-${clientId}`
+            ),
+          },
+          onUpdate: {
+            service: "CognitoIdentityServiceProvider",
+            action: "updateUserPoolClient",
+            parameters: {
+              UserPoolId: userPool.userPoolId,
+              ClientId: clientId,
+              CallbackURLs: webCallbacks,
+              LogoutURLs: webLogouts,
+              SupportedIdentityProviders: supportedIdPs,
+              AllowedOAuthFlows: ["code"],
+              AllowedOAuthScopes: ["openid", "email", "profile"],
+              AllowedOAuthFlowsUserPoolClient: true,
+              PreventUserExistenceErrors: "ENABLED",
+            },
+            physicalResourceId: PhysicalResourceId.of(
+              `enforce-hosted-ui-${clientId}`
+            ),
+          },
+          policy: AwsCustomResourcePolicy.fromStatements([
+            new iam.PolicyStatement({
+              actions: [
+                "cognito-idp:UpdateUserPoolClient",
+                "cognito-idp:DescribeUserPoolClient",
+              ],
+              resources: ["*"],
+            }),
+          ]),
+          installLatestAwsSdk: false,
+        }
+      );
+
+      return { enforceFlows, enforceHostedUi };
+    };
+
+    if (existingUserPoolClientId) {
+      // Import existing client; enforce flows + hosted UI every deploy
+      cognito.UserPoolClient.fromUserPoolClientId(
+        this,
+        "WebClientImported",
+        existingUserPoolClientId
+      );
+      makeClientEnforcers(existingUserPoolClientId, "Imported");
+      webClientIdOutput = existingUserPoolClientId;
+      new cdk.CfnOutput(this, "WebClientId", { value: webClientIdOutput });
+    } else {
+      // Create new client in the (created or imported) pool
+      const supportedIdPsForCreate: cognito.UserPoolClientIdentityProvider[] =
+        googleConfigured
+          ? [
+              cognito.UserPoolClientIdentityProvider.COGNITO,
+              cognito.UserPoolClientIdentityProvider.GOOGLE,
+            ]
+          : [cognito.UserPoolClientIdentityProvider.COGNITO];
+
+      const webClient = new cognito.UserPoolClient(this, "WebClient", {
+        userPool,
+        userPoolClientName: "web-spa",
+        generateSecret: false, // public SPA (PKCE)
+        authFlows: { userPassword: true, userSrp: true },
+        accessTokenValidity: cdk.Duration.hours(1),
+        idTokenValidity: cdk.Duration.hours(1),
+        refreshTokenValidity: cdk.Duration.days(30),
+        oAuth: {
+          flows: { authorizationCodeGrant: true },
+          scopes: [
+            cognito.OAuthScope.OPENID,
+            cognito.OAuthScope.EMAIL,
+            cognito.OAuthScope.PROFILE,
+          ],
+          callbackUrls: webCallbacks,
+          logoutUrls: webLogouts,
+        },
+        preventUserExistenceErrors: true,
+        supportedIdentityProviders: supportedIdPsForCreate,
+      });
+
+      const { enforceFlows, enforceHostedUi } = makeClientEnforcers(
+        webClient.userPoolClientId,
+        "Created"
+      );
+      enforceFlows.node.addDependency(webClient);
+      enforceHostedUi.node.addDependency(webClient);
+
+      webClientIdOutput = webClient.userPoolClientId;
+      new cdk.CfnOutput(this, "WebClientId", { value: webClientIdOutput });
+    }
 
     // ===== Outputs =====
-    const issuer = `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`;
     new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
-    new cdk.CfnOutput(this, "WebClientId", {
-      value: webClient.userPoolClientId,
-    });
+
     if (hostedUiBaseUrl) {
       new cdk.CfnOutput(this, "HostedUiDomainBaseUrl", {
         value: hostedUiBaseUrl,
       });
     }
+
+    const issuer = `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`;
     new cdk.CfnOutput(this, "Issuer", { value: issuer });
     new cdk.CfnOutput(this, "JwksUrl", {
       value: `${issuer}/.well-known/jwks.json`,
