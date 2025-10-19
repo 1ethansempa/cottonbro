@@ -8,10 +8,15 @@ on:
         type: choice
         options: [qa, prod]
         required: true
-      ref:
-        description: "Git ref (branch, tag, or commit SHA)"
-        default: "develop"
+      branch:
+        description: "Branch to deploy"
+        type: choice
+        options: [develop, main, custom]
         required: true
+      custom_ref:
+        description: "Custom ref (branch, tag, or commit SHA). Used only when branch=custom"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -22,26 +27,42 @@ jobs:
     environment: ${{ inputs.env == 'prod' && 'Production' || 'QA' }}
     runs-on: ubuntu-latest
 
+    # Resolve the ref: use selected branch, or the provided custom_ref
+    env:
+      RESOLVED_REF: ${{ inputs.branch == 'custom' && inputs.custom_ref || inputs.branch }}
+
     steps:
       - name: Checkout ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ env.RESOLVED_REF }}
+
+      - name: Validate ref exists on origin
+        run: |
+          git ls-remote --exit-code origin "${{ env.RESOLVED_REF }}" || {
+            echo "Ref '${{ env.RESOLVED_REF }}' not found on origin"; exit 1;
+          }
 
       - name: Use Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            **/pnpm-lock.yaml
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+      # Fix: ensure pnpm is available on PATH
+      - name: Setup pnpm (Corepack)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+          pnpm --version
 
       - name: Install dependencies (monorepo root)
         run: pnpm install --frozen-lockfile
 
+      # Make framework detection unambiguous: write firebase.json inside apps/web
       - name: Write firebase.json (apps/web)
         run: |
           mkdir -p apps/web
