@@ -1,1 +1,7 @@
 @import "tailwindcss";
+
+:focus-visible {
+  outline: 3px solid #c8b89f;
+  outline-offset: 3px;
+  border-radius: 6px;
+}

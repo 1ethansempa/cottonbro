@@ -1,0 +1,34 @@
+service: cottonbro-api
+frameworkVersion: ">=4"
+
+provider:
+  name: aws
+  region: eu-west-1
+  runtime: nodejs20.x
+  architecture: arm64
+  stage: prod
+  httpApi:
+    cors: true
+
+functions:
+  http:
+    handler: src/main-lambda.lambdaHandler
+    events:
+      - httpApi: "*"
+
+build:
+  esbuild:
+    bundle: true
+    target: node20
+    platform: node
+    format: cjs
+    tsconfig: tsconfig.json
+    external:
+      - "@nestjs/websockets"
+      - "@nestjs/websockets/*"
+      - "@nestjs/microservices"
+      - "@nestjs/microservices/*"
+
+package:
+  individually: false
+  excludeDevDependencies: true

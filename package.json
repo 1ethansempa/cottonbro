@@ -6,8 +6,7 @@
   "packageManager": "pnpm@10.11.1",
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "infra"
+    "packages/*"
   ],
   "scripts": {
     "build": "turbo run build",
@@ -29,6 +28,8 @@
     "@commitlint/config-conventional": "^20.0.0",
     "@types/node": "^24.5.2",
     "aws-cdk": "^2.1029.3",
+    "dotenv": "^17.2.3",
+    "esbuild": "^0.23.1",
     "eslint": "^9.36.0",
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
