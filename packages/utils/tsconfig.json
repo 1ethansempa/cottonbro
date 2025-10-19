@@ -3,11 +3,21 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "target": "ES2022",
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM"],
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["react", "react-dom"]
+
+    "declaration": true,
+    "declarationMap": false,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+
+    "types": ["node", "react", "react-dom"]
   },
-  "include": ["src"]
+  "include": ["src/index.ts", "src/edge.ts", "src/node.ts", "src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
 }

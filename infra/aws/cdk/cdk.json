@@ -1,3 +1,0 @@
-{
-  "app": "tsx --tsconfig ./tsconfig.json bin/cottonbro.ts"
-}

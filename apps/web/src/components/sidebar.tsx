@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
 import { useSession } from "../lib/use-session";
 
 const baseLinks = [
   { href: "/shop", label: "Shop" },
-  { href: "#", label: "Create Product" },
+  { href: "/products/new", label: "Create Product" },
 ];
 
 export default function Sidebar({
@@ -19,6 +19,7 @@ export default function Sidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, loading } = useSession();
 
   // ESC to close
@@ -28,21 +29,31 @@ export default function Sidebar({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  // Treat a link as active if pathname matches exactly or is a child path.
+  const isActive = (href: string) =>
+    pathname === href || (pathname?.startsWith(href) && href !== "/");
+
   const onLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
+      const res = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("Logout failed:", text);
+      }
     } catch (e) {
-      console.error("Logout failed:", e);
+      console.error("Logout error:", e);
     } finally {
-      window.location.href = "/auth/login";
+      // Ensure UI state is cleared
+      router.push("/auth/login");
+      router.refresh();
     }
   };
 
   const NavLink = ({ href, label }: { href: string; label: string }) => {
-    const active = pathname === href;
+    const active = isActive(href);
     return (
       <Link
         href={href}
@@ -62,11 +73,17 @@ export default function Sidebar({
     );
   };
 
+  // Small user summary for the header area
+  const userName = useMemo(
+    () => user?.name || user?.email || "Signed in",
+    [user]
+  );
+
   return (
     <aside
       className={[
         "bg-[#141414] text-white",
-        "fixed inset-y-0 left-0 z-40 w-64", // full height, push layout
+        "fixed inset-y-0 left-0 z-40 w-64",
         "px-4 pb-[env(safe-area-inset-bottom)]",
         "shadow-[8px_0_30px_rgba(0,0,0,0.45)] ring-1 ring-white/5",
         "transform transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
@@ -95,6 +112,32 @@ export default function Sidebar({
               priority
             />
           </button>
+
+          {/* Signed-in summary (optional, shown when user present) */}
+          {!loading && user && (
+            <div className="mx-6 mb-3 flex items-center gap-3 text-sm text-gray-300">
+              {/* If you return picture from /api/auth/session, show it; otherwise a circle */}
+              {user.picture ? (
+                <Image
+                  src={user.picture}
+                  alt={userName}
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-7 w-7 rounded-full bg-white/10" />
+              )}
+              <div className="min-w-0">
+                <div className="truncate">{userName}</div>
+                {user.email && (
+                  <div className="truncate text-[11px] text-gray-500">
+                    {user.email}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Scrollable nav */}
@@ -103,6 +146,7 @@ export default function Sidebar({
             {baseLinks.map((l) => (
               <NavLink key={l.href} href={l.href} label={l.label} />
             ))}
+
             {!loading &&
               (user ? (
                 <button

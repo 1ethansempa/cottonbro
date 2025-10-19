@@ -1,46 +1,47 @@
-// lib/useSession.ts
 "use client";
 
 import { useEffect, useState } from "react";
 
-type User = {
-  sub?: string;
-  email?: string;
-  name?: string;
-  picture?: string;
-} | null;
+interface User {
+  uid: string;
+  email?: string | null;
+  name?: string | null;
+  picture?: string | null;
+}
 
-export function useSession() {
-  const [user, setUser] = useState<User>(null);
+interface SessionResult {
+  user: User | null;
+  loading: boolean;
+  refresh: () => Promise<void>;
+}
+
+export function useSession(): SessionResult {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/session", {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!res.ok) {
-          if (alive) setUser(null);
-          return;
-        }
+  const fetchSession = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/session", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setUser(null);
+      } else {
         const data = await res.json();
-        if (alive) setUser(data.user ?? null);
-      } catch (e) {
-        console.error("Session fetch failed:", e);
-        if (alive) setUser(null);
-      } finally {
-        if (alive) setLoading(false);
+        setUser(data.user ?? null);
       }
-    })();
+    } catch (err) {
+      console.error("Failed to fetch session:", err);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return () => {
-      alive = false;
-    };
+  useEffect(() => {
+    fetchSession();
   }, []);
 
-  return { user, loading };
+  return { user, loading, refresh: fetchSession };
 }

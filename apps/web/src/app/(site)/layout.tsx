@@ -13,7 +13,6 @@ export default function RootLayout({
 
   return (
     <div className="min-h-screen text-neutral-100 bg-neutral-950">
-      {/* Subtle ambient background */}
       <div
         className="fixed inset-0 -z-10 bg-[radial-gradient(1000px_500px_at_20%_0%,rgba(120,119,198,0.12),transparent_60%),radial-gradient(900px_500px_at_80%_20%,rgba(56,189,248,0.10),transparent_60%)]"
         aria-hidden="true"
@@ -23,10 +22,8 @@ export default function RootLayout({
         aria-hidden="true"
       />
 
-      {/* Header (fixed). Header logo toggles the sidebar */}
       <header className="fixed inset-x-0 top-0 z-30 h-16 border-b border-white/10 bg-black/40 backdrop-blur-sm">
         <div className="mx-auto flex h-full items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Show text logo ONLY when sidebar is closed; clicking opens the sidebar */}
           {!open ? (
             <button
               type="button"
@@ -59,26 +56,22 @@ export default function RootLayout({
         </div>
       </header>
 
-      {/* Sidebar (controlled). No overlay/backdrop. */}
       <Sidebar open={open} onClose={() => setOpen(false)} />
 
-      {/* Content shifts with the sidebar. Starts below header. */}
       <main
         className={[
-          // Stack items vertically, fill width
           "flex flex-col items-stretch justify-start",
-          // spacing and transition
+
           "pt-24 px-6 sm:px-8 lg:px-24 py-8 transition-[margin] duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
           open ? "ml-64" : "ml-0",
         ].join(" ")}
       >
         {children}
       </main>
-      {/* Footer */}
+
       <footer className="border-t border-white/10 bg-black/40 backdrop-blur-sm">
         <div className="mx-auto max-w-screen-xl px-4 py-14">
           <div className="grid grid-cols-1 gap-10 md:grid-cols-5">
-            {/* Brand */}
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
                 <span
@@ -95,7 +88,7 @@ export default function RootLayout({
                 effortlessly. We handle printing, fulfillment, and payouts — you
                 focus on your brand.
               </p>
-              {/* Social */}
+
               <div className="mt-4 flex gap-4">
                 <a
                   href="https://twitter.com"
@@ -128,7 +121,6 @@ export default function RootLayout({
               </div>
             </div>
 
-            {/* Columns */}
             <div>
               <h4 className="text-sm font-bold uppercase tracking-wide text-neutral-200">
                 Product
@@ -197,7 +189,6 @@ export default function RootLayout({
             </div>
           </div>
 
-          {/* Divider */}
           <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 md:flex-row">
             <p className="text-sm text-neutral-400">
               © {new Date().getFullYear()} Cottonbro. All rights reserved.

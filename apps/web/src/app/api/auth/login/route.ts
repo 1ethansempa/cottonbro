@@ -1,60 +1,61 @@
+import "server-only";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import {
-  CognitoIdentityProviderClient,
-  InitiateAuthCommand,
-  AuthFlowType,
-} from "@aws-sdk/client-cognito-identity-provider";
-import { setAuthCookies } from "../../../../lib/auth-server";
+import { getAdminAuth } from "@/server/firebase-admin";
 
-const region = process.env.AWS_REGION || process.env.NEXT_PUBLIC_AWS_REGION!;
-const clientId =
-  process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
+const SESSION_COOKIE = "session";
 
-const cognito = new CognitoIdentityProviderClient({ region });
+const SESSION_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
+
+type Body = { idToken?: string };
 
 export async function POST(req: Request) {
+  let idToken: string | undefined;
+
   try {
-    const { email, password } = await req.json();
-    if (!email || !password) {
-      return new NextResponse("Email and password are required.", {
-        status: 400,
-      });
-    }
+    const body = (await req.json()) as Body;
+    idToken = body?.idToken;
+  } catch (err) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
-    const res = await cognito.send(
-      new InitiateAuthCommand({
-        AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
-        ClientId: clientId,
-        AuthParameters: {
-          USERNAME: email,
-          PASSWORD: password,
-        },
-      })
-    );
+  if (!idToken || typeof idToken !== "string") {
+    return NextResponse.json({ error: "idToken required" }, { status: 400 });
+  }
 
-    const r = res.AuthenticationResult;
-    if (!r?.AccessToken || !r?.ExpiresIn) {
-      return new NextResponse("Authentication failed.", { status: 401 });
-    }
+  try {
+    const auth = getAdminAuth();
 
-    await setAuthCookies({
-      access_token: r.AccessToken,
-      refresh_token: r.RefreshToken,
-      id_token: r.IdToken,
-      expires_in: r.ExpiresIn,
+    const decoded = await auth.verifyIdToken(idToken, true);
+
+    const sessionCookie = await auth.createSessionCookie(idToken, {
+      expiresIn: SESSION_MAX_AGE_MS,
     });
 
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    const name = e?.name;
-    const msg =
-      name === "NotAuthorizedException"
-        ? "Incorrect email or password."
-        : name === "UserNotConfirmedException"
-          ? "Account not confirmed. Check your email for the code."
-          : name === "UserNotFoundException"
-            ? "No account found with that email."
-            : e?.message || "Sign in failed.";
-    return new NextResponse(msg, { status: 400 });
+    const c = await cookies();
+    c.set({
+      name: SESSION_COOKIE,
+      value: sessionCookie,
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: Math.floor(SESSION_MAX_AGE_MS / 1000),
+    });
+
+    return NextResponse.json({
+      ok: true,
+      user: {
+        uid: decoded.uid,
+        email: decoded.email ?? null,
+        name: decoded.name ?? null,
+        picture: decoded.picture ?? null,
+      },
+    });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: "Authentication failed" },
+      { status: 401 }
+    );
   }
 }
