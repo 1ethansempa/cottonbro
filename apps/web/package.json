@@ -3,16 +3,28 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "next dev",
+    "dev:qa": "cross-env APP_ENV=qa env-cmd -f .env.qa.local next dev -p 5173",
+    "dev:prod": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next dev -p 5173",
+    "build:qa": "cross-env APP_ENV=qa env-cmd -f .env.qa.local next build",
+    "build:prod": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next build",
+    "start:qa": "cross-env APP_ENV=qa env-cmd -f .env.qa.local next start -p 5173",
+    "start:prod": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next start -p 5173",
+    "dev": "next dev -p 5173",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 5173",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "firebase:login": "firebase login",
+    "deploy:qa": "pnpm build:qa && firebase deploy --only hosting --project qa",
+    "deploy:prod": "pnpm build:prod && firebase deploy --only hosting --project prod"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.13",
-    "next": "^15.5.4",
+    "clsx": "^2.1.1",
+    "firebase": "^11.10.0",
+    "framer-motion": "^12.23.22",
+    "next": "^15.5.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -20,12 +32,18 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.1.0",
+    "env-cmd": "^11.0.0",
+    "eslint": "^9.36.0",
+    "eslint-config-next": "^15.5.4",
+    "firebase-admin": "^12.7.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "zod": "^4.1.12"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": "22.x",
     "pnpm": ">=10.11.1"
   }
 }

@@ -1,0 +1,76 @@
+name: Deploy Next.js (apps/web) — Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Environment to deploy"
+        type: choice
+        options: [qa, prod]
+        required: true
+      ref:
+        description: "Git ref (branch, tag, or commit SHA)"
+        default: "develop"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    environment: ${{ inputs.env == 'prod' && 'Production' || 'QA' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies (monorepo root)
+        run: pnpm install --frozen-lockfile
+
+      - name: Write firebase.json (apps/web)
+        run: |
+          mkdir -p apps/web
+          cat > apps/web/firebase.json << JSON
+          {
+            "hosting": [
+              {
+                "site": "${{ secrets.FIREBASE_SITE_ID }}",
+                "source": "."
+              }
+            ]
+          }
+          JSON
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          entryPoint: apps/web
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          firebaseServiceAccount: |
+            {
+              "type": "service_account",
+              "project_id": "${{ secrets.FIREBASE_PROJECT_ID }}",
+              "client_email": "${{ secrets.FIREBASE_CLIENT_EMAIL }}",
+              "private_key": "${{ secrets.FIREBASE_PRIVATE_KEY }}"
+            }
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_EMAIL_LINK_CONTINUE_URL: ${{ secrets.NEXT_PUBLIC_EMAIL_LINK_CONTINUE_URL }}
