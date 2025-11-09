@@ -1,70 +1,56 @@
 "use client";
 
-import React, { useState } from "react";
-import GoogleIcon from "../../../components/google-icon";
-import { clientAuth } from "@/lib/firebase-client";
-import {
-  sendSignInLinkToEmail,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-
-const CONTINUE_URL = process.env.NEXT_PUBLIC_EMAIL_LINK_CONTINUE_URL!;
+import * as React from "react";
+import GoogleIcon from "@/components/google-icon";
+import { useAuth } from "@cottonbro/auth-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const { requestOtp, confirmOtp, googleSignIn, busy, error } = useAuth();
 
-  async function sendMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
-    setBusy(true);
-    setStatus(null);
-    try {
-      await sendSignInLinkToEmail(clientAuth, email.trim(), {
-        url: CONTINUE_URL,
-        handleCodeInApp: true,
-      });
+  const [email, setEmail] = React.useState("");
+  const [code, setCode] = React.useState("");
+  const [sent, setSent] = React.useState(false);
+  const [status, setStatus] = React.useState<string | null>(null);
 
-      window.localStorage.setItem("cb.emailForSignIn", email.trim());
-      setStatus("Link sent. Check your inbox.");
-    } catch (err) {
-      console.error(err);
-      setStatus("Could not send link. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const redirect =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("redirect") || "/"
+      : "/";
 
   async function onGoogle() {
-    setBusy(true);
     setStatus(null);
     try {
-      const provider = new GoogleAuthProvider();
-      const cred = await signInWithPopup(clientAuth, provider);
-      const idToken = await cred.user.getIdToken();
-
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ idToken }),
-      });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || "Failed to establish session");
-      }
-      window.location.replace("/");
-    } catch (err) {
-      console.error("Google sign-in failed:", err);
+      await googleSignIn();
+      window.location.replace(redirect);
+    } catch (e) {
       setStatus("Google sign-in failed. Please try again.");
-    } finally {
-      setBusy(false);
     }
   }
 
-  const canSend = !!email && !busy;
+  async function onSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus(null);
+    try {
+      await requestOtp(email.trim());
+      setSent(true);
+      setStatus("Code sent. Check your inbox.");
+    } catch (e) {
+      setStatus("Could not send code. Please try again.");
+    }
+  }
+
+  async function onConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || code.length !== 6) return;
+    setStatus(null);
+    try {
+      await confirmOtp(email.trim(), code.trim());
+      window.location.replace(redirect);
+    } catch (e) {
+      setStatus("Invalid code. Please try again.");
+    }
+  }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-6 py-12">
@@ -98,38 +84,82 @@ export default function LoginPage() {
             </span>
           </div>
 
-          <form onSubmit={sendMagicLink} className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-1 block text-sm text-gray-700"
+          {!sent ? (
+            <form onSubmit={onSend} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-1 block text-sm text-gray-700"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={!email || busy}
+                className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                placeholder="you@example.com"
-              />
-            </div>
+                {busy ? "Sending…" : "Send code"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={onConfirm} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="code"
+                  className="mb-1 block text-sm text-gray-700"
+                >
+                  6-digit code
+                </label>
+                <input
+                  id="code"
+                  name="code"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  className="w-full tracking-widest text-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  placeholder="••••••"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={!canSend}
-              className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {busy ? "Sending Link…" : "Continue with Email"}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={code.length !== 6 || busy}
+                className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {busy ? "Verifying…" : "Confirm"}
+              </button>
 
-          {status && (
-            <p className="mt-4 text-center text-sm text-gray-600">{status}</p>
+              <button
+                type="button"
+                onClick={onSend}
+                disabled={busy}
+                className="w-full text-sm text-gray-600 underline underline-offset-4 mt-2"
+              >
+                Resend code
+              </button>
+            </form>
+          )}
+
+          {(status || error) && (
+            <p className="mt-4 text-center text-sm text-gray-600">
+              {status || error}
+            </p>
           )}
         </div>
       </div>

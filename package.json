@@ -26,6 +26,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
+    "@nestjs/config": "^4.0.2",
     "@types/node": "^24.5.2",
     "aws-cdk": "^2.1029.3",
     "dotenv": "^17.2.3",
@@ -36,5 +37,12 @@
     "tsx": "^4.20.6",
     "turbo": "^2.5.8",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@nestjs/throttler": "^6.4.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "cookie-parser": "^1.4.7",
+    "helmet": "^8.1.0"
   }
 }

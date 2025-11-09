@@ -1,5 +1,9 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  getAuth,
+  setPersistence,
+  browserLocalPersistence,
+} from "firebase/auth";
 import { publicEnv } from "@/config/env";
 
 const config = {
@@ -10,3 +14,5 @@ const config = {
 
 export const clientApp = getApps()[0] ?? initializeApp(config);
 export const clientAuth = getAuth(clientApp);
+
+setPersistence(clientAuth, browserLocalPersistence).catch(() => {});

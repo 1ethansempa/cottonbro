@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Questrial, Cedarville_Cursive } from "next/font/google";
+import WebAuthProvider from "@/app/providers/auth-provider";
 
 const questrial = Questrial({
   variable: "--font-questrial",
@@ -26,7 +27,7 @@ export default function RootLayout({
       <body
         className={`min-h-screen bg-white ${questrial.variable} ${cedarville.variable}`}
       >
-        {children}
+        <WebAuthProvider>{children}</WebAuthProvider>
       </body>
     </html>
   );

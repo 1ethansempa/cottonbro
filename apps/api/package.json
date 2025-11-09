@@ -1,7 +1,7 @@
 {
   "name": "@cottonbro/api",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
@@ -19,12 +19,17 @@
     "@nestjs/platform-socket.io": "^11.1.6",
     "@nestjs/websockets": "^11.1.6",
     "@vendia/serverless-express": "^4.12.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "@cottonbro/auth-server": "workspace:*"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
     "@types/aws-lambda": "^8.10.155",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.5",
     "serverless": "^4.21.0",
     "typescript": "^5.9.2"
   }
