@@ -38,8 +38,8 @@ export interface AuthContextConfig {
   endpoints: Endpoints;
   onSession?: (args: { idToken: string; user: User }) => void;
   onLogout?: () => void;
-  allowAutoLink?: boolean; // default true
-  keepClientSignedIn?: boolean; // default true
+  allowAutoLink?: boolean;
+  keepClientSignedIn?: boolean;
   /** Optional: override ttlMs sent on login (e.g., 7d for admin) */
   sessionTtlMs?: number;
 }
@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<
 
   const role = (claims?.role as AuthRole) ?? undefined;
 
+  // Track auth state + token changes so we surface user/claims immediately.
   useEffect(() => {
     mounted.current = true;
     const unsub1 = onAuthStateChanged(auth, (u) => setUser(u));
@@ -99,6 +100,7 @@ export const AuthProvider: React.FC<
     };
   }, [auth]);
 
+  // Helper for POSTing JSON with cookie credentials + useful errors.
   const postJson = useCallback(async (url: string, body: unknown) => {
     const res = await fetch(url, {
       method: "POST",
@@ -115,6 +117,7 @@ export const AuthProvider: React.FC<
       : undefined;
   }, []);
 
+  // Exchange Firebase ID token for our session cookie, then optionally sign out client.
   const establishSession = useCallback(
     async (u: User) => {
       const idToken = await u.getIdToken(true);
@@ -132,6 +135,7 @@ export const AuthProvider: React.FC<
     ]
   );
 
+  // Starts the OTP flow by posting an email address to the API.
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
     async (email) => {
       setError(null);
@@ -147,6 +151,7 @@ export const AuthProvider: React.FC<
     [endpoints.startOtp, postJson]
   );
 
+  // Confirms a code, signs in with the returned custom token, then mints a session cookie.
   const confirmOtp = useCallback<AuthContextValue["confirmOtp"]>(
     async (email, code) => {
       setError(null);
@@ -172,6 +177,7 @@ export const AuthProvider: React.FC<
     [auth, endpoints.verifyOtp, establishSession, postJson]
   );
 
+  // Google OAuth entry point; links to existing OTP user when allowed.
   const googleSignIn = useCallback<
     AuthContextValue["googleSignIn"]
   >(async () => {
@@ -200,6 +206,7 @@ export const AuthProvider: React.FC<
     }
   }, [allowAutoLink, auth, establishSession]);
 
+  // Forces Firebase to refresh the ID token + cached custom claims.
   const refreshIdToken = useCallback<
     AuthContextValue["refreshIdToken"]
   >(async () => {
@@ -214,6 +221,7 @@ export const AuthProvider: React.FC<
     }
   }, [auth]);
 
+  // Logs out on both the API (session cookie) and Firebase client.
   const logout = useCallback<AuthContextValue["logout"]>(async () => {
     setError(null);
     setBusy(true);
