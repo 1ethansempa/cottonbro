@@ -27,7 +27,8 @@
     "next": "^15.5.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "@cottonbro/auth-react": "workspace:*"
+    "@cottonbro/auth-react": "workspace:*",
+    "@cottonbro/ui": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19",

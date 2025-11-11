@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Jamino";
+  src:
+    url("/fonts/jamino.ttf") format("truetype"),
+    url("/fonts/jamino.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-jamino: "Jamino", system-ui, sans-serif;
+}
+
 :focus-visible {
   outline: 3px solid #c8b89f;
   outline-offset: 3px;
