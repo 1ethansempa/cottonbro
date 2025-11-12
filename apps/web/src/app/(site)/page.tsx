@@ -184,14 +184,14 @@ export default function SaaSBlackLanding() {
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-20 md:grid-cols-2">
           {/* Left: text */}
           <div>
-            <h1 className="text-balance text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
+            <h1 className="text-balance text-4xl font-bold leading-tight tracking-tight md:text-5xl">
               Design merch.
               <br />
-              We handle delivery, get paid.
+              We handle delivery, get you paid.
             </h1>
             <p className="mt-5 max-w-prose text-zinc-400">
               Turn your ideas into real merch — we take care of printing,
-              packing, and shipping while you earn automatically.
+              packing, and delivery and get you paid.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -218,7 +218,7 @@ export default function SaaSBlackLanding() {
             />
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_30px_80px_-20px_rgba(0,0,0,0.7)]">
               <img
-                src="/test-hero.png"
+                src="/test-hero-4.png"
                 alt="CottonBro preview"
                 className="block h-full w-full object-cover"
               />

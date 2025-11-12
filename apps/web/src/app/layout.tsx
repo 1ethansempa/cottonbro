@@ -4,7 +4,7 @@ import { Montserrat } from "next/font/google";
 import WebAuthProvider from "@/app/providers/auth-provider";
 
 const montserrat = Montserrat({
-  variable: "--font-questrial",
+  variable: "--font-montserrat",
   subsets: ["latin"],
   weight: "400",
 });
