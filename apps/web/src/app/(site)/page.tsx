@@ -23,24 +23,24 @@ export default function SaaSBlackLanding() {
 
   const benefits = [
     {
-      title: "Launch faster",
-      copy: "Upload your design, pick a product, publish a checkout link in minutes.",
+      title: "Launch with confidence",
+      copy: "Upload your design, pick a product, and publish once your design is approved.",
     },
     {
       title: "Zero ops",
-      copy: "We handle printing, packing, shipping, returns and support behind the scenes.",
+      copy: "We handle printing, packing, shipping, returns, and customer support behind the scenes.",
     },
     {
       title: "Transparent earnings",
-      copy: "Set your price and see margin per item before you go live.",
+      copy: "Set your price and see your margin per item before going live.",
     },
     {
       title: "3D previews",
-      copy: "Realistic previews in multiple fits so you can sanity‑check before launch.",
+      copy: "Realistic photo and 3D previews so you can sanity-check before launch.",
     },
     {
       title: "Delivery around Kampala",
-      copy: "Up to 40+ areas.",
+      copy: "Coverage across 40+ areas.",
     },
     {
       title: "Simple payouts",
@@ -54,9 +54,18 @@ export default function SaaSBlackLanding() {
       t: "Create",
       d: "Start with a template or upload artwork. Pick colors, sizes, variants.",
     },
-    { n: 2, t: "Preview", d: "Review photo & 3D mockups and confirm quality." },
+    {
+      n: 2,
+      t: "Preview",
+      d: "Review photo & 3D mockups and confirm quality.",
+    },
     {
       n: 3,
+      t: "Approval",
+      d: "Submit your design for a final check before publishing.",
+    },
+    {
+      n: 4,
       t: "Publish",
       d: "Share a store link. We fulfill and you get paid.",
     },
@@ -113,16 +122,12 @@ export default function SaaSBlackLanding() {
       a: "No. We print on demand after a customer orders, so there’s no upfront stock.",
     },
     {
-      q: "Where do you ship?",
-      a: "We currently ship to North America, Europe and parts of Africa and Asia with tracking.",
+      q: "Where do you deliver?",
+      a: "We currently deliver all around Kampala.",
     },
     {
       q: "How do payouts work?",
       a: "Connect your account once. Earnings are paid out automatically every week.",
-    },
-    {
-      q: "Can I use my own domain?",
-      a: "Yes. Pro plan supports custom domains and branded emails.",
     },
   ];
 
@@ -158,13 +163,13 @@ export default function SaaSBlackLanding() {
 
           <div className="flex items-center gap-3">
             <a
-              href="#signin"
+              href="/auth/login"
               className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-zinc-200 hover:bg-white/[0.06] transition"
             >
               Sign in
             </a>
             <a
-              href="#signup"
+              href="/auth/login"
               className="rounded-full bg-zinc-50 px-4 py-2 text-sm font-semibold text-black shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_1px_10px_rgba(255,255,255,0.06)] hover:bg-zinc-200 transition"
             >
               Create account
@@ -185,18 +190,18 @@ export default function SaaSBlackLanding() {
           {/* Left: text */}
           <div>
             <h1 className="text-balance text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-              Design merch.
+              Built for creators.
               <br />
-              We handle delivery, get you paid.
+              You design, we deliver and get you paid.
             </h1>
             <p className="mt-5 max-w-prose text-zinc-400">
-              Turn your ideas into real merch — we take care of printing,
-              packing, and delivery and get you paid.
+              Turn your ideas into real merch. You create; we handle printing,
+              packing, delivery, and payouts — end to end.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
-                href="#signup"
+                href="/auth/login"
                 className="rounded-full bg-zinc-50 px-5 py-3 text-sm font-semibold text-black hover:bg-zinc-200 transition"
               >
                 Start free
@@ -260,7 +265,7 @@ export default function SaaSBlackLanding() {
             Three simple steps to your first drop.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
           {steps.map((s) => (
             <div
               key={s.n}
@@ -277,7 +282,8 @@ export default function SaaSBlackLanding() {
       </section>
 
       {/* PRICING + TESTIMONIALS */}
-      <section id="pricing" className="mx-auto max-w-7xl px-6 pb-24">
+      {/*
+           <section id="pricing" className="mx-auto max-w-7xl px-6 pb-24">
         <div className="mb-10 text-center">
           <h2 className="text-3xl font-bold md:text-4xl">Pricing</h2>
           <p className="mt-2 text-zinc-400">
@@ -324,7 +330,6 @@ export default function SaaSBlackLanding() {
           ))}
         </div>
 
-        {/* Testimonials beside pricing on wide screens */}
         <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
             <figure
@@ -339,6 +344,7 @@ export default function SaaSBlackLanding() {
           ))}
         </div>
       </section>
+        */}
 
       {/* FAQ */}
       <section id="faq" className="mx-auto max-w-7xl px-6 pb-24">
@@ -368,11 +374,11 @@ export default function SaaSBlackLanding() {
               Ready to drop your first collection?
             </h2>
             <p className="mt-1 text-zinc-400">
-              Create a product and share the link in under 10 minutes.
+              Design, submit for approval, and publish.
             </p>
           </div>
           <a
-            href="#signup"
+            href="/auth/login"
             className="rounded-full bg-zinc-50 px-5 py-3 text-sm font-semibold text-black hover:bg-zinc-200 transition"
           >
             Create free account
@@ -384,8 +390,8 @@ export default function SaaSBlackLanding() {
       <footer className="border-t border-white/10">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-6 py-10 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
-            <div className="font-semibold">CottonBro</div>
-            <p className="mt-2 text-sm text-zinc-400">Design, sell, deliver.</p>
+            <Logo size="md" color="white" fontClassName="font-[jamino]" />
+            <p className="mt-2 text-sm text-zinc-400">Design & sell.</p>
           </div>
           <div>
             <div className="mb-2 text-sm font-semibold">Product</div>
@@ -395,11 +401,7 @@ export default function SaaSBlackLanding() {
                   Features
                 </a>
               </li>
-              <li>
-                <a href="#pricing" className="hover:text-zinc-200">
-                  Pricing
-                </a>
-              </li>
+
               <li>
                 <a href="#faq" className="hover:text-zinc-200">
                   FAQ
