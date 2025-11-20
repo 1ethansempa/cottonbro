@@ -132,21 +132,12 @@ export default function SaaSBlackLanding() {
   ];
 
   return (
-    <div className="min-h-dvh bg-[#0A0A0B] text-zinc-200 antialiased">
-      {/* GLOBAL BACKDROP (subtle vignettes + noise-ready layer) */}
-      <div
-        className="pointer-events-none fixed inset-0 -z-10
-               bg-[radial-gradient(800px_500px_at_10%_-10%,rgba(120,119,198,0.10),transparent_70%),radial-gradient(900px_500px_at_90%_-20%,rgba(56,189,248,0.08),transparent_75%)]
-               before:absolute before:inset-0 before:-z-10 before:bg-[radial-gradient(60%_120%_at_50%_-20%,rgba(255,255,255,0.04),transparent_60%)]
-               after:absolute after:inset-0 after:-z-10 after:bg-black/20"
-        aria-hidden
-      />
-
+    <div className="min-h-dvh bg-white text-black antialiased selection:bg-street-red selection:text-white">
       {/* NAV */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/40 backdrop-blur supports-[backdrop-filter]:bg-black/30">
+      <header className="sticky top-0 z-40 border-b border-black bg-white/90 backdrop-blur-md">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Link href="#" className="flex items-center">
-            <Logo size="xl" color="white" fontClassName="font-[jamino]" />
+          <Link href="#" className="flex items-center text-black">
+            <Logo size="xl" color="current" fontClassName="font-jamino" />
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -154,7 +145,7 @@ export default function SaaSBlackLanding() {
               <a
                 key={n.href}
                 href={n.href}
-                className="text-sm text-zinc-300/90 hover:text-white transition-colors"
+                className="text-sm font-bold uppercase tracking-widest text-black hover:text-street-red transition-colors"
               >
                 {n.label}
               </a>
@@ -164,13 +155,13 @@ export default function SaaSBlackLanding() {
           <div className="flex items-center gap-3">
             <a
               href="/auth/login"
-              className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-zinc-200 hover:bg-white/[0.06] transition"
+              className="text-sm font-bold uppercase tracking-widest text-black hover:text-street-red transition"
             >
               Sign in
             </a>
             <a
               href="/auth/login"
-              className="rounded-full bg-zinc-50 px-4 py-2 text-sm font-semibold text-black shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_1px_10px_rgba(255,255,255,0.06)] hover:bg-zinc-200 transition"
+              className="bg-street-red px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-black transition"
             >
               Create account
             </a>
@@ -179,36 +170,31 @@ export default function SaaSBlackLanding() {
       </header>
 
       {/* HERO */}
-      <section className="relative overflow-hidden bg-[#0A0A0B] text-zinc-100">
-        {/* background accent */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10
-                 bg-[radial-gradient(750px_420px_at_12%_-10%,rgba(120,119,198,0.10),transparent_70%),radial-gradient(850px_420px_at_88%_-18%,rgba(56,189,248,0.08),transparent_70%)]"
-        />
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-20 md:grid-cols-2">
+      {/* HERO */}
+      <section className="relative overflow-hidden border-b border-black pt-12 pb-24 md:pt-32">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-6 md:grid-cols-2">
           {/* Left: text */}
-          <div>
-            <h1 className="text-balance text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-              Built for creators.
+          <div className="flex flex-col items-start z-10 max-w-full">
+            <h1 className="font-jamino uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full">
+              Built for
               <br />
-              You design, we deliver and get you paid.
+              <span className="text-street-red">Creators</span>
             </h1>
-            <p className="mt-5 max-w-prose text-zinc-400">
+            <p className="mt-8 max-w-md text-lg font-medium leading-relaxed text-black">
               Turn your ideas into real merch. You create; we handle printing,
               packing, delivery, and payouts — end to end.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-12 flex flex-wrap items-center gap-6">
               <a
                 href="/auth/login"
-                className="rounded-full bg-zinc-50 px-5 py-3 text-sm font-semibold text-black hover:bg-zinc-200 transition"
+                className="bg-black px-8 py-4 text-base font-bold uppercase tracking-widest text-white hover:bg-street-red transition"
               >
                 Start free
               </a>
               <a
                 href="#demo"
-                className="rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm text-zinc-200 hover:bg-white/[0.06] transition"
+                className="border-b-2 border-black pb-1 text-base font-bold uppercase tracking-widest text-black hover:text-street-red hover:border-street-red transition"
               >
                 View demo
               </a>
@@ -217,15 +203,11 @@ export default function SaaSBlackLanding() {
 
           {/* Right: image */}
           <div className="relative">
-            <div
-              className="absolute -left-10 -top-10 h-56 w-56 rounded-full bg-white/5 blur-3xl md:-left-16 md:-top-16"
-              aria-hidden
-            />
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+            <div className="relative aspect-[4/5] overflow-hidden border border-black bg-zinc-100">
               <img
                 src="/test-hero-4.png"
                 alt="CottonBro preview"
-                className="block h-full w-full object-cover"
+                className="block h-full w-full object-cover grayscale hover:grayscale-0 transition duration-500"
               />
             </div>
           </div>
@@ -235,47 +217,55 @@ export default function SaaSBlackLanding() {
       {/* PARTNERS (unchanged, but surfaces adjusted if you enable) */}
 
       {/* BENEFITS */}
-      <section id="features" className="mx-auto max-w-7xl px-6 pb-24">
-        <h2 className="mb-3 text-center text-3xl font-bold md:text-4xl">
-          Benefits
-        </h2>
-        <p className="mx-auto mb-10 max-w-2xl text-center text-zinc-400">
-          Focus on design and audience. We take care of the rest.
-        </p>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {benefits.map((f) => (
+      {/* BENEFITS */}
+      <section id="features" className="mx-auto max-w-7xl px-6 py-32 border-b border-black">
+        <div className="mb-16 md:mb-24">
+          <h2 className="font-jamino text-6xl uppercase text-black md:text-8xl">
+            The Studio
+          </h2>
+          <p className="mt-6 max-w-xl text-xl font-bold text-black">
+            Everything you need to run a professional merch brand, minus the
+            logistics headache.
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-px bg-black border border-black md:grid-cols-3 md:grid-rows-2">
+          {benefits.map((f, i) => (
             <article
               key={f.title}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-sm hover:bg-white/[0.05] transition"
+              className={[
+                "group relative flex flex-col justify-between bg-white p-8 transition hover:bg-zinc-50 hover:shadow-[inset_0_0_0_2px_#D90429]",
+                i === 0 || i === 3 ? "md:col-span-2" : "",
+              ].join(" ")}
             >
-              <h3 className="text-lg font-semibold text-white">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                {f.copy}
-              </p>
+              <div>
+                <h3 className="font-jamino text-3xl uppercase text-black group-hover:text-street-red transition-colors">{f.title}</h3>
+                <p className="mt-4 max-w-sm text-black font-medium">
+                  {f.copy}
+                </p>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="mb-8 max-w-prose">
-          <h2 className="text-2xl font-bold md:text-3xl">How it works</h2>
-          <p className="mt-2 text-zinc-400">
-            Three simple steps to your first drop.
-          </p>
+      {/* HOW IT WORKS */}
+      <section id="how" className="mx-auto max-w-7xl px-6 py-32 border-b border-black">
+        <div className="mb-16">
+          <h2 className="font-jamino text-6xl uppercase text-black md:text-8xl">
+            How it works
+          </h2>
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
           {steps.map((s) => (
-            <div
-              key={s.n}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
-            >
-              <div className="mb-3 inline-grid size-10 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-sm font-bold text-white">
-                {s.n}
-              </div>
-              <h3 className="text-lg font-semibold">{s.t}</h3>
-              <p className="mt-2 text-zinc-400">{s.d}</p>
+            <div key={s.n} className="flex flex-col gap-4 border-l-2 border-black pl-6">
+              <span className="font-jamino text-6xl text-street-red">
+                0{s.n}
+              </span>
+              <h3 className="text-xl font-bold uppercase text-black">{s.t}</h3>
+              <p className="text-sm font-medium leading-relaxed text-black">{s.d}</p>
             </div>
           ))}
         </div>
@@ -347,39 +337,41 @@ export default function SaaSBlackLanding() {
         */}
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-7xl px-6 pb-24">
-        <h2 className="mb-6 text-2xl font-bold md:text-3xl">
-          Frequently asked questions
+      {/* FAQ */}
+      <section id="faq" className="mx-auto max-w-4xl px-6 py-32 border-b border-black">
+        <h2 className="mb-12 font-jamino text-5xl uppercase text-black text-center md:text-7xl">
+          FAQ
         </h2>
-        <div className="divide-y divide-white/10 rounded-2xl border border-white/10">
+        <div className="divide-y divide-black border-y border-black">
           {faqs.map((f) => (
-            <details key={f.q} className="group p-6 open:bg-white/[0.03]">
+            <details key={f.q} className="group py-8">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
-                <span className="text-sm font-medium text-white">{f.q}</span>
-                <span className="text-zinc-500 transition group-open:rotate-45">
+                <span className="text-xl font-bold text-black uppercase group-hover:text-street-red transition-colors">{f.q}</span>
+                <span className="text-street-red transition group-open:rotate-45 text-2xl">
                   +
                 </span>
               </summary>
-              <p className="mt-3 text-sm text-zinc-400">{f.a}</p>
+              <p className="mt-4 text-lg font-medium text-black">{f.a}</p>
             </details>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:flex-row md:items-center">
+      {/* CTA */}
+      <section className="mx-auto max-w-7xl px-6 py-32">
+        <div className="flex flex-col items-center justify-center gap-8 border-4 border-black bg-white p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
           <div>
-            <h2 className="text-xl font-bold md:text-2xl">
-              Ready to drop your first collection?
+            <h2 className="font-jamino text-5xl uppercase text-black md:text-7xl">
+              Ready to launch?
             </h2>
-            <p className="mt-1 text-zinc-400">
-              Design, submit for approval, and publish.
+            <p className="mt-4 text-xl font-bold text-black">
+              Join the new wave of creators.
             </p>
           </div>
           <a
             href="/auth/login"
-            className="rounded-full bg-zinc-50 px-5 py-3 text-sm font-semibold text-black hover:bg-zinc-200 transition"
+            className="bg-street-red px-10 py-5 text-lg font-bold uppercase tracking-widest text-white hover:bg-black transition"
           >
             Create free account
           </a>
@@ -387,63 +379,69 @@ export default function SaaSBlackLanding() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/10">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-6 py-10 md:grid-cols-4">
-          <div className="col-span-2 md:col-span-1">
-            <Logo size="md" color="white" fontClassName="font-[jamino]" />
-            <p className="mt-2 text-sm text-zinc-400">Design & sell.</p>
+      <footer className="border-t border-black bg-white">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-12 px-6 py-16 md:grid-cols-4">
+          <div className="col-span-2 md:col-span-1 text-black">
+            <Logo size="md" color="current" fontClassName="font-jamino" />
+            <p className="mt-4 text-sm font-bold text-black">
+              CottonBro handles the heavy lifting so you can focus on the art.
+            </p>
           </div>
           <div>
-            <div className="mb-2 text-sm font-semibold">Product</div>
-            <ul className="space-y-1 text-sm text-zinc-400">
+            <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">Product</div>
+            <ul className="space-y-2 text-sm font-medium text-black">
               <li>
-                <a href="#features" className="hover:text-zinc-200">
+                <a href="#features" className="hover:text-street-red transition-colors">
                   Features
                 </a>
               </li>
-
               <li>
-                <a href="#faq" className="hover:text-zinc-200">
+                <a href="#how" className="hover:text-street-red transition-colors">
+                  How it works
+                </a>
+              </li>
+              <li>
+                <a href="#faq" className="hover:text-street-red transition-colors">
                   FAQ
                 </a>
               </li>
             </ul>
           </div>
           <div>
-            <div className="mb-2 text-sm font-semibold">Company</div>
-            <ul className="space-y-1 text-sm text-zinc-400">
+            <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">Company</div>
+            <ul className="space-y-2 text-sm font-medium text-black">
               <li>
-                <a href="#" className="hover:text-zinc-200">
+                <a href="#" className="hover:text-street-red transition-colors">
                   About
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-zinc-200">
+                <a href="#" className="hover:text-street-red transition-colors">
                   Contact
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-zinc-200">
+                <a href="#" className="hover:text-street-red transition-colors">
                   Privacy
                 </a>
               </li>
             </ul>
           </div>
           <div>
-            <div className="mb-2 text-sm font-semibold">Stay in the loop</div>
-            <form className="flex gap-2">
+            <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">Newsletter</div>
+            <form className="flex flex-col gap-2">
               <input
                 type="email"
                 placeholder="Email address"
-                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm outline-none placeholder:text-zinc-500 focus:ring-2 focus:ring-white/10"
+                className="w-full border-2 border-black bg-white px-3 py-2 text-sm text-black outline-none placeholder:text-zinc-400 focus:border-street-red transition"
               />
-              <button className="rounded-lg bg-zinc-50 px-3 py-2 text-sm font-medium text-black hover:bg-zinc-200 transition">
-                Join
+              <button className="w-full bg-street-red px-3 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-black transition">
+                Subscribe
               </button>
             </form>
           </div>
         </div>
-        <div className="border-t border-white/10 py-6 text-center text-xs text-zinc-500">
+        <div className="border-t border-black py-8 text-center text-xs font-bold uppercase tracking-widest text-black">
           © {new Date().getFullYear()} CottonBro. All rights reserved.
         </div>
       </footer>

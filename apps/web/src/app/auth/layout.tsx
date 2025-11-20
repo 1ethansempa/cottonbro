@@ -22,7 +22,7 @@ export default function AuthLayout({
   return (
     <main
       className="min-h-screen w-full flex items-center justify-center 
-                 bg-[url('/auth-bg-3.png')] bg-cover bg-center"
+                 bg-white bg-cover bg-center"
     >
       {children}
     </main>

@@ -53,14 +53,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen w-full flex items-center justify-center px-6 py-12 bg-white text-black selection:bg-street-red selection:text-white">
       <div className="w-full max-w-md">
-        <div className="relative rounded-2xl bg-white shadow-xl p-6 md:p-8">
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+        <div className="relative bg-white border-2 border-black p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <div className="mb-8 text-center">
+            <h1 className="font-jamino text-4xl uppercase text-black">
               Authentication
             </h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-2 text-sm font-bold text-black uppercase tracking-widest">
               Sign in or create an account
             </p>
           </div>
@@ -70,16 +70,16 @@ export default function LoginPage() {
               type="button"
               onClick={onGoogle}
               disabled={busy}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer disabled:opacity-60"
+              className="w-full inline-flex items-center justify-center gap-3 border-2 border-black bg-white px-4 py-3 text-sm font-bold uppercase tracking-widest text-black hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer disabled:opacity-60"
             >
               <GoogleIcon />
               Continue with Google
             </button>
           </div>
 
-          <div className="relative my-6">
-            <div className="h-px w-full bg-gray-200" />
-            <span className="absolute inset-0 -top-3 mx-auto w-fit px-3 text-[11px] uppercase tracking-wider text-gray-500 bg-white">
+          <div className="relative my-8">
+            <div className="h-0.5 w-full bg-black" />
+            <span className="absolute inset-0 -top-3 mx-auto w-fit px-3 text-xs font-bold uppercase tracking-widest text-black bg-white">
               or
             </span>
           </div>
@@ -89,7 +89,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="email"
-                  className="mb-1 block text-sm text-gray-700"
+                  className="mb-1 block text-sm font-bold uppercase tracking-widest text-black"
                 >
                   Email
                 </label>
@@ -101,7 +101,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  className="w-full border-2 border-black bg-white px-3 py-2 text-sm font-medium text-black placeholder:text-zinc-400 outline-none focus:border-street-red transition"
                   placeholder="you@example.com"
                 />
               </div>
@@ -109,7 +109,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={!email || busy}
-                className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                className="mt-4 w-full bg-black text-white px-4 py-3 text-sm font-bold uppercase tracking-widest hover:bg-street-red focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 {busy ? "Sending…" : "Send code"}
               </button>
@@ -119,7 +119,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="code"
-                  className="mb-1 block text-sm text-gray-700"
+                  className="mb-1 block text-sm font-bold uppercase tracking-widest text-black"
                 >
                   6-digit code
                 </label>
@@ -132,7 +132,7 @@ export default function LoginPage() {
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  className="w-full tracking-widest text-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  className="w-full tracking-[1em] text-center border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black placeholder:text-zinc-400 outline-none focus:border-street-red transition"
                   placeholder="••••••"
                 />
               </div>
@@ -140,7 +140,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={code.length !== 6 || busy}
-                className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                className="mt-4 w-full bg-black text-white px-4 py-3 text-sm font-bold uppercase tracking-widest hover:bg-street-red focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 {busy ? "Verifying…" : "Confirm"}
               </button>
@@ -149,7 +149,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={onSend}
                 disabled={busy}
-                className="w-full text-sm text-gray-600 underline underline-offset-4 mt-2"
+                className="w-full text-sm font-bold uppercase tracking-widest text-zinc-500 underline underline-offset-4 mt-4 hover:text-black transition"
               >
                 Resend code
               </button>
@@ -157,7 +157,7 @@ export default function LoginPage() {
           )}
 
           {(status || error) && (
-            <p className="mt-4 text-center text-sm text-gray-600">
+            <p className="mt-4 text-center text-sm text-red-400">
               {status || error}
             </p>
           )}
