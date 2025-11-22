@@ -1,24 +1,16 @@
 "use client";
 import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
+import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function SaaSBlackLanding() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const nav = [
     { href: "#features", label: "Features" },
     { href: "#how", label: "How it works" },
     { href: "#pricing", label: "Pricing" },
     { href: "#faq", label: "FAQ" },
-  ];
-
-  const brands = [
-    "Axiom",
-    "Nimbus",
-    "Pulse",
-    "Voyage",
-    "Matter",
-    "North",
-    "Iris",
-    "Atlas",
   ];
 
   const benefits = [
@@ -131,6 +123,22 @@ export default function SaaSBlackLanding() {
     },
   ];
 
+  // Animation variants
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
   return (
     <div className="min-h-dvh bg-white text-black antialiased selection:bg-street-red selection:text-white">
       {/* NAV */}
@@ -152,7 +160,7 @@ export default function SaaSBlackLanding() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <a
               href="/auth/login"
               className="text-sm font-bold uppercase tracking-widest text-black hover:text-street-red transition"
@@ -161,34 +169,111 @@ export default function SaaSBlackLanding() {
             </a>
             <a
               href="/auth/login"
-              className="bg-street-red px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-black transition"
+              className="bg-black border-2 border-black px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
             >
               Create account
             </a>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="flex md:hidden flex-col gap-1.5 p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <div className={`h-0.5 w-6 bg-black transition-transform ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
+            <div className={`h-0.5 w-6 bg-black transition-opacity ${mobileMenuOpen ? "opacity-0" : ""}`} />
+            <div className={`h-0.5 w-6 bg-black transition-transform ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+          </button>
         </nav>
+
+        {/* Mobile Menu Overlay */}
+        <div
+          className={`fixed inset-0 z-[200] bg-white w-screen h-screen overflow-y-auto transition-opacity duration-300 md:hidden ${
+            mobileMenuOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <div className="flex flex-col h-full p-6">
+            <div className="flex justify-between items-center mb-8">
+              <Logo size="xl" color="current" fontClassName="font-jamino" />
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2"
+                aria-label="Close menu"
+              >
+                <svg
+                  className="w-8 h-8 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-6 items-center text-center">
+              {nav.map((n) => (
+                <a
+                  key={n.href}
+                  href={n.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-3xl font-jamino uppercase text-black hover:text-street-red transition-colors"
+                >
+                  {n.label}
+                </a>
+              ))}
+            </div>
+
+            <div className="mt-auto flex flex-col gap-4 pb-8">
+              <a
+                href="/auth/login"
+                className="text-xl font-bold uppercase tracking-widest text-black text-center hover:text-street-red transition"
+              >
+                Sign in
+              </a>
+              <a
+                href="/auth/login"
+                className="bg-black border-2 border-black px-6 py-4 text-center text-xl font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
+              >
+                Create account
+              </a>
+            </div>
+          </div>
+        </div>
       </header>
 
-      {/* HERO */}
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-black pt-12 pb-24 md:pt-32">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-6 md:grid-cols-2">
           {/* Left: text */}
-          <div className="flex flex-col items-start z-10 max-w-full">
-            <h1 className="font-jamino uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="flex flex-col items-start z-10 max-w-full"
+          >
+            <motion.h1 variants={fadeInUp} className="font-jamino uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full">
               Built for
               <br />
               <span className="text-street-red">Creators</span>
-            </h1>
-            <p className="mt-8 max-w-md text-lg font-medium leading-relaxed text-black">
+            </motion.h1>
+            <motion.p variants={fadeInUp} className="mt-8 max-w-md text-lg font-medium leading-relaxed text-black">
               Turn your ideas into real merch. You create; we handle printing,
               packing, delivery, and payouts — end to end.
-            </p>
+            </motion.p>
 
-            <div className="mt-12 flex flex-wrap items-center gap-6">
+            <motion.div variants={fadeInUp} className="mt-12 flex flex-wrap items-center gap-6">
               <a
                 href="/auth/login"
-                className="bg-black px-8 py-4 text-base font-bold uppercase tracking-widest text-white hover:bg-street-red transition"
+                className="bg-black border-2 border-black px-8 py-4 text-base font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
               >
                 Start free
               </a>
@@ -198,11 +283,17 @@ export default function SaaSBlackLanding() {
               >
                 View demo
               </a>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Right: image */}
-          <div className="relative">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
             <div className="relative aspect-[4/5] overflow-hidden border border-black bg-zinc-100">
               <img
                 src="/test-hero-4.png"
@@ -210,29 +301,44 @@ export default function SaaSBlackLanding() {
                 className="block h-full w-full object-cover grayscale hover:grayscale-0 transition duration-500"
               />
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* PARTNERS (unchanged, but surfaces adjusted if you enable) */}
-
-      {/* BENEFITS */}
       {/* BENEFITS */}
       <section id="features" className="mx-auto max-w-7xl px-6 py-32 border-b border-black">
         <div className="mb-16 md:mb-24">
-          <h2 className="font-jamino text-6xl uppercase text-black md:text-8xl">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="font-jamino text-6xl uppercase text-black md:text-8xl"
+          >
             The Studio
-          </h2>
-          <p className="mt-6 max-w-xl text-xl font-bold text-black">
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            viewport={{ once: true }}
+            className="mt-6 max-w-xl text-xl font-bold text-black"
+          >
             Everything you need to run a professional merch brand, minus the
             logistics headache.
-          </p>
+          </motion.p>
         </div>
         
-        <div className="grid grid-cols-1 gap-px bg-black border border-black md:grid-cols-3 md:grid-rows-2">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={staggerContainer}
+          className="grid grid-cols-1 gap-px bg-black border border-black md:grid-cols-3 md:grid-rows-2"
+        >
           {benefits.map((f, i) => (
-            <article
+            <motion.article
               key={f.title}
+              variants={fadeInUp}
               className={[
                 "group relative flex flex-col justify-between bg-white p-8 transition hover:bg-zinc-50 hover:shadow-[inset_0_0_0_2px_#D90429]",
                 i === 0 || i === 3 ? "md:col-span-2" : "",
@@ -244,63 +350,86 @@ export default function SaaSBlackLanding() {
                   {f.copy}
                 </p>
               </div>
-            </article>
+            </motion.article>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* HOW IT WORKS */}
-      {/* HOW IT WORKS */}
       <section id="how" className="mx-auto max-w-7xl px-6 py-32 border-b border-black">
         <div className="mb-16">
-          <h2 className="font-jamino text-6xl uppercase text-black md:text-8xl">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="font-jamino text-6xl uppercase text-black md:text-8xl"
+          >
             How it works
-          </h2>
+          </motion.h2>
         </div>
         
         <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
-          {steps.map((s) => (
-            <div key={s.n} className="flex flex-col gap-4 border-l-2 border-black pl-6">
+          {steps.map((s, i) => (
+            <motion.div 
+              key={s.n} 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              viewport={{ once: true }}
+              className="flex flex-col gap-4 border-l-2 border-black pl-6"
+            >
               <span className="font-jamino text-6xl text-street-red">
                 0{s.n}
               </span>
               <h3 className="text-xl font-bold uppercase text-black">{s.t}</h3>
               <p className="text-sm font-medium leading-relaxed text-black">{s.d}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* PRICING + TESTIMONIALS */}
-      {/*
-           <section id="pricing" className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="mb-10 text-center">
-          <h2 className="text-3xl font-bold md:text-4xl">Pricing</h2>
-          <p className="mt-2 text-zinc-400">
-            Clear plans with creator-friendly fees. Highlighted plan fits most
-            teams.
+      <section id="pricing" className="mx-auto max-w-7xl px-6 py-32 border-b border-black">
+        <div className="mb-16 text-center">
+          <motion.h2 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="font-jamino text-6xl uppercase text-black md:text-8xl"
+          >
+            Pricing
+          </motion.h2>
+          <p className="mt-6 text-xl font-bold text-black">
+            Clear plans with creator-friendly fees.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {plans.map((p) => (
-            <div
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 items-start">
+          {plans.map((p, i) => (
+            <motion.div
               key={p.name}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              viewport={{ once: true }}
               className={[
-                "flex flex-col rounded-2xl border p-6",
+                "flex flex-col border-2 border-black p-8 transition duration-300",
                 p.highlight
-                  ? "border-white/10 bg-white/[0.04] shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_60px_-20px_rgba(0,0,0,0.6)]"
-                  : "border-white/10 bg-white/[0.03]",
+                  ? "bg-black text-white shadow-[8px_8px_0px_0px_#D90429] -translate-y-4"
+                  : "bg-white text-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
               ].join(" ")}
             >
-              <h3 className="mb-1 text-base font-semibold">{p.name}</h3>
-              <div className="mb-4 flex items-end gap-1">
-                <span className="text-3xl font-extrabold">{p.price}</span>
-                <span className="pb-1 text-sm text-zinc-400">{p.period}</span>
+              <h3 className="mb-2 text-xl font-bold uppercase tracking-widest">{p.name}</h3>
+              <div className="mb-6 flex items-end gap-1">
+                <span className="text-5xl font-jamino">{p.price}</span>
+                <span className={[
+                    "pb-1 text-sm font-medium",
+                    p.highlight ? "text-zinc-400" : "text-zinc-500"
+                ].join(" ")}>{p.period}</span>
               </div>
-              <ul className="mb-6 space-y-2 text-sm text-zinc-300">
+              <ul className="mb-8 space-y-4 text-sm font-medium">
                 {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <span aria-hidden>•</span>
+                  <li key={f} className="flex items-start gap-3">
+                    <span className="text-street-red font-bold">✓</span>
                     <span>{f}</span>
                   </li>
                 ))}
@@ -308,35 +437,43 @@ export default function SaaSBlackLanding() {
               <a
                 href="#signup"
                 className={[
-                  "mt-auto rounded-full px-4 py-2 text-center text-sm font-medium transition",
+                  "mt-auto px-6 py-3 text-center text-sm font-bold uppercase tracking-widest transition border-2",
                   p.highlight
-                    ? "bg-zinc-50 text-black hover:bg-zinc-200"
-                    : "border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-zinc-200",
+                    ? "bg-street-red border-street-red text-white hover:bg-white hover:text-street-red"
+                    : "border-black bg-transparent hover:bg-black hover:text-white",
                 ].join(" ")}
               >
                 {p.cta}
               </a>
-            </div>
+            </motion.div>
           ))}
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {testimonials.map((t) => (
-            <figure
-              key={t.name}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
-            >
-              <blockquote className="text-zinc-300">“{t.body}”</blockquote>
-              <figcaption className="mt-4 text-sm text-zinc-400">
-                {t.name} • {t.role}
-              </figcaption>
-            </figure>
-          ))}
+        <div className="mt-32">
+            <h3 className="mb-12 text-center font-jamino text-4xl uppercase text-black md:text-5xl">Loved by people worldwide</h3>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {testimonials.map((t, i) => (
+                <motion.figure
+                  key={t.name}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="border-2 border-black bg-white p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                >
+                <div className="flex gap-1 text-street-red mb-4">
+                    {[1,2,3,4,5].map(i => <span key={i}>★</span>)}
+                </div>
+                <blockquote className="text-lg font-medium text-black">“{t.body}”</blockquote>
+                <figcaption className="mt-6 text-sm font-bold uppercase tracking-widest text-zinc-500">
+                    {t.name} — {t.role}
+                </figcaption>
+                </motion.figure>
+            ))}
+            </div>
         </div>
       </section>
-        */}
 
-      {/* FAQ */}
       {/* FAQ */}
       <section id="faq" className="mx-auto max-w-4xl px-6 py-32 border-b border-black">
         <h2 className="mb-12 font-jamino text-5xl uppercase text-black text-center md:text-7xl">
@@ -351,16 +488,26 @@ export default function SaaSBlackLanding() {
                   +
                 </span>
               </summary>
-              <p className="mt-4 text-lg font-medium text-black">{f.a}</p>
+              <motion.p 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                className="mt-4 text-lg font-medium text-black"
+              >
+                {f.a}
+              </motion.p>
             </details>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      {/* CTA */}
       <section className="mx-auto max-w-7xl px-6 py-32">
-        <div className="flex flex-col items-center justify-center gap-8 border-4 border-black bg-white p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex flex-col items-center justify-center gap-8 border-4 border-black bg-white p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+        >
           <div>
             <h2 className="font-jamino text-5xl uppercase text-black md:text-7xl">
               Ready to launch?
@@ -371,16 +518,16 @@ export default function SaaSBlackLanding() {
           </div>
           <a
             href="/auth/login"
-            className="bg-street-red px-10 py-5 text-lg font-bold uppercase tracking-widest text-white hover:bg-black transition"
+            className="bg-black border-2 border-black px-10 py-5 text-lg font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
           >
             Create free account
           </a>
-        </div>
+        </motion.div>
       </section>
 
       {/* FOOTER */}
       <footer className="border-t border-black bg-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-12 px-6 py-16 md:grid-cols-4">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 py-16 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1 text-black">
             <Logo size="md" color="current" fontClassName="font-jamino" />
             <p className="mt-4 text-sm font-bold text-black">
@@ -435,7 +582,7 @@ export default function SaaSBlackLanding() {
                 placeholder="Email address"
                 className="w-full border-2 border-black bg-white px-3 py-2 text-sm text-black outline-none placeholder:text-zinc-400 focus:border-street-red transition"
               />
-              <button className="w-full bg-street-red px-3 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-black transition">
+              <button className="w-full bg-black border-2 border-black px-3 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition">
                 Subscribe
               </button>
             </form>
