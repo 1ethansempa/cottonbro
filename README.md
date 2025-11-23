@@ -5,5 +5,5 @@ This will enable users(creators) create merch. This ranges from shirts, beenies,
 ## Commands
 
 - pnpm --filter @cottonbro/web dev
-- pnpm --filter @cottonbro/api
+- pnpm --filter @cottonbro/api dev
 - pnpm --filter @cottonbro/ui build

@@ -24,7 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`min-h-screen bg-white ${montserrat.variable} ${urbanist.variable}`}>
+      <body className={`min-h-screen bg-white ${montserrat.variable} ${urbanist.variable}`} suppressHydrationWarning>
         <WebAuthProvider>{children}</WebAuthProvider>
       </body>
     </html>

@@ -12,6 +12,7 @@
   "dependencies": {
     "@cottonbro/contracts": "workspace:*",
     "@cottonbro/utils": "workspace:*",
+    "dotenv": "^17.2.3",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/microservices": "^11.1.6",
