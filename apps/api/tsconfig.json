@@ -1,8 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "target": "ES2022",
     "outDir": "dist",
     "rootDir": "src",
@@ -11,10 +11,14 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@cottonbro/contracts": ["../../packages/contracts/src"],
-      "@cottonbro/utils": ["../../packages/utils/src"]
+      "@cottonbro/contracts": ["../../packages/core/contracts/src"],
+      "@cottonbro/utils": ["../../packages/core/utils/src"]
     },
-    "types": ["node", "aws-lambda"]
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*"]
 }

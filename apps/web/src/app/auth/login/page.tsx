@@ -1,136 +1,175 @@
 "use client";
 
-import React, { useState } from "react";
-import GoogleIcon from "../../../components/google-icon";
-import { clientAuth } from "@/lib/firebase-client";
-import {
-  sendSignInLinkToEmail,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-
-const CONTINUE_URL = process.env.NEXT_PUBLIC_EMAIL_LINK_CONTINUE_URL!;
+import * as React from "react";
+import { useAuth } from "@cottonbro/auth-react";
+import { Button, Input, GoogleButton } from "@cottonbro/ui";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const { requestOtp, confirmOtp, googleSignIn, busy, error } = useAuth();
 
-  async function sendMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
-    setBusy(true);
-    setStatus(null);
-    try {
-      await sendSignInLinkToEmail(clientAuth, email.trim(), {
-        url: CONTINUE_URL,
-        handleCodeInApp: true,
-      });
+  const [email, setEmail] = React.useState("");
+  const [code, setCode] = React.useState("");
+  const [sent, setSent] = React.useState(false);
+  const [status, setStatus] = React.useState<string | null>(null);
 
-      window.localStorage.setItem("cb.emailForSignIn", email.trim());
-      setStatus("Link sent. Check your inbox.");
-    } catch (err) {
-      console.error(err);
-      setStatus("Could not send link. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const redirect =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("redirect") || "/"
+      : "/";
 
   async function onGoogle() {
-    setBusy(true);
     setStatus(null);
     try {
-      const provider = new GoogleAuthProvider();
-      const cred = await signInWithPopup(clientAuth, provider);
-      const idToken = await cred.user.getIdToken();
-
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ idToken }),
-      });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || "Failed to establish session");
-      }
-      window.location.replace("/");
-    } catch (err) {
-      console.error("Google sign-in failed:", err);
+      await googleSignIn();
+      window.location.replace(redirect);
+    } catch (e) {
       setStatus("Google sign-in failed. Please try again.");
-    } finally {
-      setBusy(false);
     }
   }
 
-  const canSend = !!email && !busy;
+  async function onSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus(null);
+    try {
+      await requestOtp(email.trim());
+      setSent(true);
+      setStatus("Code sent. Check your inbox.");
+    } catch {
+      setStatus("Could not send code. Please try again.");
+    }
+  }
+
+  async function onConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || code.length !== 6) return;
+    setStatus(null);
+    try {
+      await confirmOtp(email.trim(), code.trim());
+      window.location.replace(redirect);
+    } catch {
+      setStatus("Invalid code. Please try again.");
+    }
+  }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md">
-        <div className="relative rounded-2xl bg-white shadow-xl p-6 md:p-8">
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              Authentication
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Sign in or create an account
-            </p>
-          </div>
+    <div className="w-full max-w-5xl mx-auto px-6 py-12 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-start">
+      {/* LEFT COLUMN: SIGN IN */}
+      <div className="w-full max-w-md mx-auto md:mx-0">
+        <h1 className="font-jamino text-5xl md:text-7xl uppercase text-black mb-8 md:mb-12 tracking-tight">
+          Sign In
+        </h1>
 
-          <div className="mb-6">
-            <button
-              type="button"
-              onClick={onGoogle}
-              disabled={busy}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer disabled:opacity-60"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-          </div>
+        {/* Google button */}
+        <div className="mb-8">
+          <GoogleButton
+            onClick={onGoogle}
+            disabled={busy}
+          />
+        </div>
 
-          <div className="relative my-6">
-            <div className="h-px w-full bg-gray-200" />
-            <span className="absolute inset-0 -top-3 mx-auto w-fit px-3 text-[11px] uppercase tracking-wider text-gray-500 bg-white">
-              or
-            </span>
+        {/* Divider */}
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t-2 border-black/10"></div>
           </div>
+          <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest">
+            <span className="bg-white px-4 text-zinc-500">Or using email</span>
+          </div>
+        </div>
 
-          <form onSubmit={sendMagicLink} className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-1 block text-sm text-gray-700"
+        {/* Forms */}
+        <div>
+          {!sent ? (
+            <form onSubmit={onSend} className="space-y-6">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
+                >
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="YOU@EXAMPLE.COM"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={!email || busy}
+                className="w-full"
               >
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black focus:border-black"
-                placeholder="you@example.com"
-              />
-            </div>
+                {busy ? "Sending…" : "Sign In"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={onConfirm} className="space-y-6">
+              <div>
+                <label
+                  htmlFor="code"
+                  className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
+                >
+                  Enter 6-digit code
+                </label>
+                <Input
+                  id="code"
+                  name="code"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  className="tracking-[0.5em] text-center text-xl font-bold"
+                  placeholder="••••••"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={!canSend}
-              className="mt-2 w-full rounded-lg bg-gray-950/90 text-white px-4 py-2.5 text-sm font-semibold tracking-wide hover:bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {busy ? "Sending Link…" : "Continue with Email"}
-            </button>
-          </form>
+              <Button
+                type="submit"
+                disabled={code.length !== 6 || busy}
+                className="w-full"
+              >
+                {busy ? "Verifying…" : "Confirm Code"}
+              </Button>
 
-          {status && (
-            <p className="mt-4 text-center text-sm text-gray-600">{status}</p>
+              <button
+                type="button"
+                onClick={onSend}
+                disabled={busy}
+                className="w-full text-xs font-bold uppercase tracking-widest text-zinc-500 underline underline-offset-4 hover:text-black transition disabled:opacity-60 text-center block"
+              >
+                Resend code
+              </button>
+            </form>
           )}
+        </div>
+
+        {(status || error) && (
+          <p className="mt-6 text-center text-sm font-bold text-red-600 uppercase tracking-wide">
+            {status || error}
+          </p>
+        )}
+      </div>
+
+      {/* RIGHT COLUMN: INFO SNIPPET */}
+      <div className="hidden md:block w-full max-w-md mx-auto md:mx-0 pt-8 md:pt-24">
+        <div className="p-8 border-2 border-black bg-zinc-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <p className="font-bold uppercase tracking-wide text-sm mb-4 text-black">
+            New to Cotton Bro?
+          </p>
+          <p className="text-base font-medium text-zinc-600 mb-6 leading-relaxed">
+            Use the form on the left. We&apos;ll create an account for you
+            automatically if you don&apos;t have one.
+          </p>
+          <div className="h-1 w-12 bg-street-red" />
         </div>
       </div>
     </div>

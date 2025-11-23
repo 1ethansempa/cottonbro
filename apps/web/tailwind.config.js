@@ -4,6 +4,8 @@ module.exports = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../packages/frontend/ui/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -14,6 +16,7 @@ module.exports = {
         cream: "#F6F0E6", // paper surfaces
         bone: "#EDE6DA", // lines on cream
         slatey: "#A6A6A6", // muted copy on dark
+        "street-red": "#D90429", // streetwear accent
       },
       boxShadow: {
         subtle:
@@ -28,6 +31,9 @@ module.exports = {
       letterSpacing: {
         tightish: "-0.01em",
         label: "0.14em",
+      },
+      fontFamily: {
+        urbanist: ["var(--font-urbanist)"],
       },
     },
   },

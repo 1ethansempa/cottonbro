@@ -1,270 +1,395 @@
 "use client";
 
-import React from "react";
+import { Button } from "@cottonbro/ui";
+import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
-export default function ModernHome() {
-  const sampleProducts = [
+// --- 3D Components ---
+
+export default function SaaSBlackLanding() {
+  const benefits = [
     {
-      id: "cottonbro-tee-white",
-      name: "CottonBro Tee — White",
-      price: "$29.99",
-      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Tee+White",
+      title: "Launch with confidence",
+      copy: "Upload your design, pick a product, and publish once your design is approved.",
     },
     {
-      id: "cottonbro-hoodie-ivory",
-      name: "CottonBro Hoodie — Ivory",
-      price: "$59.99",
-      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Hoodie+Ivory",
+      title: "Zero ops",
+      copy: "We handle printing, packing, shipping, returns, and customer support behind the scenes.",
     },
     {
-      id: "cottonbro-crop-top-sand",
-      name: "CottonBro Crop Top — Sand",
-      price: "$34.99",
-      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Crop+Top+Sand",
+      title: "Transparent earnings",
+      copy: "Set your price and see your margin per item before going live.",
     },
     {
-      id: "cottonbro-beanie-navy",
-      name: "CottonBro Beanie — Navy",
-      price: "$19.99",
-      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Beanie+Navy",
+      title: "3D previews",
+      copy: "Realistic photo and 3D previews so you can sanity-check before launch.",
     },
+    { title: "Delivery around Kampala", copy: "Coverage across 40+ areas." },
     {
-      id: "cottonbro-tank-emerald",
-      name: "CottonBro Tank — Emerald",
-      price: "$24.99",
-      imageUrl: "https://placehold.co/400x400.png?text=CottonBro+Tank+Emerald",
-    },
-    {
-      id: "cottonbro-sweatshirt-cream",
-      name: "CottonBro Sweatshirt — Cream",
-      price: "$49.99",
-      imageUrl:
-        "https://placehold.co/400x400.png?text=CottonBro+Sweatshirt+Cream",
+      title: "Simple payouts",
+      copy: "Connect your account and get paid automatically every week.",
     },
   ];
 
+  const steps = [
+    {
+      n: 1,
+      t: "Create",
+      d: "Start with a template or upload artwork. Pick colors, sizes, variants.",
+    },
+    { n: 2, t: "Preview", d: "Review photo & 3D mockups and confirm quality." },
+    {
+      n: 3,
+      t: "Approval",
+      d: "Submit your design for a final check before publishing.",
+    },
+    {
+      n: 4,
+      t: "Publish",
+      d: "Share a store link. We fulfill and you get paid.",
+    },
+  ];
+
+  const testimonials = [
+    {
+      name: "Nia K.",
+      role: "Artist",
+      body: "Launched a capsule in a weekend. The previews looked exactly like the final pieces.",
+      rotate: -2,
+    },
+    {
+      name: "Tendo M.",
+      role: "Creator",
+      body: "No logistics, just design. Payouts arrive weekly without me touching anything.",
+      rotate: 1,
+    },
+    {
+      name: "Jonas O.",
+      role: "Brand lead",
+      body: "We swapped from spreadsheets to a single link. Conversion went up 18%.",
+      rotate: -1,
+    },
+  ];
+
+  const faqs = [
+    {
+      q: "Do I need to buy inventory?",
+      a: "No. We print on demand after a customer orders, so there’s no upfront stock.",
+    },
+    {
+      q: "Where do you deliver?",
+      a: "We currently deliver all around Kampala.",
+    },
+    {
+      q: "How do payouts work?",
+      a: "Connect your account once. Earnings are paid out automatically every week.",
+    },
+  ];
+
+  // Scroll animations
+  const { scrollY } = useScroll();
+  const heroParallax = useTransform(scrollY, [0, 1000], [0, 150]); // Subtle parallax for background
+
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-neutral-950 text-neutral-100">
-      <div
-        className="absolute inset-0 -z-10 bg-[radial-gradient(1000px_600px_at_25%_0%,rgba(120,119,198,0.18),transparent_70%),radial-gradient(900px_600px_at_80%_20%,rgba(56,189,248,0.15),transparent_70%)]"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute -top-40 left-1/2 -translate-x-1/2 h-[28rem] w-[28rem] rounded-full bg-[conic-gradient(from_180deg_at_50%_50%,#5eead4,#818cf8,#ec4899,#fbbf24,#5eead4)] opacity-30 blur-3xl"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-0 -z-10 bg-black/40 backdrop-blur-[2px]"
-        aria-hidden="true"
-      />
+    <div className="min-h-dvh bg-black overflow-x-hidden">
+      {/* 
+        Mobile Nav Depth Effect:
+        We wrap the main content in a motion.div that scales down when the menu is open.
+      */}
+      <motion.div className="bg-white min-h-dvh text-black antialiased selection:bg-street-red selection:text-white origin-top shadow-2xl">
+        {/* NAV */}
+        <SiteHeader />
 
-      <section className="mx-auto max-w-screen-xl px-6 pb-32 pt-40 text-center">
-        <h1 className="mx-auto max-w-4xl bg-gradient-to-r from-emerald-300 via-sky-400 to-purple-500 bg-clip-text text-5xl font-extrabold leading-tight tracking-tight text-transparent md:text-7xl">
-          Design merch. We handle everything else.
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-neutral-400">
-          Create custom t‑shirts, hoodies, beanies and more. Set your price and
-          share a link—our platform takes care of printing, sales and delivery.
-        </p>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <a
-            href="#signup"
-            className="rounded-full bg-gradient-to-r from-white to-neutral-200 px-7 py-3 text-base font-bold text-black shadow transition-transform duration-300 hover:scale-105 hover:shadow-lg"
+        {/* HERO */}
+        <section className="relative overflow-hidden border-b border-black pt-12 pb-24 md:pt-32">
+          {/* Subtle Parallax Background */}
+          <motion.div
+            style={{ y: heroParallax }}
+            className="absolute inset-0 pointer-events-none opacity-[0.03] z-0"
           >
-            Create Product →
-          </a>
-          <a
-            href="#live-demo"
-            className="rounded-full border border-white/20 bg-white/5 px-7 py-3 text-base font-bold text-neutral-100 transition-colors duration-300 hover:bg-white/10"
-          >
-            View Shop
-          </a>
-        </div>
-        <div className="pointer-events-none mt-16">
-          <img
-            src="/hero.png"
-            alt="CottonBro hero visual"
-            className="mx-auto w-full max-w-4xl rounded-3xl border border-white/10 bg-white/5 object-cover shadow-xl"
-          />
-        </div>
-      </section>
+            <div className="absolute top-20 left-20 w-64 h-64 bg-black rounded-full blur-3xl" />
+            <div className="absolute bottom-20 right-20 w-96 h-96 bg-street-red rounded-full blur-3xl" />
+          </motion.div>
 
-      <section id="shop" className="mx-auto max-w-screen-xl px-6 pb-24">
-        <div className="relative mb-14 overflow-hidden rounded-3xl shadow-lg">
-          <img
-            src="/shop-hero.png"
-            alt="Shop hero"
-            className="h-72 w-full object-cover md:h-96"
-          />
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
-            <h2 className="text-3xl font-bold md:text-5xl">
-              New Drop Incoming
-            </h2>
-            <a
-              href="#collection"
-              className="mt-4 rounded-full bg-gradient-to-r from-emerald-300 via-sky-400 to-purple-500 px-6 py-3 text-base font-semibold text-black shadow transition-transform duration-300 hover:scale-105 hover:shadow-lg"
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 md:grid-cols-2 relative z-10">
+            {/* Left: text */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex flex-col items-start z-10 max-w-full"
             >
-              Explore the Drop
-            </a>
+              <h1 className="font-urbanist uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full">
+                Built for
+                <br />
+                <span className="text-street-red flex">Creators</span>
+              </h1>
+              <p className="mt-8 max-w-md text-lg font-medium leading-relaxed text-black">
+                Turn your ideas into real merch. You create; we handle printing,
+                packing, delivery, and payouts — end to end.
+              </p>
+
+              <div className="mt-12 flex flex-wrap items-center gap-6">
+                <Link href="/auth/login">
+                  <Button className="px-8 py-4 text-base">Start free</Button>
+                </Link>
+                <a
+                  href="#demo"
+                  className="border-b-2 border-black pb-1 text-base font-bold uppercase tracking-widest text-black hover:text-street-red hover:border-street-red transition"
+                >
+                  View demo
+                </a>
+              </div>
+            </motion.div>
+
+            {/* Right: Flat Image Stack */}
+            <div className="relative">
+              <div className="relative z-10 cursor-pointer group">
+                {/* Card Stack Effect */}
+                <div className="absolute -inset-4 bg-black/5 border border-black/10 rounded-sm" />
+                <div className="absolute -inset-2 bg-black/10 border border-black/20 rounded-sm" />
+
+                <div className="relative aspect-[4/5] overflow-hidden border-2 border-black bg-zinc-100 shadow-2xl">
+                  <img
+                    src="/test-hero-5.png"
+                    alt="CottonBro preview"
+                    className="block h-full w-full object-cover grayscale group-hover:grayscale-0 transition duration-500"
+                  />
+                  {/* Shine effect on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none mix-blend-overlay" />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div
-          id="collection"
-          className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+        {/* BENEFITS ("The Studio") */}
+        <section
+          id="features"
+          className="mx-auto max-w-7xl px-6 py-32 border-b border-black"
         >
-          {sampleProducts.map((product) => (
-            <div
-              key={product.id}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-md transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="aspect-square overflow-hidden">
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 group-hover:rotate-1"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-white">
-                  {product.name}
-                </h3>
-                <p className="mt-1 text-neutral-400">{product.price}</p>
-              </div>
-              <a
-                href={`/product/${product.id}`}
-                className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10"
-                aria-label={`View ${product.name}`}
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="features" className="mx-auto max-w-screen-xl px-6 pb-24">
-        <div className="mb-14 text-center">
-          <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
-            Everything you need to launch your merch brand
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-neutral-400">
-            From design to delivery — CottonBro handles the hard parts so you
-            can focus on your creativity.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {[
-            {
-              title: "Design your merch",
-              copy: "Create and customize shirts, hoodies, crop tops and more with your own assets and branding.",
-            },
-            {
-              title: "3D fit preview",
-              copy: "See your designs come to life on realistic models across sizes and styles.",
-            },
-            {
-              title: "Publish your link",
-              copy: "Share a private proof or a public store link — let your fans order instantly.",
-            },
-            {
-              title: "Sell and earn",
-              copy: "Set your prices and get paid automatically for every sale.",
-            },
-            {
-              title: "We handle fulfillment",
-              copy: "We print, pack and ship — so you can focus on your brand.",
-            },
-            {
-              title: "Track your success",
-              copy: "Monitor sales and payouts from your dashboard in real time.",
-            },
-          ].map((f, i) => (
-            <article
-              key={f.title}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-white/10"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-300 via-sky-400 to-purple-500 text-base font-bold text-black shadow-inner">
-                  {i + 1}
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white">
-                    {f.title}
-                  </h3>
-                  <p className="mt-1 text-neutral-400 leading-relaxed">
-                    {f.copy}
-                  </p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="workflow" className="mx-auto max-w-screen-xl px-6 pb-24">
-        <h2 className="text-3xl font-extrabold md:text-4xl">How it works</h2>
-        <p className="mt-2 max-w-prose text-neutral-300">
-          From idea to income in five steps.
-        </p>
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-5">
-          {[
-            {
-              n: "1",
-              t: "Create",
-              d: "Design and customize your merch directly in the editor.",
-            },
-            {
-              n: "2",
-              t: "Preview",
-              d: "See your product on a realistic 3D model in any size.",
-            },
-            {
-              n: "3",
-              t: "Publish",
-              d: "Make your product live with a shareable private or public link.",
-            },
-            {
-              n: "4",
-              t: "Sell",
-              d: "Fans browse, select size and purchase directly through your page.",
-            },
-            {
-              n: "5",
-              t: "Get Paid",
-              d: "We print, pack, ship and send your earnings automatically.",
-            },
-          ].map((step) => (
-            <div
-              key={step.n}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5 text-left shadow transition-all duration-300 hover:-translate-y-1 hover:bg-white/10"
-            >
-              <div className="mb-3 inline-grid size-10 place-items-center rounded-full border border-white/10 bg-gradient-to-br from-emerald-300 via-sky-400 to-purple-500 text-lg font-extrabold text-black shadow-inner">
-                {step.n}
-              </div>
-              <h3 className="text-lg font-bold">{step.t}</h3>
-              <p className="mt-1 text-neutral-300">{step.d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="publish" className="mx-auto max-w-screen-xl px-6 pb-24">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-white/10 bg-gradient-to-b from-white/10 via-white/5 to-transparent p-6 shadow md:flex-row md:items-center">
-          <div>
-            <h2 className="text-2xl font-extrabold md:text-3xl">
-              Start creating. Start selling.
+          <div className="mb-16 md:mb-24">
+            <h2 className="font-jamino text-6xl uppercase text-black md:text-8xl">
+              The Studio
             </h2>
-            <p className="mt-1 text-neutral-300">
-              Launch your first merch collection today — we’ll handle the rest.
+            <p className="mt-6 max-w-xl text-xl font-bold text-black">
+              Everything you need to run a professional merch brand, minus the
+              logistics headache.
             </p>
           </div>
-          <a
-            href="#signup"
-            className="rounded-full bg-gradient-to-r from-emerald-300 via-sky-400 to-purple-500 px-6 py-3 text-base font-bold text-black shadow transition-transform duration-300 hover:scale-105 hover:shadow-lg"
-          >
-            Create free account
-          </a>
-        </div>
-      </section>
+
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:grid-rows-2">
+            {benefits.map((f, i) => (
+              <motion.div
+                key={f.title}
+                className={[
+                  "group relative flex flex-col justify-between bg-white p-8 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+                  i === 0 || i === 3 ? "md:col-span-2" : "",
+                ].join(" ")}
+                whileHover={{
+                  y: -4,
+                  boxShadow: "8px 8px 0px 0px rgba(0,0,0,1)",
+                }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="h-full flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-marcellus font-semibold text-3xl uppercase text-black group-hover:text-street-red transition-colors">
+                      {f.title}
+                    </h3>
+                    <p className="mt-4 max-w-sm text-black font-medium">
+                      {f.copy}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* HOW IT WORKS */}
+        <section
+          id="how"
+          className="mx-auto max-w-7xl px-6 py-32 border-b border-black"
+        >
+          <div className="mb-16">
+            <h2 className="font-jamino text-6xl uppercase text-black md:text-8xl">
+              How it works
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
+            {steps.map((s, i) => (
+              <motion.div
+                key={s.n}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15, duration: 0.6, ease: "backOut" }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="flex flex-col gap-4 border-l-2 border-black pl-6 group"
+              >
+                {/* Embossed Number Effect */}
+                <span
+                  className="font-jamino text-6xl text-street-red transition-transform duration-300 group-hover:-translate-y-2 group-hover:scale-110"
+                  style={{ textShadow: "2px 2px 0px rgba(0,0,0,0.1)" }}
+                >
+                  0{s.n}
+                </span>
+                <h3 className="text-xl font-bold uppercase text-black">
+                  {s.t}
+                </h3>
+                <p className="text-sm font-medium leading-relaxed text-black">
+                  {s.d}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* PRICING */}
+        <section
+          id="pricing"
+          className="mx-auto max-w-7xl px-6 py-32 border-b border-black"
+        >
+          <div className="mb-16 text-center">
+            <h2 className="font-jamino text-6xl uppercase text-black md:text-8xl">
+              Pricing
+            </h2>
+            <p className="mt-6 text-xl font-bold text-black">
+              Clear plans with creator-friendly fees.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <div className="w-full max-w-2xl">
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="flex flex-col items-center border-4 border-black bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"
+              >
+                <h3 className="mb-6 font-urbanist text-4xl uppercase text-black md:text-5xl">
+                  Transparent Pricing
+                </h3>
+                <div className="mb-8 flex flex-col items-center gap-2">
+                  <span className="text-6xl font-urbanist text-street-red">
+                    UGX 10k
+                  </span>
+                  <span className="text-xl font-bold uppercase tracking-widest text-black">
+                    per sale
+                  </span>
+                </div>
+                <div className="mb-8 h-px w-24 bg-black/20" />
+                <p className="text-xl font-bold text-black">
+                  + 5% payment processing fee
+                </p>
+                <p className="mt-4 text-sm font-medium text-zinc-500 max-w-md">
+                  No monthly fees. No hidden costs. You only pay when you make a
+                  sale.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* TESTIMONIALS (Polaroid Effect) */}
+          <div className="mt-32">
+            <h3 className="mb-12 text-center font-jamino text-4xl uppercase text-black md:text-5xl">
+              Loved by creators
+            </h3>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              {testimonials.map((t, i) => (
+                <motion.figure
+                  key={t.name}
+                  initial={{ opacity: 0, rotate: t.rotate }}
+                  whileInView={{ opacity: 1 }}
+                  whileHover={{
+                    rotate: 0,
+                    scale: 1.05,
+                    zIndex: 10,
+                    boxShadow: "0px 20px 40px rgba(0,0,0,0.2)",
+                  }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  viewport={{ once: true }}
+                  className="border-2 border-black bg-white p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] origin-center cursor-default"
+                >
+                  <div className="flex gap-1 text-street-red mb-4">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star}>★</span>
+                    ))}
+                  </div>
+                  <blockquote className="text-lg font-medium text-black">
+                    “{t.body}”
+                  </blockquote>
+                  <figcaption className="mt-6 text-sm font-bold uppercase tracking-widest text-zinc-500">
+                    {t.name} — {t.role}
+                  </figcaption>
+                </motion.figure>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section
+          id="faq"
+          className="mx-auto max-w-4xl px-6 py-32 border-b border-black"
+        >
+          <h2 className="mb-12 font-jamino text-5xl uppercase text-black text-center md:text-7xl">
+            FAQ
+          </h2>
+          <div className="divide-y divide-black border-y border-black">
+            {faqs.map((f) => (
+              <details key={f.q} className="group py-8">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
+                  <span className="text-xl font-bold text-black uppercase group-hover:text-street-red transition-colors">
+                    {f.q}
+                  </span>
+                  <span className="text-street-red transition group-open:rotate-45 text-2xl">
+                    +
+                  </span>
+                </summary>
+                <motion.p
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  className="mt-4 text-lg font-medium text-black"
+                >
+                  {f.a}
+                </motion.p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA (3D Slab) */}
+        <section className="mx-auto max-w-7xl px-6 py-32">
+          <div className="w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="flex flex-col items-center justify-center gap-8 border-4 border-black bg-white p-12 text-center shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]"
+            >
+              <div>
+                <h2 className="font-jamino text-5xl uppercase text-black md:text-7xl">
+                  Ready to launch?
+                </h2>
+                <p className="mt-4 text-xl font-bold text-black">
+                  Join the new wave of creators.
+                </p>
+              </div>
+              <Link href="/auth/login">
+                <Button className="px-10 py-5 text-lg">
+                  Create free account
+                </Button>
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <SiteFooter />
+      </motion.div>
     </div>
   );
 }
