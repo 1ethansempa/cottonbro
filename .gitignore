@@ -18,6 +18,7 @@ out/
 # Env files
 .env
 .env*.local
+apps/api/firebase-admin*.json
 
 # Logs
 npm-debug.log*
@@ -42,5 +43,4 @@ cdk.context.json
 # AWS SAM / Serverless (if used later)
 .aws-sam/
 .serverless/
-
 

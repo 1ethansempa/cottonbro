@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
-import { useSession } from "../lib/use-session";
+import { useAuth } from "@cottonbro/auth-react";
 
 const baseLinks = [
   { href: "/shop", label: "Shop" },
@@ -20,7 +20,7 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useSession();
+  const { user, loading, logout: authLogout, busy } = useAuth();
 
   // ESC to close
   useEffect(() => {
@@ -35,14 +35,7 @@ export default function Sidebar({
 
   const onLogout = async () => {
     try {
-      const res = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        console.error("Logout failed:", text);
-      }
+      await authLogout();
     } catch (e) {
       console.error("Logout error:", e);
     } finally {
@@ -72,12 +65,6 @@ export default function Sidebar({
       </Link>
     );
   };
-
-  // Small user summary for the header area
-  const userName = useMemo(
-    () => user?.name || user?.email || "Signed in",
-    [user]
-  );
 
   return (
     <aside
@@ -112,32 +99,6 @@ export default function Sidebar({
               priority
             />
           </button>
-
-          {/* Signed-in summary (optional, shown when user present) */}
-          {!loading && user && (
-            <div className="mx-6 mb-3 flex items-center gap-3 text-sm text-gray-300">
-              {/* If you return picture from /api/auth/session, show it; otherwise a circle */}
-              {user.picture ? (
-                <Image
-                  src={user.picture}
-                  alt={userName}
-                  width={28}
-                  height={28}
-                  className="h-7 w-7 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-7 w-7 rounded-full bg-white/10" />
-              )}
-              <div className="min-w-0">
-                <div className="truncate">{userName}</div>
-                {user.email && (
-                  <div className="truncate text-[11px] text-gray-500">
-                    {user.email}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Scrollable nav */}
@@ -151,9 +112,10 @@ export default function Sidebar({
               (user ? (
                 <button
                   onClick={onLogout}
+                  disabled={busy}
                   className="w-full text-left block rounded-md px-3 py-2 text-sm font-medium tracking-wide text-gray-300
                              hover:text-white hover:bg-white/5 hover:ring-1 hover:ring-white/10
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Logout
                 </button>

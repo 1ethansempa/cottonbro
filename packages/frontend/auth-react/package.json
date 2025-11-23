@@ -1,0 +1,28 @@
+{
+  "name": "@cottonbro/auth-react",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "peerDependencies": {
+    "firebase": "^11.10.0",
+    "react": "19.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@types/react": "^19.2.2"
+  }
+}

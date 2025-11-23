@@ -1,20 +1,21 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Questrial, Cedarville_Cursive } from "next/font/google";
+import { Montserrat, Urbanist } from "next/font/google";
+import WebAuthProvider from "@/app/providers/auth-provider";
 
-const questrial = Questrial({
-  variable: "--font-questrial",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
   weight: "400",
 });
 
-const cedarville = Cedarville_Cursive({
-  variable: "--font-cedarville",
+const urbanist = Urbanist({
+  variable: "--font-urbanist",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500", "700"],
 });
 
-export const metadata: Metadata = { title: "Cotton Bro" };
+export const metadata: Metadata = { title: "Cotton Bro", description: "" };
 
 export default function RootLayout({
   children,
@@ -23,10 +24,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        className={`min-h-screen bg-white ${questrial.variable} ${cedarville.variable}`}
-      >
-        {children}
+      <body className={`min-h-screen bg-white ${montserrat.variable} ${urbanist.variable}`} suppressHydrationWarning>
+        <WebAuthProvider>{children}</WebAuthProvider>
       </body>
     </html>
   );
