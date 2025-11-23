@@ -1,12 +1,18 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Montserrat, Urbanist } from "next/font/google";
 import WebAuthProvider from "@/app/providers/auth-provider";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: "400",
+});
+
+const urbanist = Urbanist({
+  variable: "--font-urbanist",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
 });
 
 export const metadata: Metadata = { title: "Cotton Bro", description: "" };
@@ -18,7 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`min-h-screen bg-white ${montserrat.variable}`}>
+      <body className={`min-h-screen bg-white ${montserrat.variable} ${urbanist.variable}`}>
         <WebAuthProvider>{children}</WebAuthProvider>
       </body>
     </html>

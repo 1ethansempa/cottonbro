@@ -5,6 +5,7 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../packages/ui/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -30,6 +31,9 @@ module.exports = {
       letterSpacing: {
         tightish: "-0.01em",
         label: "0.14em",
+      },
+      fontFamily: {
+        urbanist: ["var(--font-urbanist)"],
       },
     },
   },

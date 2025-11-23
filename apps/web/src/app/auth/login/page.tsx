@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import GoogleIcon from "@/components/google-icon";
 import { useAuth } from "@cottonbro/auth-react";
+import { Button, Input, GoogleButton } from "@cottonbro/ui";
 
 export default function LoginPage() {
   const { requestOtp, confirmOtp, googleSignIn, busy, error } = useAuth();
@@ -35,7 +35,7 @@ export default function LoginPage() {
       await requestOtp(email.trim());
       setSent(true);
       setStatus("Code sent. Check your inbox.");
-    } catch (e) {
+    } catch {
       setStatus("Could not send code. Please try again.");
     }
   }
@@ -47,53 +47,49 @@ export default function LoginPage() {
     try {
       await confirmOtp(email.trim(), code.trim());
       window.location.replace(redirect);
-    } catch (e) {
+    } catch {
       setStatus("Invalid code. Please try again.");
     }
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-6 py-12 bg-white text-black selection:bg-street-red selection:text-white">
-      <div className="w-full max-w-md">
-        <div className="relative bg-white border-2 border-black p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          <div className="mb-8 text-center">
-            <h1 className="font-jamino text-4xl uppercase text-black">
-              Authentication
-            </h1>
-            <p className="mt-2 text-sm font-bold text-black uppercase tracking-widest">
-              Sign in or create an account
-            </p>
-          </div>
+    <div className="w-full max-w-5xl mx-auto px-6 py-12 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-start">
+      {/* LEFT COLUMN: SIGN IN */}
+      <div className="w-full max-w-md mx-auto md:mx-0">
+        <h1 className="font-jamino text-5xl md:text-7xl uppercase text-black mb-8 md:mb-12 tracking-tight">
+          Sign In
+        </h1>
 
-          <div className="mb-6">
-            <button
-              type="button"
-              onClick={onGoogle}
-              disabled={busy}
-              className="w-full inline-flex items-center justify-center gap-3 border-2 border-black bg-white px-4 py-3 text-sm font-bold uppercase tracking-widest text-black hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition cursor-pointer disabled:opacity-60"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-          </div>
+        {/* Google button */}
+        <div className="mb-8">
+          <GoogleButton
+            onClick={onGoogle}
+            disabled={busy}
+          />
+        </div>
 
-          <div className="relative my-8">
-            <div className="h-0.5 w-full bg-black" />
-            <span className="absolute inset-0 -top-3 mx-auto w-fit px-3 text-xs font-bold uppercase tracking-widest text-black bg-white">
-              or
-            </span>
+        {/* Divider */}
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t-2 border-black/10"></div>
           </div>
+          <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest">
+            <span className="bg-white px-4 text-zinc-500">Or using email</span>
+          </div>
+        </div>
 
+        {/* Forms */}
+        <div>
           {!sent ? (
-            <form onSubmit={onSend} className="space-y-4">
+            <form onSubmit={onSend} className="space-y-6">
               <div>
                 <label
                   htmlFor="email"
-                  className="mb-1 block text-sm font-bold uppercase tracking-widest text-black"
+                  className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
                 >
-                  Email
+                  Email Address
                 </label>
-                <input
+                <Input
                   id="email"
                   name="email"
                   type="email"
@@ -101,29 +97,28 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border-2 border-black bg-white px-3 py-2 text-sm font-medium text-black placeholder:text-zinc-400 outline-none focus:border-street-red transition"
-                  placeholder="you@example.com"
+                  placeholder="YOU@EXAMPLE.COM"
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={!email || busy}
-                className="mt-4 w-full bg-black text-white px-4 py-3 text-sm font-bold uppercase tracking-widest hover:bg-street-red focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full"
               >
-                {busy ? "Sending…" : "Send code"}
-              </button>
+                {busy ? "Sending…" : "Sign In"}
+              </Button>
             </form>
           ) : (
-            <form onSubmit={onConfirm} className="space-y-4">
+            <form onSubmit={onConfirm} className="space-y-6">
               <div>
                 <label
                   htmlFor="code"
-                  className="mb-1 block text-sm font-bold uppercase tracking-widest text-black"
+                  className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
                 >
-                  6-digit code
+                  Enter 6-digit code
                 </label>
-                <input
+                <Input
                   id="code"
                   name="code"
                   inputMode="numeric"
@@ -132,35 +127,49 @@ export default function LoginPage() {
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  className="w-full tracking-[1em] text-center border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black placeholder:text-zinc-400 outline-none focus:border-street-red transition"
+                  className="tracking-[0.5em] text-center text-xl font-bold"
                   placeholder="••••••"
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={code.length !== 6 || busy}
-                className="mt-4 w-full bg-black text-white px-4 py-3 text-sm font-bold uppercase tracking-widest hover:bg-street-red focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full"
               >
-                {busy ? "Verifying…" : "Confirm"}
-              </button>
+                {busy ? "Verifying…" : "Confirm Code"}
+              </Button>
 
               <button
                 type="button"
                 onClick={onSend}
                 disabled={busy}
-                className="w-full text-sm font-bold uppercase tracking-widest text-zinc-500 underline underline-offset-4 mt-4 hover:text-black transition"
+                className="w-full text-xs font-bold uppercase tracking-widest text-zinc-500 underline underline-offset-4 hover:text-black transition disabled:opacity-60 text-center block"
               >
                 Resend code
               </button>
             </form>
           )}
+        </div>
 
-          {(status || error) && (
-            <p className="mt-4 text-center text-sm text-red-400">
-              {status || error}
-            </p>
-          )}
+        {(status || error) && (
+          <p className="mt-6 text-center text-sm font-bold text-red-600 uppercase tracking-wide">
+            {status || error}
+          </p>
+        )}
+      </div>
+
+      {/* RIGHT COLUMN: INFO SNIPPET */}
+      <div className="hidden md:block w-full max-w-md mx-auto md:mx-0 pt-8 md:pt-24">
+        <div className="p-8 border-2 border-black bg-zinc-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <p className="font-bold uppercase tracking-wide text-sm mb-4 text-black">
+            New to Cotton Bro?
+          </p>
+          <p className="text-base font-medium text-zinc-600 mb-6 leading-relaxed">
+            Use the form on the left. We&apos;ll create an account for you
+            automatically if you don&apos;t have one.
+          </p>
+          <div className="h-1 w-12 bg-street-red" />
         </div>
       </div>
     </div>

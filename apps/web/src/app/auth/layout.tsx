@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Auth | Cotton Bro",
 };
 
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+
 export default function AuthLayout({
   children,
 }: {
@@ -20,11 +23,12 @@ export default function AuthLayout({
   }
 
   return (
-    <main
-      className="min-h-screen w-full flex items-center justify-center 
-                 bg-white bg-cover bg-center"
-    >
-      {children}
-    </main>
+    <div className="min-h-screen w-full flex flex-col bg-white">
+      <SiteHeader />
+      <main className="flex-1 flex items-center justify-center w-full">
+        {children}
+      </main>
+      <SiteFooter />
+    </div>
   );
 }
