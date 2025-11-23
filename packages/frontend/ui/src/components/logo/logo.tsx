@@ -1,4 +1,4 @@
-// packages/ui/src/components/logo/Logo.tsx
+// packages/frontend/ui/src/components/logo/logo.tsx
 "use client";
 import * as React from "react";
 import { Wordmark } from "./wordmark";

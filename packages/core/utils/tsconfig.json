@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -15,7 +15,7 @@
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
-
+    "baseUrl": ".",
     "types": ["node", "react", "react-dom"]
   },
   "include": ["src/index.ts", "src/edge.ts", "src/node.ts", "src/**/*.ts"],

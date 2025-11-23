@@ -7,3 +7,20 @@ This will enable users(creators) create merch. This ranges from shirts, beenies,
 - pnpm --filter @cottonbro/web dev
 - pnpm --filter @cottonbro/api dev
 - pnpm --filter @cottonbro/ui build
+
+## Packages layout
+
+```
+packages/
+  core/
+    contracts/
+    utils/
+    pricing/
+    orders/
+  frontend/
+    ui/
+    auth-react/
+  backend/
+    auth-server/
+    jobs/
+```
