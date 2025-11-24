@@ -8,7 +8,7 @@ import { SiteFooter } from "@/components/site-footer";
 
 // --- 3D Components ---
 
-export default function SaaSBlackLanding() {
+export default function LandingPage() {
   const benefits = [
     {
       title: "Launch with confidence",

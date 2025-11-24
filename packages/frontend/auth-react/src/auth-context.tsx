@@ -24,6 +24,8 @@ import {
  * - Exposes role from custom claims
  */
 
+// ---------- Types ----------
+
 export type AuthRole = "User" | "Admin" | string | undefined;
 
 export interface Endpoints {
@@ -58,7 +60,11 @@ export interface AuthContextValue {
   busy: boolean;
 }
 
+// ---------- Context ----------
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+// ---------- Provider ----------
 
 export const AuthProvider: React.FC<
   React.PropsWithChildren<AuthContextConfig>
@@ -72,6 +78,8 @@ export const AuthProvider: React.FC<
   sessionTtlMs,
   children,
 }) => {
+  // --- State ---
+
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<IdTokenResult["claims"] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,26 +87,38 @@ export const AuthProvider: React.FC<
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
+  // Derived role from custom claims
   const role = (claims?.role as AuthRole) ?? undefined;
 
-  // Track auth state + token changes so we surface user/claims immediately.
+  // --- Lifecycle: keep mounted ref + sync auth state/claims ---
+
   useEffect(() => {
     mounted.current = true;
-    const unsub1 = onAuthStateChanged(auth, (u) => setUser(u));
-    const unsub2 = onIdTokenChanged(auth, async (u) => {
-      if (!u) return setClaims(null);
+
+    const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubToken = onIdTokenChanged(auth, async (u) => {
+      if (!u) {
+        setClaims(null);
+        return;
+      }
       try {
         const res = await u.getIdTokenResult();
         if (mounted.current) setClaims(res.claims);
-      } catch {}
+      } catch {
+        // ignore
+      }
     });
+
     setLoading(false);
+
     return () => {
       mounted.current = false;
-      unsub1();
-      unsub2();
+      unsubAuth();
+      unsubToken();
     };
   }, [auth]);
+
+  // --- Helpers ---
 
   // Helper for POSTing JSON with cookie credentials + useful errors.
   const postJson = useCallback(async (url: string, body: unknown) => {
@@ -108,14 +128,33 @@ export const AuthProvider: React.FC<
       credentials: "include",
       body: JSON.stringify(body ?? {}),
     });
+
     if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(t || `Request failed: ${res.status}`);
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `Request failed: ${res.status}`);
     }
-    return res.headers.get("content-type")?.includes("application/json")
-      ? res.json()
-      : undefined;
+
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return res.json();
+    }
+
+    return undefined;
   }, []);
+
+  // Generic wrapper to manage busy+error around async actions.
+  const runWithBusy = useCallback(
+    async <T,>(fn: () => Promise<T>): Promise<T> => {
+      setError(null);
+      setBusy(true);
+      try {
+        return await fn();
+      } finally {
+        if (mounted.current) setBusy(false);
+      }
+    },
+    []
+  );
 
   // Exchange Firebase ID token for our session cookie, then optionally sign out client.
   const establishSession = useCallback(
@@ -123,7 +162,9 @@ export const AuthProvider: React.FC<
       const idToken = await u.getIdToken(true);
       await postJson(endpoints.login, { idToken, ttlMs: sessionTtlMs });
       onSession?.({ idToken, user: u });
-      if (!keepClientSignedIn) await auth.signOut();
+      if (!keepClientSignedIn) {
+        await auth.signOut();
+      }
     },
     [
       auth,
@@ -135,76 +176,77 @@ export const AuthProvider: React.FC<
     ]
   );
 
+  // --- Public actions ---
+
   // Starts the OTP flow by posting an email address to the API.
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
-    async (email) => {
-      setError(null);
-      setBusy(true);
-      try {
+    async (email) =>
+      runWithBusy(async () => {
         const e = email.trim();
         if (!e) throw new Error("email_required");
         await postJson(endpoints.startOtp, { email: e });
-      } finally {
-        if (mounted.current) setBusy(false);
-      }
-    },
-    [endpoints.startOtp, postJson]
+      }),
+    [endpoints.startOtp, postJson, runWithBusy]
   );
 
   // Confirms a code, signs in with the returned custom token, then mints a session cookie.
   const confirmOtp = useCallback<AuthContextValue["confirmOtp"]>(
-    async (email, code) => {
-      setError(null);
-      setBusy(true);
-      try {
-        const e = email.trim();
-        const c = code.trim();
-        if (!e || !c) throw new Error("invalid_otp_payload");
-        const data = (await postJson(endpoints.verifyOtp, {
-          email: e,
-          code: c,
-        })) as { customToken: string } | undefined;
-        if (!data?.customToken) throw new Error("missing_custom_token");
-        const cred = await signInWithCustomToken(auth, data.customToken);
-        await establishSession(cred.user);
-      } catch (err: any) {
-        if (mounted.current) setError(err?.message ?? "otp_verify_failed");
-        throw err;
-      } finally {
-        if (mounted.current) setBusy(false);
-      }
-    },
-    [auth, endpoints.verifyOtp, establishSession, postJson]
+    async (email, code) =>
+      runWithBusy(async () => {
+        try {
+          const e = email.trim();
+          const c = code.trim();
+          if (!e || !c) throw new Error("invalid_otp_payload");
+
+          const data = (await postJson(endpoints.verifyOtp, {
+            email: e,
+            code: c,
+          })) as { customToken: string } | undefined;
+
+          if (!data?.customToken) throw new Error("missing_custom_token");
+
+          const cred = await signInWithCustomToken(auth, data.customToken);
+          await establishSession(cred.user);
+        } catch (err: any) {
+          if (mounted.current) {
+            setError(err?.message ?? "otp_verify_failed");
+          }
+          throw err;
+        }
+      }),
+    [auth, endpoints.verifyOtp, establishSession, postJson, runWithBusy]
   );
 
   // Google OAuth entry point; links to existing OTP user when allowed.
-  const googleSignIn = useCallback<
-    AuthContextValue["googleSignIn"]
-  >(async () => {
-    setError(null);
-    setBusy(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      if (allowAutoLink && auth.currentUser) {
-        const result = await signInWithPopup(auth, provider);
-        await establishSession(result.user);
-        return;
-      }
-      const result = await signInWithPopup(auth, provider);
-      await establishSession(result.user);
-    } catch (e: any) {
-      if (e?.code === "auth/account-exists-with-different-credential") {
-        setError(
-          "Account exists with a different sign-in method. Sign in with email, then add Google."
-        );
-      } else {
-        setError(e?.message ?? "google_signin_failed");
-      }
-      throw e;
-    } finally {
-      if (mounted.current) setBusy(false);
-    }
-  }, [allowAutoLink, auth, establishSession]);
+  const googleSignIn = useCallback<AuthContextValue["googleSignIn"]>(
+    async () =>
+      runWithBusy(async () => {
+        try {
+          const provider = new GoogleAuthProvider();
+
+          // When allowAutoLink is true and the user is already signed in,
+          // run the same signInWithPopup flow but treat it as "linking".
+          if (allowAutoLink && auth.currentUser) {
+            const result = await signInWithPopup(auth, provider);
+            await establishSession(result.user);
+            return;
+          }
+
+          const result = await signInWithPopup(auth, provider);
+          await establishSession(result.user);
+        } catch (e: any) {
+          if (e?.code === "auth/account-exists-with-different-credential") {
+            setError(
+              "Account exists with a different sign-in method. Sign in with email, then add Google."
+            );
+          } else {
+            setError(e?.message ?? "google_signin_failed");
+          }
+          throw e;
+        }
+      }),
+    [allowAutoLink, auth, establishSession, runWithBusy]
+  );
 
   // Forces Firebase to refresh the ID token + cached custom claims.
   const refreshIdToken = useCallback<
@@ -212,32 +254,36 @@ export const AuthProvider: React.FC<
   >(async () => {
     try {
       if (!auth.currentUser) return null;
-      const t = await auth.currentUser.getIdToken(true);
+      const token = await auth.currentUser.getIdToken(true);
       const info = await auth.currentUser.getIdTokenResult();
       if (mounted.current) setClaims(info.claims);
-      return t;
+      return token;
     } catch {
       return null;
     }
   }, [auth]);
 
   // Logs out on both the API (session cookie) and Firebase client.
-  const logout = useCallback<AuthContextValue["logout"]>(async () => {
-    setError(null);
-    setBusy(true);
-    try {
-      await fetch(endpoints.logout, {
-        method: "POST",
-        credentials: "include",
-      }).catch(() => {});
-      await auth.signOut().catch(() => {});
-      setClaims(null);
-      setUser(null);
-      onLogout?.();
-    } finally {
-      if (mounted.current) setBusy(false);
-    }
-  }, [auth, endpoints.logout, onLogout]);
+  const logout = useCallback<AuthContextValue["logout"]>(
+    async () =>
+      runWithBusy(async () => {
+        try {
+          await fetch(endpoints.logout, {
+            method: "POST",
+            credentials: "include",
+          }).catch(() => {});
+          await auth.signOut().catch(() => {});
+          setClaims(null);
+          setUser(null);
+          onLogout?.();
+        } finally {
+          // `runWithBusy` handles busy flag; keep behavior the same.
+        }
+      }),
+    [auth, endpoints.logout, onLogout, runWithBusy]
+  );
+
+  // --- Memoized value ---
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -271,6 +317,8 @@ export const AuthProvider: React.FC<
   // No JSX to keep the file .ts
   return React.createElement(AuthContext.Provider, { value }, children as any);
 };
+
+// ---------- Hook ----------
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
