@@ -3,8 +3,9 @@
 import * as React from "react";
 import { useAuth } from "@cottonbro/auth-react";
 import { Button, Input, GoogleButton } from "@cottonbro/ui";
+import WebAuthProvider from "@/app/providers/auth-provider";
 
-export default function LoginPage() {
+function LoginView() {
   const { requestOtp, confirmOtp, googleSignIn, busy, error } = useAuth();
 
   const [email, setEmail] = React.useState("");
@@ -173,5 +174,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <WebAuthProvider>
+      <LoginView />
+    </WebAuthProvider>
   );
 }
