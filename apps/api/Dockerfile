@@ -16,7 +16,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.js
 # Copy workspace packages used by @cottonbro/api
 COPY packages ./packages
 
-# Copy API package.json so pnpm knows about this workspace
+# Copy API package manifest so pnpm can resolve this workspace
 COPY apps/api/package.json ./apps/api/package.json
 
 # Install only deps for @cottonbro/api and its workspace dependencies
@@ -27,11 +27,14 @@ FROM deps AS build
 
 ENV NODE_ENV=production
 
-# Copy full app source
+# Copy full app sources
 COPY apps ./apps
 
 # Build API (NestJS -> dist/)
 RUN pnpm --filter @cottonbro/api build
+
+# Create a trimmed production payload (code + prod node_modules)
+RUN pnpm deploy --filter @cottonbro/api --prod --legacy /app/deploy
 
 # ---------- Runtime stage ----------
 FROM node:22-slim AS runner
@@ -42,14 +45,11 @@ WORKDIR /app
 # Create non-root user
 RUN addgroup --system app && adduser --system --ingroup app app
 
-# Copy node_modules, workspace packages, and the built API with correct ownership
-COPY --from=build --chown=app:app /app/node_modules ./node_modules
-COPY --from=build --chown=app:app /app/packages ./packages
-COPY --from=build --chown=app:app /app/apps/api ./apps/api
+# Copy only the trimmed deploy artifacts
+COPY --from=build --chown=app:app /app/deploy/ ./
 
+# Switch to non-root user for runtime safety
 USER app
-
-WORKDIR /app/apps/api
 
 # Port & env
 ENV PORT=3001
