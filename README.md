@@ -24,3 +24,21 @@ packages/
     auth-server/
     jobs/
 ```
+
+## Docker
+
+- docker build \
+  -f apps/web/Dockerfile \
+  --build-arg APP_ENV=qa \
+  -t cottonbro-web:qa .
+- docker run --rm -p 5173:5173 \
+  -e APP_ENV=qa \
+  -e NEXT_PUBLIC_API_URL=<http://localhost:3001> \
+  cottonbro-web:qa
+- docker build \
+  -f apps/api/Dockerfile \
+  --build-arg APP_ENV=qa \
+  -t cottonbro-api:qa .
+- docker run --rm -p 3001:3001 \
+  -e APP_ENV=qa \
+  cottonbro-api:qa
