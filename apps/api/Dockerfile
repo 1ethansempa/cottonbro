@@ -31,6 +31,9 @@ ENV NODE_ENV=production
 # Copy full app sources (now that deps are installed)
 COPY apps ./apps
 
+# Build shared auth-server package so compiled output exists for API build
+RUN pnpm --filter @cottonbro/auth-server build
+
 # Build API (NestJS -> dist/)
 RUN pnpm --filter @cottonbro/api build
 
