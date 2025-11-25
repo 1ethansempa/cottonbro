@@ -1,4 +1,4 @@
-name: Deploy API to Cloud Run
+name: Deploy API to Cloud Run (QA)
 
 on:
     push:
@@ -10,6 +10,7 @@ permissions:
     id-token: write
 
 env:
+    # These come from your GitHub Environment "qa" → Variables
     GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
     REGION: ${{ vars.GCP_REGION }} # e.g. europe-west1
     REGISTRY: ${{ vars.GCP_REGISTRY }} # e.g. europe-west1-docker.pkg.dev
@@ -19,17 +20,18 @@ env:
 jobs:
     deploy-api:
         runs-on: ubuntu-latest
+        environment: qa # 👈 tells GitHub to use env-level secrets/vars from "qa"
 
         steps:
             - name: Checkout repo
               uses: actions/checkout@v4
 
-            # ✅ AUTH VIA WORKLOAD IDENTITY FEDERATION (NO JSON KEY)
+            # AUTH VIA WORKLOAD IDENTITY FEDERATION
             - name: Authenticate to Google Cloud
               uses: google-github-actions/auth@v2
               with:
-                  workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-                  service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+                  workload_identity_provider: ${{ secrets.WIF_PROVIDER }} # from env: qa
+                  service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }} # from env: qa
 
             - name: Setup gcloud
               uses: google-github-actions/setup-gcloud@v2
@@ -53,7 +55,7 @@ jobs:
               run: |
                   docker push "$IMAGE"
 
-            - name: Deploy API to Cloud Run
+            - name: Deploy API to Cloud Run (QA)
               run: |
                   gcloud run deploy "$SERVICE_NAME" \
                     --project "$GCP_PROJECT_ID" \
