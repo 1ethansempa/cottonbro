@@ -3,7 +3,7 @@ name: Deploy API to Cloud Run
 on:
     push:
         branches:
-            - release/qa # deploy QA when this branch gets updated
+            - release/qa
 
 permissions:
     contents: read
@@ -11,8 +11,8 @@ permissions:
 
 env:
     GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-    REGION: ${{ vars.GCP_REGION }}
-    REGISTRY: ${{ vars.GCP_REGISTRY }}
+    REGION: ${{ vars.GCP_REGION }} # e.g. europe-west1
+    REGISTRY: ${{ vars.GCP_REGISTRY }} # e.g. europe-west1-docker.pkg.dev
     SERVICE_NAME: cottonbro-api
     DOCKERFILE: apps/api/Dockerfile
 
@@ -21,29 +21,25 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            # --- CHECKOUT ---
             - name: Checkout repo
               uses: actions/checkout@v4
 
-            # --- AUTH TO GCP USING WIF ---
+            # ✅ AUTH VIA WORKLOAD IDENTITY FEDERATION (NO JSON KEY)
             - name: Authenticate to Google Cloud
               uses: google-github-actions/auth@v2
               with:
                   workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
                   service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-            # --- SETUP GCLOUD ---
             - name: Setup gcloud
               uses: google-github-actions/setup-gcloud@v2
               with:
                   project_id: ${{ env.GCP_PROJECT_ID }}
 
-            # --- DOCKER AUTH FOR ARTIFACT REGISTRY ---
-            - name: Configure Docker auth
+            - name: Configure Docker auth for Artifact Registry
               run: |
                   gcloud auth configure-docker "$REGISTRY" --quiet
 
-            # --- BUILD IMAGE FROM YOUR DOCKERFILE ---
             - name: Build API image
               run: |
                   IMAGE="$REGISTRY/$GCP_PROJECT_ID/api/$SERVICE_NAME:${{ github.sha }}"
@@ -53,12 +49,10 @@ jobs:
                     -t "$IMAGE" \
                     .
 
-            # --- PUSH IMAGE ---
             - name: Push API image
               run: |
                   docker push "$IMAGE"
 
-            # --- DEPLOY TO CLOUD RUN ---
             - name: Deploy API to Cloud Run
               run: |
                   gcloud run deploy "$SERVICE_NAME" \
@@ -74,7 +68,6 @@ jobs:
                     --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
                     --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest
 
-            # --- SHOW SERVICE URL ---
             - name: Show service URL
               run: |
                   gcloud run services describe "$SERVICE_NAME" \
