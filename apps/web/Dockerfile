@@ -65,7 +65,8 @@ RUN ENV_FILE="/app/apps/web/.env.${APP_ENV}.local"; \
       echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}"; \
       echo "NEXT_PUBLIC_AUTH_BASE_URL=${NEXT_PUBLIC_AUTH_BASE_URL}"; \
       echo "NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}"; \
-    } > "$ENV_FILE"
+    } > "$ENV_FILE"; \
+    cp "$ENV_FILE" "/app/.env.${APP_ENV}.local"
 
 # Build QA or Prod based on APP_ENV (Next will emit .next/standalone)
 RUN if [ "$APP_ENV" = "qa" ]; then \
