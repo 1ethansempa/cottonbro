@@ -1,0 +1,82 @@
+name: Deploy API to Cloud Run
+
+on:
+    push:
+        branches:
+            - release/qa # deploy QA when this branch gets updated
+
+permissions:
+    contents: read
+    id-token: write
+
+env:
+    GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+    REGION: ${{ vars.GCP_REGION }}
+    REGISTRY: ${{ vars.GCP_REGISTRY }}
+    SERVICE_NAME: cottonbro-api
+    DOCKERFILE: apps/api/Dockerfile
+
+jobs:
+    deploy-api:
+        runs-on: ubuntu-latest
+
+        steps:
+            # --- CHECKOUT ---
+            - name: Checkout repo
+              uses: actions/checkout@v4
+
+            # --- AUTH TO GCP USING WIF ---
+            - name: Authenticate to Google Cloud
+              uses: google-github-actions/auth@v2
+              with:
+                  workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+                  service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+            # --- SETUP GCLOUD ---
+            - name: Setup gcloud
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                  project_id: ${{ env.GCP_PROJECT_ID }}
+
+            # --- DOCKER AUTH FOR ARTIFACT REGISTRY ---
+            - name: Configure Docker auth
+              run: |
+                  gcloud auth configure-docker "$REGISTRY" --quiet
+
+            # --- BUILD IMAGE FROM YOUR DOCKERFILE ---
+            - name: Build API image
+              run: |
+                  IMAGE="$REGISTRY/$GCP_PROJECT_ID/api/$SERVICE_NAME:${{ github.sha }}"
+                  echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+                  docker build \
+                    -f "$DOCKERFILE" \
+                    -t "$IMAGE" \
+                    .
+
+            # --- PUSH IMAGE ---
+            - name: Push API image
+              run: |
+                  docker push "$IMAGE"
+
+            # --- DEPLOY TO CLOUD RUN ---
+            - name: Deploy API to Cloud Run
+              run: |
+                  gcloud run deploy "$SERVICE_NAME" \
+                    --project "$GCP_PROJECT_ID" \
+                    --region "$REGION" \
+                    --platform managed \
+                    --image "$IMAGE" \
+                    --service-account "${{ secrets.RUNTIME_SA }}" \
+                    --allow-unauthenticated \
+                    --set-env-vars NODE_ENV=production \
+                    --set-env-vars APP_ENV=qa \
+                    --set-secrets FIREBASE_PROJECT_ID=api-firebase-project-id:latest \
+                    --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
+                    --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest
+
+            # --- SHOW SERVICE URL ---
+            - name: Show service URL
+              run: |
+                  gcloud run services describe "$SERVICE_NAME" \
+                    --region "$REGION" \
+                    --format='value(status.url)'
