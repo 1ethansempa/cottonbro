@@ -19,9 +19,9 @@ async function bootstrap() {
     appEnv === "prod"
       ? ["https://cottonbro.com"]
       : [
-          "http://localhost:5173", // local/QA web
-          // add QA domain when you have it, e.g.:
-          // "https://qa.your-domain.com",
+          "http://localhost:5173",
+          "https://cottonbro-web-rgkcirpgkq-ew.a.run.app",
+          "https://cottonbro-web-491077850913.europe-west1.run.app",
         ];
 
   app.enableCors({
