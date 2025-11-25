@@ -13,10 +13,15 @@ env:
     SERVICE_NAME: cottonbro-api
     DOCKERFILE: apps/api/Dockerfile
 
+    # Hardcode these for now so they are NEVER empty
+    GCP_PROJECT_ID: cottonbro-dev
+    REGION: europe-west1
+    REGISTRY: europe-west1-docker.pkg.dev
+
 jobs:
     deploy-api:
         runs-on: ubuntu-latest
-        environment: qa # use env-level secrets/vars from "qa"
+        environment: qa # use env-level secrets from "qa"
 
         steps:
             - name: Checkout repo
@@ -31,15 +36,17 @@ jobs:
             - name: Setup gcloud
               uses: google-github-actions/setup-gcloud@v2
               with:
-                  project_id: ${{ vars.GCP_PROJECT_ID }}
+                  project_id: ${{ env.GCP_PROJECT_ID }}
 
             - name: Configure Docker auth for Artifact Registry
               run: |
-                  gcloud auth configure-docker "${{ vars.GCP_REGISTRY }}" --quiet
+                  gcloud auth configure-docker "$REGISTRY" --quiet
 
             - name: Build API image
               run: |
-                  IMAGE="${{ vars.GCP_REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/api/${SERVICE_NAME}:${{ github.sha }}"
+                  echo "REGISTRY=$REGISTRY"
+                  echo "GCP_PROJECT_ID=$GCP_PROJECT_ID"
+                  IMAGE="$REGISTRY/$GCP_PROJECT_ID/api/$SERVICE_NAME:${{ github.sha }}"
                   echo "Using image: $IMAGE"
                   echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
                   docker build \
@@ -54,8 +61,8 @@ jobs:
             - name: Deploy API to Cloud Run (QA)
               run: |
                   gcloud run deploy "$SERVICE_NAME" \
-                    --project "${{ vars.GCP_PROJECT_ID }}" \
-                    --region "${{ vars.GCP_REGION }}" \
+                    --project "$GCP_PROJECT_ID" \
+                    --region "$REGION" \
                     --platform managed \
                     --image "$IMAGE" \
                     --service-account "${{ secrets.RUNTIME_SA }}" \
@@ -69,5 +76,5 @@ jobs:
             - name: Show service URL
               run: |
                   gcloud run services describe "$SERVICE_NAME" \
-                    --region "${{ vars.GCP_REGION }}" \
+                    --region "$REGION" \
                     --format='value(status.url)'
