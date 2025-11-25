@@ -10,41 +10,37 @@ permissions:
     id-token: write
 
 env:
-    # These come from your GitHub Environment "qa" → Variables
-    GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-    REGION: ${{ vars.GCP_REGION }} # e.g. europe-west1
-    REGISTRY: ${{ vars.GCP_REGISTRY }} # e.g. europe-west1-docker.pkg.dev
     SERVICE_NAME: cottonbro-api
     DOCKERFILE: apps/api/Dockerfile
 
 jobs:
     deploy-api:
         runs-on: ubuntu-latest
-        environment: qa # 👈 tells GitHub to use env-level secrets/vars from "qa"
+        environment: qa # use env-level secrets/vars from "qa"
 
         steps:
             - name: Checkout repo
               uses: actions/checkout@v4
 
-            # AUTH VIA WORKLOAD IDENTITY FEDERATION
             - name: Authenticate to Google Cloud
               uses: google-github-actions/auth@v2
               with:
-                  workload_identity_provider: ${{ secrets.WIF_PROVIDER }} # from env: qa
-                  service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }} # from env: qa
+                  workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+                  service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
             - name: Setup gcloud
               uses: google-github-actions/setup-gcloud@v2
               with:
-                  project_id: ${{ env.GCP_PROJECT_ID }}
+                  project_id: ${{ vars.GCP_PROJECT_ID }}
 
             - name: Configure Docker auth for Artifact Registry
               run: |
-                  gcloud auth configure-docker "$REGISTRY" --quiet
+                  gcloud auth configure-docker "${{ vars.GCP_REGISTRY }}" --quiet
 
             - name: Build API image
               run: |
-                  IMAGE="$REGISTRY/$GCP_PROJECT_ID/api/$SERVICE_NAME:${{ github.sha }}"
+                  IMAGE="${{ vars.GCP_REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/api/${SERVICE_NAME}:${{ github.sha }}"
+                  echo "Using image: $IMAGE"
                   echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
                   docker build \
                     -f "$DOCKERFILE" \
@@ -58,8 +54,8 @@ jobs:
             - name: Deploy API to Cloud Run (QA)
               run: |
                   gcloud run deploy "$SERVICE_NAME" \
-                    --project "$GCP_PROJECT_ID" \
-                    --region "$REGION" \
+                    --project "${{ vars.GCP_PROJECT_ID }}" \
+                    --region "${{ vars.GCP_REGION }}" \
                     --platform managed \
                     --image "$IMAGE" \
                     --service-account "${{ secrets.RUNTIME_SA }}" \
@@ -73,5 +69,5 @@ jobs:
             - name: Show service URL
               run: |
                   gcloud run services describe "$SERVICE_NAME" \
-                    --region "$REGION" \
+                    --region "${{ vars.GCP_REGION }}" \
                     --format='value(status.url)'
