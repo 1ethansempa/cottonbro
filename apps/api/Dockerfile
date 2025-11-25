@@ -13,27 +13,29 @@ FROM base AS deps
 # Copy root-level files needed for workspaces + TS
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.json tsconfig.types.json ./
 
-# Copy workspace packages used by @cottonbro/api
+# Copy workspace packages (so pnpm can resolve all workspace deps)
 COPY packages ./packages
 
 # Copy API package manifest so pnpm can resolve this workspace
 COPY apps/api/package.json ./apps/api/package.json
 
-# Install only deps for @cottonbro/api and its workspace dependencies
-RUN pnpm install --filter @cottonbro/api... --prod=false
+# Install all workspace dependencies (dev deps included for build)
+# This ensures @cottonbro/auth-server and any other workspace deps are available.
+RUN pnpm install --prod=false
 
 # ---------- Build stage ----------
 FROM deps AS build
 
 ENV NODE_ENV=production
 
-# Copy full app sources
+# Copy full app sources (now that deps are installed)
 COPY apps ./apps
 
 # Build API (NestJS -> dist/)
 RUN pnpm --filter @cottonbro/api build
 
 # Create a trimmed production payload (code + prod node_modules)
+# This should only copy what @cottonbro/api needs into /app/deploy
 RUN pnpm deploy --filter @cottonbro/api --prod --legacy /app/deploy
 
 # ---------- Runtime stage ----------
