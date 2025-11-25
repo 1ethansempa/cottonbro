@@ -16,15 +16,15 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 
+const MIN_REFRESH_INTERVAL_MS = 60 * 1000;
+const MAX_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
+
 /**
- * CottonBro Auth React Context (no JSX variant)
- * - Email OTP + Google sign-in
- * - Posts ID token to `/api/auth/login` to mint 14d session cookie
- * - Links Google to current user when already signed in via OTP
- * - Exposes role from custom claims
+ * Central auth wiring: wraps Firebase, handles OTP + Google sign-in, exchanges ID
+ * tokens for backend session cookies, and keeps claims fresh via periodic refresh.
  */
 
-// ---------- Types ----------
+// Types
 
 export type AuthRole = "User" | "Admin" | string | undefined;
 
@@ -44,6 +44,8 @@ export interface AuthContextConfig {
   keepClientSignedIn?: boolean;
   /** Optional: override ttlMs sent on login (e.g., 7d for admin) */
   sessionTtlMs?: number;
+  /** Optional: how often to refresh ID token + session cookie (ms) */
+  sessionRefreshIntervalMs?: number;
 }
 
 export interface AuthContextValue {
@@ -60,12 +62,10 @@ export interface AuthContextValue {
   busy: boolean;
 }
 
-// ---------- Context ----------
-
+// Context
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// ---------- Provider ----------
-
+// Provider
 export const AuthProvider: React.FC<
   React.PropsWithChildren<AuthContextConfig>
 > = ({
@@ -76,10 +76,9 @@ export const AuthProvider: React.FC<
   allowAutoLink = true,
   keepClientSignedIn = true,
   sessionTtlMs,
+  sessionRefreshIntervalMs,
   children,
 }) => {
-  // --- State ---
-
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<IdTokenResult["claims"] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,8 +89,7 @@ export const AuthProvider: React.FC<
   // Derived role from custom claims
   const role = (claims?.role as AuthRole) ?? undefined;
 
-  // --- Lifecycle: keep mounted ref + sync auth state/claims ---
-
+  // Lifecycle: track mount + sync auth state/claims
   useEffect(() => {
     mounted.current = true;
 
@@ -118,9 +116,9 @@ export const AuthProvider: React.FC<
     };
   }, [auth]);
 
-  // --- Helpers ---
+  // Helpers
 
-  // Helper for POSTing JSON with cookie credentials + useful errors.
+  // POST JSON with cookies + surfaced errors.
   const postJson = useCallback(async (url: string, body: unknown) => {
     const res = await fetch(url, {
       method: "POST",
@@ -142,7 +140,7 @@ export const AuthProvider: React.FC<
     return undefined;
   }, []);
 
-  // Generic wrapper to manage busy+error around async actions.
+  // Wrap async actions with busy/error bookkeeping.
   const runWithBusy = useCallback(
     async <T,>(fn: () => Promise<T>): Promise<T> => {
       setError(null);
@@ -156,29 +154,31 @@ export const AuthProvider: React.FC<
     []
   );
 
-  // Exchange Firebase ID token for our session cookie, then optionally sign out client.
-  const establishSession = useCallback(
-    async (u: User) => {
+  // Mint/refresh the backend session cookie from a Firebase ID token.
+  const syncSessionCookie = useCallback(
+    async (u: User, emitSessionEvent = true) => {
       const idToken = await u.getIdToken(true);
       await postJson(endpoints.login, { idToken, ttlMs: sessionTtlMs });
-      onSession?.({ idToken, user: u });
+      if (emitSessionEvent) onSession?.({ idToken, user: u });
+      return idToken;
+    },
+    [endpoints.login, onSession, postJson, sessionTtlMs]
+  );
+
+  // Exchange Firebase ID token for our session cookie, optionally sign out client.
+  const establishSession = useCallback(
+    async (u: User) => {
+      await syncSessionCookie(u, true);
       if (!keepClientSignedIn) {
         await auth.signOut();
       }
     },
-    [
-      auth,
-      endpoints.login,
-      sessionTtlMs,
-      keepClientSignedIn,
-      onSession,
-      postJson,
-    ]
+    [syncSessionCookie, keepClientSignedIn, auth]
   );
 
-  // --- Public actions ---
+  // Public actions
 
-  // Starts the OTP flow by posting an email address to the API.
+  // Kick off OTP flow.
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
     async (email) =>
       runWithBusy(async () => {
@@ -189,7 +189,7 @@ export const AuthProvider: React.FC<
     [endpoints.startOtp, postJson, runWithBusy]
   );
 
-  // Confirms a code, signs in with the returned custom token, then mints a session cookie.
+  // Verify OTP -> sign in -> mint cookie.
   const confirmOtp = useCallback<AuthContextValue["confirmOtp"]>(
     async (email, code) =>
       runWithBusy(async () => {
@@ -217,15 +217,14 @@ export const AuthProvider: React.FC<
     [auth, endpoints.verifyOtp, establishSession, postJson, runWithBusy]
   );
 
-  // Google OAuth entry point; links to existing OTP user when allowed.
+  // Google OAuth; links existing OTP account when allowed.
   const googleSignIn = useCallback<AuthContextValue["googleSignIn"]>(
     async () =>
       runWithBusy(async () => {
         try {
           const provider = new GoogleAuthProvider();
 
-          // When allowAutoLink is true and the user is already signed in,
-          // run the same signInWithPopup flow but treat it as "linking".
+          // When auto-linking and already signed in, treat popup as "link".
           if (allowAutoLink && auth.currentUser) {
             const result = await signInWithPopup(auth, provider);
             await establishSession(result.user);
@@ -248,22 +247,59 @@ export const AuthProvider: React.FC<
     [allowAutoLink, auth, establishSession, runWithBusy]
   );
 
-  // Forces Firebase to refresh the ID token + cached custom claims.
+  // Refresh Firebase token + claims + cookie.
   const refreshIdToken = useCallback<
     AuthContextValue["refreshIdToken"]
   >(async () => {
     try {
       if (!auth.currentUser) return null;
-      const token = await auth.currentUser.getIdToken(true);
+      const token = await syncSessionCookie(auth.currentUser, false);
       const info = await auth.currentUser.getIdTokenResult();
       if (mounted.current) setClaims(info.claims);
       return token;
     } catch {
       return null;
     }
-  }, [auth]);
+  }, [auth, syncSessionCookie]);
 
-  // Logs out on both the API (session cookie) and Firebase client.
+  // Periodic refresh to keep cookie + claims warm.
+  useEffect(() => {
+    const baseInterval =
+      typeof sessionRefreshIntervalMs === "number"
+        ? sessionRefreshIntervalMs
+        : sessionTtlMs
+          ? Math.floor(sessionTtlMs / 2)
+          : undefined;
+    const intervalMs =
+      baseInterval && baseInterval > 0
+        ? Math.max(
+            MIN_REFRESH_INTERVAL_MS,
+            Math.min(baseInterval, MAX_REFRESH_INTERVAL_MS)
+          )
+        : undefined;
+    if (!user || !intervalMs) return undefined;
+
+    const id = setInterval(() => {
+      refreshIdToken().catch(() => {});
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [refreshIdToken, sessionRefreshIntervalMs, sessionTtlMs, user]);
+
+  // Also refresh on tab focus.
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const handler = () => {
+      if (!document.hidden) {
+        refreshIdToken().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => {
+      document.removeEventListener("visibilitychange", handler);
+    };
+  }, [refreshIdToken]);
+
+  // Logout hits API cookie + Firebase client.
   const logout = useCallback<AuthContextValue["logout"]>(
     async () =>
       runWithBusy(async () => {
@@ -283,7 +319,7 @@ export const AuthProvider: React.FC<
     [auth, endpoints.logout, onLogout, runWithBusy]
   );
 
-  // --- Memoized value ---
+  // Memoized context payload
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -314,11 +350,11 @@ export const AuthProvider: React.FC<
     ]
   );
 
-  // No JSX to keep the file .ts
+  // No JSX so the file stays .ts
   return React.createElement(AuthContext.Provider, { value }, children as any);
 };
 
-// ---------- Hook ----------
+// Hook
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
@@ -326,7 +362,7 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-// Example wiring (per app):
+// Example wiring:
 // const base = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "/api/auth";
 // <AuthProvider
 //   auth={clientAuth}

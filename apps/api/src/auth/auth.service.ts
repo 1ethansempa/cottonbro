@@ -15,10 +15,11 @@ import {
 
 const DEFAULT_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const MAX_TTL_MS = DEFAULT_TTL_MS; // cap at 14d
+const MIN_TTL_MS = 5 * 60 * 1000; // Firebase requires >= 5 minutes
 
 function clampTtlMs(ttlMs?: number) {
   if (!ttlMs || ttlMs <= 0) return DEFAULT_TTL_MS;
-  return Math.min(ttlMs, MAX_TTL_MS);
+  return Math.min(Math.max(ttlMs, MIN_TTL_MS), MAX_TTL_MS);
 }
 
 @Injectable()
