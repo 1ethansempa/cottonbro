@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "connect-src 'self' http://localhost:3001 https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com",
   "font-src 'self'",
-  "frame-src 'self' https://*.firebaseapp.com https://www.gstatic.com",
+  "frame-src 'self' https://*.firebaseapp.com https://www.gstatic.com https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
 ].join("; ");
 

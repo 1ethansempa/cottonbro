@@ -54,7 +54,7 @@ export interface AuthContextValue {
   claims: IdTokenResult["claims"] | null;
   role: AuthRole;
   refreshIdToken: () => Promise<string | null>;
-  requestOtp: (email: string) => Promise<void>;
+  requestOtp: (email: string, captchaToken: string) => Promise<void>;
   confirmOtp: (email: string, code: string) => Promise<void>;
   googleSignIn: () => Promise<void>;
   logout: () => Promise<void>;
@@ -180,11 +180,13 @@ export const AuthProvider: React.FC<
 
   // Kick off OTP flow.
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
-    async (email) =>
+    async (email, captchaToken) =>
       runWithBusy(async () => {
         const e = email.trim();
+        const token = captchaToken?.trim();
         if (!e) throw new Error("email_required");
-        await postJson(endpoints.startOtp, { email: e });
+        if (!token) throw new Error("captcha_required");
+        await postJson(endpoints.startOtp, { email: e, captchaToken: token });
       }),
     [endpoints.startOtp, postJson, runWithBusy]
   );

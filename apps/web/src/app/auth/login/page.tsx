@@ -5,6 +5,19 @@ import { useAuth } from "@cottonbro/auth-react";
 import { Button, Input, GoogleButton } from "@cottonbro/ui";
 import WebAuthProvider from "@/app/providers/auth-provider";
 
+declare global {
+  interface Window {
+    turnstile?: {
+      reset: (widgetId?: string) => void;
+    };
+    cottonbroTurnstileCallback?: (token: string) => void;
+    cottonbroTurnstileExpired?: () => void;
+    cottonbroTurnstileError?: () => void;
+  }
+}
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+
 function LoginView() {
   const { requestOtp, confirmOtp, googleSignIn, busy, error } = useAuth();
 
@@ -12,6 +25,38 @@ function LoginView() {
   const [code, setCode] = React.useState("");
   const [sent, setSent] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null);
+  const turnstileConfigured = Boolean(TURNSTILE_SITE_KEY);
+
+  const resetCaptcha = React.useCallback(() => {
+    setCaptchaToken(null);
+    if (typeof window !== "undefined" && window.turnstile?.reset) {
+      try {
+        window.turnstile.reset();
+      } catch {
+        // no-op; Turnstile script handles logging
+      }
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !turnstileConfigured) return;
+    window.cottonbroTurnstileCallback = (token: string) => {
+      setCaptchaToken(token);
+      setStatus(null);
+    };
+    const invalidateToken = () => {
+      setCaptchaToken(null);
+      setStatus(null);
+    };
+    window.cottonbroTurnstileExpired = invalidateToken;
+    window.cottonbroTurnstileError = invalidateToken;
+    return () => {
+      delete window.cottonbroTurnstileCallback;
+      delete window.cottonbroTurnstileExpired;
+      delete window.cottonbroTurnstileError;
+    };
+  }, [turnstileConfigured]);
 
   const redirect =
     typeof window !== "undefined"
@@ -31,13 +76,23 @@ function LoginView() {
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
+    if (!turnstileConfigured) {
+      setStatus("Captcha is not configured. Contact support.");
+      return;
+    }
+    if (!captchaToken) {
+      setStatus("Please complete the captcha before requesting a code.");
+      return;
+    }
     setStatus(null);
     try {
-      await requestOtp(email.trim());
+      await requestOtp(email.trim(), captchaToken);
       setSent(true);
       setStatus("Code sent. Check your inbox.");
     } catch {
       setStatus("Could not send code. Please try again.");
+    } finally {
+      resetCaptcha();
     }
   }
 
@@ -102,9 +157,34 @@ function LoginView() {
                 />
               </div>
 
+              {turnstileConfigured ? (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+                    Verify you&apos;re human
+                  </p>
+                  <div
+                    className="cf-turnstile mt-3"
+                    data-sitekey={TURNSTILE_SITE_KEY}
+                    data-callback="cottonbroTurnstileCallback"
+                    data-expired-callback="cottonbroTurnstileExpired"
+                    data-error-callback="cottonbroTurnstileError"
+                    data-action="otp_start"
+                    data-theme="light"
+                    role="presentation"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-red-600">
+                  Turnstile site key missing. Add NEXT_PUBLIC_TURNSTILE_SITE_KEY
+                  to use captcha protection.
+                </p>
+              )}
+
               <Button
                 type="submit"
-                disabled={!email || busy}
+                disabled={
+                  !email || busy || !captchaToken || !turnstileConfigured
+                }
                 className="w-full"
               >
                 {busy ? "Sending…" : "Sign In"}
@@ -144,7 +224,7 @@ function LoginView() {
               <button
                 type="button"
                 onClick={onSend}
-                disabled={busy}
+                disabled={busy || !captchaToken || !turnstileConfigured}
                 className="w-full text-xs font-bold uppercase tracking-widest text-zinc-500 underline underline-offset-4 hover:text-black transition disabled:opacity-60 text-center block"
               >
                 Resend code
@@ -153,9 +233,14 @@ function LoginView() {
           )}
         </div>
 
-        {(status || error) && (
-          <p className="mt-6 text-center text-sm font-bold text-red-600 uppercase tracking-wide">
-            {status || error}
+        {status && (
+          <p className="mt-6 text-center text-sm font-bold text-green-700 uppercase tracking-wide">
+            {status}
+          </p>
+        )}
+        {error && (
+          <p className="mt-2 text-center text-sm font-bold text-red-600 uppercase tracking-wide">
+            {error}
           </p>
         )}
       </div>

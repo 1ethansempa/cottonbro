@@ -4,9 +4,25 @@ import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@cottonbro/auth-react";
 
 export function SiteHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
+    const { user, logout, busy } = useAuth();
+
+    const isAuthenticated = Boolean(user);
+
+    async function handleLogout() {
+        if (loggingOut) return;
+        setLoggingOut(true);
+        try {
+            await logout();
+        } finally {
+            setLoggingOut(false);
+            setMobileMenuOpen(false);
+        }
+    }
 
     const nav = [
         { href: "/#features", label: "Features" },
@@ -36,18 +52,31 @@ export function SiteHeader() {
                     </div>
 
                     <div className="hidden md:flex items-center gap-3">
-                        <Link
-                            href="/auth/login"
-                            className="text-sm font-bold uppercase tracking-widest text-black hover:text-street-red transition"
-                        >
-                            Sign in
-                        </Link>
-                        <Link
-                            href="/auth/login"
-                            className="bg-black border-2 border-black px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
-                        >
-                            Create account
-                        </Link>
+                        {!isAuthenticated ? (
+                            <>
+                                <Link
+                                    href="/auth/login"
+                                    className="text-sm font-bold uppercase tracking-widest text-black hover:text-street-red transition"
+                                >
+                                    Sign in
+                                </Link>
+                                <Link
+                                    href="/auth/login"
+                                    className="bg-black border-2 border-black px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
+                                >
+                                    Create account
+                                </Link>
+                            </>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                disabled={loggingOut || busy}
+                                className="bg-black border-2 border-black px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition disabled:opacity-60"
+                            >
+                                {loggingOut ? "Logging out…" : "Log out"}
+                            </button>
+                        )}
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -117,18 +146,33 @@ export function SiteHeader() {
                                 ))}
                             </div>
                             <div className="mt-auto flex flex-col gap-4 pb-8">
-                                <Link
-                                    href="/auth/login"
-                                    className="text-xl font-bold uppercase tracking-widest text-black text-center hover:text-street-red transition"
-                                >
-                                    Sign in
-                                </Link>
-                                <Link
-                                    href="/auth/login"
-                                    className="bg-black border-2 border-black px-6 py-4 text-center text-xl font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
-                                >
-                                    Create account
-                                </Link>
+                                {!isAuthenticated ? (
+                                    <>
+                                        <Link
+                                            href="/auth/login"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-xl font-bold uppercase tracking-widest text-black text-center hover:text-street-red transition"
+                                        >
+                                            Sign in
+                                        </Link>
+                                        <Link
+                                            href="/auth/login"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="bg-black border-2 border-black px-6 py-4 text-center text-xl font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
+                                        >
+                                            Create account
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
+                                        disabled={loggingOut || busy}
+                                        className="bg-black border-2 border-black px-6 py-4 text-center text-xl font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition disabled:opacity-60"
+                                    >
+                                        {loggingOut ? "Logging out…" : "Log out"}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </motion.div>
