@@ -68,6 +68,9 @@ RUN ENV_FILE="/app/apps/web/.env.${APP_ENV}.local"; \
     } > "$ENV_FILE"; \
     cp "$ENV_FILE" "/app/.env.${APP_ENV}.local"
 
+# Build shared frontend packages so their dist outputs exist for Next build
+RUN pnpm --filter @cottonbro/ui build && pnpm --filter @cottonbro/auth-react build
+
 # Build QA or Prod based on APP_ENV (Next will emit .next/standalone)
 RUN if [ "$APP_ENV" = "qa" ]; then \
       pnpm --filter @cottonbro/web build:qa; \
