@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useAuth } from "@cottonbro/auth-react";
 import { Button, Input, GoogleButton } from "@cottonbro/ui";
-import WebAuthProvider from "@/app/providers/auth-provider";
+import { useSearchParams } from "next/navigation";
 
 declare global {
   interface Window {
@@ -19,14 +19,26 @@ declare global {
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 function LoginView() {
-  const { requestOtp, confirmOtp, googleSignIn, busy, error } = useAuth();
+  const {
+    requestOtp,
+    confirmOtp,
+    googleSignIn,
+    busy,
+    error,
+    user,
+    logout,
+  } = useAuth();
 
   const [email, setEmail] = React.useState("");
   const [code, setCode] = React.useState("");
   const [sent, setSent] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = React.useState<string | null>(null);
+  const [switchingAccount, setSwitchingAccount] = React.useState(false);
   const turnstileConfigured = Boolean(TURNSTILE_SITE_KEY);
+  const searchParams = useSearchParams();
+  const redirect = searchParams?.get("redirect") || "/";
+  const isAuthenticated = Boolean(user);
 
   const resetCaptcha = React.useCallback(() => {
     setCaptchaToken(null);
@@ -58,10 +70,28 @@ function LoginView() {
     };
   }, [turnstileConfigured]);
 
-  const redirect =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("redirect") || "/"
-      : "/";
+  const handleContinue = React.useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.location.replace(redirect);
+    }
+  }, [redirect]);
+
+  const handleSwitchAccount = React.useCallback(async () => {
+    if (switchingAccount) return;
+    setSwitchingAccount(true);
+    setStatus("Signing you out so you can log in again…");
+    try {
+      await logout();
+      setSent(false);
+      setCode("");
+      resetCaptcha();
+      setStatus("Signed out. Enter your email to continue.");
+    } catch {
+      setStatus("Could not sign you out. Please try again.");
+    } finally {
+      setSwitchingAccount(false);
+    }
+  }, [logout, resetCaptcha, switchingAccount]);
 
   async function onGoogle() {
     setStatus(null);
@@ -136,59 +166,97 @@ function LoginView() {
 
         {/* Forms */}
         <div>
-          {!sent ? (
-            <form onSubmit={onSend} className="space-y-6">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
+          {isAuthenticated && (
+            <div className="mb-6 rounded border-2 border-black bg-zinc-50 p-4">
+              <p className="text-sm font-bold uppercase tracking-widest text-black">
+                You&apos;re already signed in
+                {user?.email ? ` as ${user.email}` : ""}.
+              </p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Continue to your account or sign out to switch profiles.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleContinue}
+                  className="w-full rounded border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-white hover:text-black"
                 >
-                  Email Address
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="YOU@EXAMPLE.COM"
-                />
+                  Continue
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSwitchAccount}
+                  disabled={switchingAccount || busy}
+                  className="w-full rounded border-2 border-black bg-white px-4 py-2 text-sm font-bold uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:opacity-60"
+                >
+                  {switchingAccount ? "Signing out…" : "Switch account"}
+                </button>
               </div>
+            </div>
+          )}
 
-              {turnstileConfigured ? (
+          {!sent ? (
+            <form onSubmit={onSend}>
+              <fieldset
+                disabled={isAuthenticated && !switchingAccount}
+                className="space-y-6 disabled:opacity-60"
+              >
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                    Verify you&apos;re human
-                  </p>
-                  <div
-                    className="cf-turnstile mt-3"
-                    data-sitekey={TURNSTILE_SITE_KEY}
-                    data-callback="cottonbroTurnstileCallback"
-                    data-expired-callback="cottonbroTurnstileExpired"
-                    data-error-callback="cottonbroTurnstileError"
-                    data-action="otp_start"
-                    data-theme="light"
-                    role="presentation"
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
+                  >
+                    Email Address
+                  </label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="YOU@EXAMPLE.COM"
                   />
                 </div>
-              ) : (
-                <p className="text-sm font-semibold text-red-600">
-                  Turnstile site key missing. Add NEXT_PUBLIC_TURNSTILE_SITE_KEY
-                  to use captcha protection.
-                </p>
-              )}
 
-              <Button
-                type="submit"
-                disabled={
-                  !email || busy || !captchaToken || !turnstileConfigured
-                }
-                className="w-full"
-              >
-                {busy ? "Sending…" : "Sign In"}
-              </Button>
+                {turnstileConfigured ? (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+                      Verify you&apos;re human
+                    </p>
+                    <div
+                      className="cf-turnstile mt-3"
+                      data-sitekey={TURNSTILE_SITE_KEY}
+                      data-callback="cottonbroTurnstileCallback"
+                      data-expired-callback="cottonbroTurnstileExpired"
+                      data-error-callback="cottonbroTurnstileError"
+                      data-action="otp_start"
+                      data-theme="light"
+                      role="presentation"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm font-semibold text-red-600">
+                    Turnstile site key missing. Add
+                    NEXT_PUBLIC_TURNSTILE_SITE_KEY to use captcha protection.
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={
+                    !email ||
+                    busy ||
+                    !captchaToken ||
+                    !turnstileConfigured ||
+                    switchingAccount
+                  }
+                  className="w-full"
+                >
+                  {busy ? "Sending…" : "Sign In"}
+                </Button>
+              </fieldset>
             </form>
           ) : (
             <form onSubmit={onConfirm} className="space-y-6">
@@ -263,9 +331,5 @@ function LoginView() {
 }
 
 export default function LoginPage() {
-  return (
-    <WebAuthProvider>
-      <LoginView />
-    </WebAuthProvider>
-  );
+  return <LoginView />;
 }
