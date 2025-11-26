@@ -13,13 +13,21 @@ async function bootstrap() {
   // Cookies
   app.use(cookieParser());
 
-  // Dev CORS (in prod, prefer same-origin or a gateway)
-  if (process.env.NODE_ENV !== "production") {
-    app.enableCors({
-      origin: [/^http:\/\/localhost:\d+$/],
-      credentials: true,
-    });
-  }
+  const appEnv = process.env.APP_ENV ?? "prod";
+
+  const allowedOrigins =
+    appEnv === "prod"
+      ? ["https://cottonbro.com"]
+      : [
+          "http://localhost:5173",
+          "https://cottonbro-web-rgkcirpgkq-ew.a.run.app",
+          "https://cottonbro-web-491077850913.europe-west1.run.app",
+        ];
+
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+  });
 
   // Global prefix
   app.setGlobalPrefix("v1");

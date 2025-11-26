@@ -9,16 +9,15 @@ export const metadata: Metadata = {
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const c = cookies() as any;
-  const access = c.get("access_token")?.value;
-  const id = c.get("id_token")?.value;
+  const c = await cookies();
+  const session = c.get("__session")?.value;
 
-  if (access || id) {
+  if (session) {
     redirect("/");
   }
 

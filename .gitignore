@@ -44,3 +44,5 @@ cdk.context.json
 .aws-sam/
 .serverless/
 
+.pnpm-store
+
