@@ -151,9 +151,9 @@ export default function LandingPage() {
                 <div className="absolute -inset-4 bg-black/5 border border-black/10 rounded-sm" />
                 <div className="absolute -inset-2 bg-black/10 border border-black/20 rounded-sm" />
 
-                <div className="relative aspect-[4/5] overflow-hidden border-2 border-black bg-zinc-100 shadow-2xl">
+                <div className="relative aspect-square overflow-hidden border-2 border-black bg-zinc-100 shadow-2xl">
                   <img
-                    src="/test-hero-5.png"
+                    src="/test-hero-7.png"
                     alt="CottonBro preview"
                     className="block h-full w-full object-cover grayscale group-hover:grayscale-0 transition duration-500"
                   />
