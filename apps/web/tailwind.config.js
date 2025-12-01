@@ -17,6 +17,7 @@ module.exports = {
         bone: "#EDE6DA", // lines on cream
         slatey: "#A6A6A6", // muted copy on dark
         "street-red": "#D90429", // streetwear accent
+        "soft-pink": "#FDE2E4", // playful accent
       },
       boxShadow: {
         subtle:
