@@ -14,7 +14,6 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "smoke": "bash ./scripts/smoke.sh",
     "prepare": "husky"
   },
   "keywords": [],

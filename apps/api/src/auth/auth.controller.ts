@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   HttpCode,
+  Ip,
   Post,
   Res,
   UseGuards,
@@ -23,8 +24,8 @@ export class AuthController {
   @UseGuards(ThrottlerGuard)
   @Post("otp/start")
   @HttpCode(204)
-  async startOtp(@Body() dto: OtpStartDto): Promise<void> {
-    await this.service.startOtp(dto.email);
+  async startOtp(@Body() dto: OtpStartDto, @Ip() ip: string): Promise<void> {
+    await this.service.startOtp(dto.email, dto.captchaToken, ip);
   }
 
   @UseGuards(ThrottlerGuard)
