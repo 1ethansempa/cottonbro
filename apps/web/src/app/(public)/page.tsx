@@ -114,10 +114,13 @@ export default function LandingPage() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="flex flex-col items-start z-10 max-w-full"
             >
-              <h1 className="font-marcellus uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full">
+              <h1 className="font-marcellus uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full relative">
                 Built for
                 <br />
-                <span className="text-street-red flex italic">Creators</span>
+                <span className="relative inline-block">
+                  <span className="relative z-10 text-street-red italic">Creators</span>
+                  <span className="absolute -bottom-2 left-0 w-full h-4 bg-soft-pink -rotate-2 -z-0 rounded-full" />
+                </span>
               </h1>
               <p className="mt-8 max-w-md text-xl font-bold leading-relaxed text-black uppercase tracking-wide">
                 Turn your ideas into real merch. You create; we handle printing,
@@ -126,7 +129,7 @@ export default function LandingPage() {
 
               <div className="mt-12 flex flex-wrap items-center gap-6">
                 <Link href="/auth/login">
-                  <Button className="px-10 py-5 text-lg rounded-none border-2 border-black bg-white text-black hover:bg-street-red hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all uppercase font-bold tracking-widest">
+                  <Button className="px-10 py-5 text-lg rounded-full border-2 border-black bg-white text-black hover:bg-street-red hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all uppercase font-bold tracking-widest">
                     Start free
                   </Button>
                 </Link>
@@ -143,10 +146,10 @@ export default function LandingPage() {
             <div className="relative">
               <div className="relative z-10 cursor-pointer group">
                 {/* Stack Effect */}
-                <div className="absolute -inset-4 bg-street-red border-2 border-black translate-x-3 translate-y-3" />
-                <div className="absolute -inset-4 bg-black border-2 border-black" />
+                <div className="absolute -inset-4 bg-soft-pink border-2 border-black translate-x-3 translate-y-3 rounded-2xl" />
+                <div className="absolute -inset-4 bg-black border-2 border-black rounded-2xl" />
 
-                <div className="relative aspect-square overflow-hidden border-2 border-black bg-zinc-100">
+                <div className="relative aspect-square overflow-hidden border-2 border-black bg-zinc-100 rounded-2xl">
                   <Image
                     src="/test-hero-7.png"
                     alt="CottonBro preview"
@@ -158,29 +161,37 @@ export default function LandingPage() {
                   {/* Glitch/Shine effect on hover */}
                   <div className="absolute inset-0 bg-street-red/10 opacity-0 group-hover:opacity-100 transition-opacity duration-100 pointer-events-none mix-blend-multiply" />
                 </div>
+
+
               </div>
             </div>
           </div>
 
           {/* SCROLLING MARQUEE */}
-          <div className="w-full border-t-2 border-black bg-black py-4 overflow-hidden whitespace-nowrap">
+          <div className="w-full border-t-2 border-black bg-black py-4 overflow-hidden">
             <motion.div
-              className="inline-block"
-              animate={{ x: [0, -1000] }}
-              transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+              className="flex w-max"
+              animate={{ x: "-50%" }}
+              transition={{ repeat: Infinity, duration: 120, ease: "linear" }}
             >
-              {[...Array(10)].map((_, i) => (
-                <span
-                  key={i}
-                  className="text-3xl md:text-5xl font-black uppercase text-white tracking-widest mx-8 font-urbanist"
-                >
-                  Launch Your Merch{" "}
-                  <span className="text-street-red mx-2">•</span> No Inventory
-                  Needed <span className="text-street-red mx-2">•</span> We
-                  Handle Production{" "}
-                  <span className="text-street-red mx-2">•</span> Kampala
-                  Delivery <span className="text-street-red mx-2">•</span>
-                </span>
+              {[0, 1].map((setIndex) => (
+                <div key={setIndex} className="flex shrink-0 items-center">
+                  {[...Array(8)].map((_, i) => (
+                    <span
+                      key={i}
+                      className="text-3xl md:text-5xl font-black uppercase text-white tracking-widest mx-8 font-urbanist flex items-center gap-4"
+                    >
+                      Launch Your Merch{" "}
+                      <span className="text-soft-pink mx-2 text-6xl">•</span> No
+                      Inventory Needed{" "}
+                      <span className="text-soft-pink mx-2 text-6xl">•</span> We
+                      Handle Production{" "}
+                      <span className="text-soft-pink mx-2 text-6xl">•</span>{" "}
+                      Kampala Delivery{" "}
+                      <span className="text-soft-pink mx-2 text-6xl">•</span>
+                    </span>
+                  ))}
+                </div>
               ))}
             </motion.div>
           </div>
@@ -191,7 +202,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Column 1 — Apparel Studio */}
             <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
+              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black rounded-xl">
                 <Image
                   src="/test-hero-7.png"
                   alt="Apparel"
@@ -213,7 +224,7 @@ export default function LandingPage() {
 
             {/* Column 2 — Outerwear */}
             <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
+              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black rounded-xl">
                 <Image
                   src="/test-img-2.png"
                   alt="Outerwear"
@@ -235,7 +246,7 @@ export default function LandingPage() {
 
             {/* Column 3 — Limited Editions */}
             <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
+              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black rounded-xl">
                 <Image
                   src="/test-img-1.png"
                   alt="Limited Editions"
@@ -266,9 +277,8 @@ export default function LandingPage() {
             <h2 className="font-marcellus text-6xl uppercase text-black md:text-8xl leading-[0.9]">
               The Studio
             </h2>
-            <p className="mt-8 max-w-xl text-xl font-black uppercase text-white bg-black inline-block px-3 py-1 transform -rotate-1">
-              No logistics.{" "}
-              <span className="text-street-red">Just design.</span>
+            <p className="mt-8 max-w-xl text-xl font-black uppercase text-black bg-soft-pink inline-block px-4 py-2 transform -rotate-1 rounded-lg border-2 border-black">
+              No logistics. <span className="text-street-red">Just design.</span>
             </p>
           </div>
 
@@ -277,7 +287,7 @@ export default function LandingPage() {
               <motion.div
                 key={f.title}
                 className={[
-                  "group relative flex flex-col justify-between bg-white p-8 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all",
+                  "group relative flex flex-col justify-between bg-white p-8 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(253,226,228,1)] hover:-translate-y-1 transition-all rounded-xl",
                   i === 0 || i === 3 ? "md:col-span-2" : "",
                 ].join(" ")}
               >
@@ -319,12 +329,12 @@ export default function LandingPage() {
               >
                 {/* Embossed Number Effect */}
                 <span
-                  className="font-jamino text-7xl text-transparent stroke-black stroke-1 transition-transform duration-300 group-hover:-translate-y-2 group-hover:text-street-red"
+                  className="font-jamino text-7xl text-transparent stroke-black stroke-1 transition-transform duration-300 group-hover:-translate-y-2 group-hover:text-soft-pink"
                   style={{ WebkitTextStroke: "1px black" }}
                 >
                   0{s.n}
                 </span>
-                <h3 className="text-xl font-black uppercase text-black bg-zinc-100 inline-block px-2 self-start transform -rotate-1 group-hover:rotate-0 transition-transform group-hover:bg-street-red group-hover:text-white">
+                <h3 className="text-xl font-black uppercase text-black bg-zinc-100 inline-block px-2 self-start transform -rotate-1 group-hover:rotate-0 transition-transform group-hover:bg-soft-pink group-hover:text-black rounded-md border border-transparent group-hover:border-black">
                   {s.t}
                 </h3>
                 <p className="text-sm font-bold uppercase leading-relaxed text-zinc-700 group-hover:text-black transition-colors">
@@ -357,8 +367,11 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="flex flex-col items-center border-2 border-black bg:white bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-[16px_16px_0px_0px_rgba(217,4,41,1)] transition-shadow"
+                className="flex flex-col items-center border-2 border-black bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-[16px_16px_0px_0px_rgba(253,226,228,1)] transition-shadow rounded-3xl relative"
               >
+                <div className="absolute -top-4 bg-soft-pink text-black text-xs font-black uppercase px-4 py-1 rounded-full border-2 border-black">
+                  Simple & Fair
+                </div>
                 <h3 className="mb-6 font-urbanist text-4xl font-black uppercase text-black">
                   Transparent Pricing
                 </h3>
@@ -400,8 +413,9 @@ export default function LandingPage() {
                     boxShadow: "8px 8px 0px 0px rgba(0,0,0,1)",
                   }}
                   transition={{ type: "spring", stiffness: 300 }}
+
                   viewport={{ once: true }}
-                  className="border-2 border-black bg-white p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] origin-center cursor-default"
+                  className="border-2 border-black bg-soft-pink/20 p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] origin-center cursor-default rounded-2xl"
                 >
                   <div className="flex gap-1 text-street-red mb-4 text-xl">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -441,9 +455,8 @@ export default function LandingPage() {
                     {f.q}
                   </span>
                   <span
-                    className={`text-street-red transition-transform duration-300 text-3xl font-black ${
-                      hoveredFaqIndex === i ? "rotate-45" : ""
-                    }`}
+                    className={`text-street-red transition-transform duration-300 text-3xl font-black ${hoveredFaqIndex === i ? "rotate-45" : ""
+                      }`}
                   >
                     +
                   </span>
@@ -483,7 +496,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <Link href="/auth/login">
-                <Button className="px-10 py-5 text-lg rounded-none border-2 border-black bg-black text-white hover:bg-street-red hover:text-white shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all uppercase font-black tracking-widest">
+                <Button className="px-10 py-5 text-lg rounded-full border-2 border-black bg-black text-white hover:bg-soft-pink hover:text-black shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all uppercase font-black tracking-widest">
                   Create free account
                 </Button>
               </Link>
