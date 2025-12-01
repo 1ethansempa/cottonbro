@@ -1,12 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@cottonbro/ui";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 export default function LandingPage() {
+  const [hoveredFaqIndex, setHoveredFaqIndex] = useState<number | null>(null);
+
   const benefits = [
     {
       title: "Launch with confidence",
@@ -88,7 +92,7 @@ export default function LandingPage() {
 
   // Scroll animations
   const { scrollY } = useScroll();
-  const heroParallax = useTransform(scrollY, [0, 1000], [0, 150]); // Subtle parallax for background
+  const heroParallax = useTransform(scrollY, [0, 1000], [0, 150]); // Subtle parallax for background (currently unused but kept)
 
   return (
     <div className="min-h-dvh bg-black overflow-x-hidden font-urbanist">
@@ -143,10 +147,13 @@ export default function LandingPage() {
                 <div className="absolute -inset-4 bg-black border-2 border-black" />
 
                 <div className="relative aspect-square overflow-hidden border-2 border-black bg-zinc-100">
-                  <img
+                  <Image
                     src="/test-hero-7.png"
                     alt="CottonBro preview"
-                    className="block h-full w-full object-cover contrast-125 transition duration-500"
+                    fill
+                    priority
+                    className="object-cover contrast-125 transition duration-500"
+                    sizes="(min-width: 1024px) 50vw, 100vw"
                   />
                   {/* Glitch/Shine effect on hover */}
                   <div className="absolute inset-0 bg-street-red/10 opacity-0 group-hover:opacity-100 transition-opacity duration-100 pointer-events-none mix-blend-multiply" />
@@ -163,8 +170,16 @@ export default function LandingPage() {
               transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
             >
               {[...Array(10)].map((_, i) => (
-                <span key={i} className="text-3xl md:text-5xl font-black uppercase text-white tracking-widest mx-8 font-urbanist">
-                  Launch Your Merch <span className="text-street-red mx-2">•</span> No Inventory Needed <span className="text-street-red mx-2">•</span> We Handle Production <span className="text-street-red mx-2">•</span> Kampala Delivery <span className="text-street-red mx-2">•</span>
+                <span
+                  key={i}
+                  className="text-3xl md:text-5xl font-black uppercase text-white tracking-widest mx-8 font-urbanist"
+                >
+                  Launch Your Merch{" "}
+                  <span className="text-street-red mx-2">•</span> No Inventory
+                  Needed <span className="text-street-red mx-2">•</span> We
+                  Handle Production{" "}
+                  <span className="text-street-red mx-2">•</span> Kampala
+                  Delivery <span className="text-street-red mx-2">•</span>
                 </span>
               ))}
             </motion.div>
@@ -174,16 +189,20 @@ export default function LandingPage() {
         {/* NEW SECTION: COLLECTIONS (Balanced Edition) */}
         <section className="mx-auto max-w-7xl px-6 py-24 border-b-2 border-black">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Column 1 */}
+            {/* Column 1 — Apparel Studio */}
             <div className="group cursor-pointer relative">
               <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
-                <img
+                <Image
                   src="/test-hero-7.png"
                   alt="Apparel"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
                 />
               </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">Apparel Studio</h3>
+              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
+                Apparel Studio
+              </h3>
               <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
                 Redefining streetwear.
               </p>
@@ -192,30 +211,42 @@ export default function LandingPage() {
               </span>
             </div>
 
-            {/* Column 2 */}
+            {/* Column 2 — Outerwear */}
             <div className="group cursor-pointer relative">
               <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
-                <div className="h-full w-full bg-zinc-100 flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-                  <span className="font-jamino text-5xl text-zinc-300 group-hover:text-black">IMG</span>
-                </div>
+                <Image
+                  src="/test-img-2.png"
+                  alt="Outerwear"
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
+                />
               </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">Accessories</h3>
+              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
+                Outerwear
+              </h3>
               <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
-                Curated essentials.
+                Beyond bold layers.
               </p>
               <span className="inline-block border-b-2 border-black pb-0.5 text-sm font-black uppercase tracking-widest group-hover:text-street-red group-hover:border-street-red transition-all">
-                Shop Accessories
+                Shop Outerwear
               </span>
             </div>
 
-            {/* Column 3 */}
+            {/* Column 3 — Limited Editions */}
             <div className="group cursor-pointer relative">
               <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
-                <div className="h-full w-full bg-zinc-800 flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-                  <span className="font-jamino text-5xl text-zinc-600 group-hover:text-white">IMG</span>
-                </div>
+                <Image
+                  src="/test-img-1.png"
+                  alt="Limited Editions"
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
+                />
               </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">Limited Editions</h3>
+              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
+                Limited Editions
+              </h3>
               <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
                 Exclusive drops.
               </p>
@@ -236,7 +267,8 @@ export default function LandingPage() {
               The Studio
             </h2>
             <p className="mt-8 max-w-xl text-xl font-black uppercase text-white bg-black inline-block px-3 py-1 transform -rotate-1">
-              No logistics. <span className="text-street-red">Just design.</span>
+              No logistics.{" "}
+              <span className="text-street-red">Just design.</span>
             </p>
           </div>
 
@@ -313,7 +345,10 @@ export default function LandingPage() {
               Pricing
             </h2>
             <p className="mt-6 text-xl font-black uppercase text-black">
-              Clear plans. <span className="text-street-red underline decoration-4 decoration-black">Zero bs.</span>
+              Clear plans.{" "}
+              <span className="text-street-red underline decoration-4 decoration-black">
+                Zero bs.
+              </span>
             </p>
           </div>
           <div className="flex justify-center">
@@ -322,7 +357,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="flex flex-col items-center border-2 border-black bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-[16px_16px_0px_0px_rgba(217,4,41,1)] transition-shadow"
+                className="flex flex-col items-center border-2 border-black bg:white bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-[16px_16px_0px_0px_rgba(217,4,41,1)] transition-shadow"
               >
                 <h3 className="mb-6 font-urbanist text-4xl font-black uppercase text-black">
                   Transparent Pricing
@@ -394,24 +429,38 @@ export default function LandingPage() {
             FAQ
           </h2>
           <div className="divide-y-2 divide-black border-y-2 border-black">
-            {faqs.map((f) => (
-              <details key={f.q} className="group py-8">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
+            {faqs.map((f, i) => (
+              <div
+                key={f.q}
+                className="group py-8 cursor-pointer"
+                onMouseEnter={() => setHoveredFaqIndex(i)}
+                onMouseLeave={() => setHoveredFaqIndex(null)}
+              >
+                <div className="flex list-none items-center justify-between gap-4">
                   <span className="text-xl font-black text-black uppercase group-hover:text-street-red transition-colors">
                     {f.q}
                   </span>
-                  <span className="text-street-red transition group-open:rotate-45 text-3xl font-black">
+                  <span
+                    className={`text-street-red transition-transform duration-300 text-3xl font-black ${
+                      hoveredFaqIndex === i ? "rotate-45" : ""
+                    }`}
+                  >
                     +
                   </span>
-                </summary>
-                <motion.p
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  className="mt-4 text-lg font-bold uppercase text-zinc-700"
+                </div>
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: hoveredFaqIndex === i ? "auto" : 0,
+                    opacity: hoveredFaqIndex === i ? 1 : 0,
+                  }}
+                  className="overflow-hidden"
                 >
-                  {f.a}
-                </motion.p>
-              </details>
+                  <p className="mt-4 text-lg font-bold uppercase text-zinc-700">
+                    {f.a}
+                  </p>
+                </motion.div>
+              </div>
             ))}
           </div>
         </section>
