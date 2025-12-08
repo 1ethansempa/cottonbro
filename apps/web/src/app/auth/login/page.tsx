@@ -4,6 +4,7 @@ import * as React from "react";
 import { useAuth } from "@cottonbro/auth-react";
 import { Button, Input, GoogleButton } from "@cottonbro/ui";
 import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 
 declare global {
   interface Window {
@@ -139,10 +140,15 @@ function LoginView() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-6 py-12 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-start">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-start px-6 py-12"
+    >
       {/* LEFT COLUMN: SIGN IN */}
-      <div className="w-full max-w-md mx-auto md:mx-0">
-        <h1 className="font-jamino text-5xl md:text-7xl uppercase text-black mb-8 md:mb-12 tracking-tight">
+      <div className="bg-white p-8 md:p-12 border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+        <h1 className="font-marcellus text-5xl uppercase text-black mb-8 tracking-tight leading-[0.9]">
           Sign In
         </h1>
 
@@ -167,7 +173,7 @@ function LoginView() {
         {/* Forms */}
         <div>
           {isAuthenticated && (
-            <div className="mb-6 rounded border-2 border-black bg-zinc-50 p-4">
+            <div className="mb-6 border-2 border-black bg-zinc-50 p-6">
               <p className="text-sm font-bold uppercase tracking-widest text-black">
                 You&apos;re already signed in
                 {user?.email ? ` as ${user.email}` : ""}.
@@ -175,11 +181,11 @@ function LoginView() {
               <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 Continue to your account or sign out to switch profiles.
               </p>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={handleContinue}
-                  className="w-full rounded border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-white hover:text-black"
+                  className="w-full border-2 border-black bg-black px-6 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-street-red hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5"
                 >
                   Continue
                 </button>
@@ -187,7 +193,7 @@ function LoginView() {
                   type="button"
                   onClick={handleSwitchAccount}
                   disabled={switchingAccount || busy}
-                  className="w-full rounded border-2 border-black bg-white px-4 py-2 text-sm font-bold uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:opacity-60"
+                  className="w-full border-2 border-black bg-white px-6 py-3 text-sm font-bold uppercase tracking-widest text-black transition hover:bg-zinc-100 disabled:opacity-60"
                 >
                   {switchingAccount ? "Signing out…" : "Switch account"}
                 </button>
@@ -217,16 +223,17 @@ function LoginView() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="YOU@EXAMPLE.COM"
+                    className="border-2 border-black px-4 py-3 text-lg font-bold placeholder:text-zinc-300 focus:ring-0 focus:border-street-red transition-colors"
                   />
                 </div>
 
                 {turnstileConfigured ? (
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
                       Verify you&apos;re human
                     </p>
                     <div
-                      className="cf-turnstile mt-3"
+                      className="cf-turnstile"
                       data-sitekey={TURNSTILE_SITE_KEY}
                       data-callback="cottonbroTurnstileCallback"
                       data-expired-callback="cottonbroTurnstileExpired"
@@ -252,7 +259,7 @@ function LoginView() {
                     !turnstileConfigured ||
                     switchingAccount
                   }
-                  className="w-full"
+                  className="w-full border-2 border-black bg-black text-white hover:bg-street-red hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all uppercase font-bold tracking-widest py-4 text-lg"
                 >
                   {busy ? "Sending…" : "Sign In"}
                 </Button>
@@ -276,7 +283,7 @@ function LoginView() {
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  className="tracking-[0.5em] text-center text-xl font-bold"
+                  className="tracking-[0.5em] text-center text-3xl font-black border-2 border-black py-4"
                   placeholder="••••••"
                 />
               </div>
@@ -284,7 +291,7 @@ function LoginView() {
               <Button
                 type="submit"
                 disabled={code.length !== 6 || busy}
-                className="w-full"
+                className="w-full border-2 border-black bg-black text-white hover:bg-street-red hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all uppercase font-bold tracking-widest py-4 text-lg"
               >
                 {busy ? "Verifying…" : "Confirm Code"}
               </Button>
@@ -302,31 +309,43 @@ function LoginView() {
         </div>
 
         {status && (
-          <p className="mt-6 text-center text-sm font-bold text-green-700 uppercase tracking-wide">
+          <p className="mt-6 text-center text-sm font-bold text-green-700 uppercase tracking-wide bg-green-50 p-3 border border-green-200">
             {status}
           </p>
         )}
         {error && (
-          <p className="mt-2 text-center text-sm font-bold text-red-600 uppercase tracking-wide">
+          <p className="mt-6 text-center text-sm font-bold text-red-600 uppercase tracking-wide bg-red-50 p-3 border border-red-200">
             {error}
           </p>
         )}
       </div>
 
       {/* RIGHT COLUMN: INFO SNIPPET */}
-      <div className="hidden md:block w-full max-w-md mx-auto md:mx-0 pt-8 md:pt-24">
-        <div className="p-8 border-2 border-black bg-zinc-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          <p className="font-bold uppercase tracking-wide text-sm mb-4 text-black">
+      <div className="hidden md:block pt-12">
+        <div className="p-8 md:p-12 border-2 border-black bg-soft-pink shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transform rotate-1 hover:rotate-0 transition-transform duration-300">
+          <h2 className="font-marcellus text-3xl uppercase text-black mb-4">
             New to Cotton Bro?
-          </p>
-          <p className="text-base font-medium text-zinc-600 mb-6 leading-relaxed">
+          </h2>
+          <p className="text-lg font-bold text-black mb-8 leading-relaxed uppercase">
             Use the form on the left. We&apos;ll create an account for you
             automatically if you don&apos;t have one.
           </p>
-          <div className="h-1 w-12 bg-street-red" />
+          <div className="flex gap-2">
+            <div className="h-2 w-12 bg-street-red" />
+            <div className="h-2 w-4 bg-black" />
+          </div>
+        </div>
+
+        <div className="mt-12 p-8 md:p-12 border-2 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transform -rotate-1 hover:rotate-0 transition-transform duration-300">
+          <h3 className="font-marcellus text-2xl uppercase text-black mb-2">
+            Secure & Passwordless
+          </h3>
+          <p className="text-sm font-bold text-zinc-600 uppercase tracking-wide">
+            We use magic links and OTPs so you never have to remember another password.
+          </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

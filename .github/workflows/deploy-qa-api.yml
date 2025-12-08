@@ -78,7 +78,9 @@ jobs:
             --set-env-vars APP_ENV=qa \
             --set-secrets FIREBASE_PROJECT_ID=api-firebase-project-id:latest \
             --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
-            --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest
+            --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest \
+            --set-secrets SMTP_USER=api-smtp-user:latest \
+            --set-secrets SMTP_PASS=api-smtp-pass:latest
 
       - name: Show service URL
         run: |

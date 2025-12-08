@@ -13,6 +13,7 @@ import {
   mintCustomToken,
 } from "@cottonbro/auth-server";
 import { ConfigService } from "../common/config/config.service.js";
+import { MailService } from "../common/mail/mail.service.js";
 
 const DEFAULT_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const MAX_TTL_MS = DEFAULT_TTL_MS; // cap at 14d
@@ -34,15 +35,17 @@ type TurnstileVerifyResponse = {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly mail: MailService
+  ) {}
 
   /** Starts an OTP flow: generate & email the code */
   async startOtp(email: string, captchaToken: string, remoteIp?: string) {
     if (!email) throw new BadRequestException("Email is required");
     await this.verifyCaptcha(captchaToken, remoteIp);
     const code = await startOtp(email);
-    // TODO: send via your mailer (SES/Mailgun/etc.)
-    console.log(`[OTP] ${email} => ${code}`);
+    await this.mail.sendOtpEmail(email, code);
   }
 
   /** Verifies code, ensures user, returns a Firebase Custom Token */

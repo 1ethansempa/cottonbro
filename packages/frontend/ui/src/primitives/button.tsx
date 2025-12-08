@@ -16,7 +16,7 @@ export const Button: React.FC<ButtonProps> = ({
   let variantStyles = "";
   switch (variant) {
     case "primary":
-      variantStyles = "bg-black border-2 border-black text-white hover:bg-white hover:text-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]";
+      variantStyles = "bg-black border-2 border-black text-white hover:bg-white hover:text-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]";
       break;
     case "outline":
       variantStyles = "bg-white border-2 border-black text-black hover:bg-black hover:text-white";
