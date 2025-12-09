@@ -1,18 +1,11 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
-@font-face {
-  font-family: "Jamino";
-  src:
-    url("/fonts/jamino.ttf") format("truetype"),
-    url("/fonts/jamino.otf") format("opentype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 @theme {
-  --font-jamino: "Jamino", system-ui, sans-serif;
+  --font-jamino: "Urbanist", system-ui, sans-serif;
 }
 
-
+body {
+  @apply bg-page text-primary antialiased selection:bg-white selection:text-black;
+  font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+}

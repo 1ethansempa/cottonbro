@@ -1,88 +1,83 @@
-"use client";
-
+// ...existing imports...
 import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
 
 export function SiteFooter() {
+    // ...existing code...
     return (
-        <footer className="border-t border-black bg-white">
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 py-16 md:grid-cols-4">
-                <div className="col-span-2 md:col-span-1 text-black">
-                    <Logo size="md" color="current" fontClassName="font-jamino" />
-                    <p className="mt-4 text-sm font-bold text-black">
-                        CottonBro handles the heavy lifting so you can focus on the art.
+        <footer className="border-t border-white/5 bg-page pt-20 pb-10">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 md:grid-cols-4 lg:gap-16">
+                <div className="col-span-2 md:col-span-1">
+                    <Link href="/" className="inline-block grayscale hover:grayscale-0 transition-all duration-300">
+                        <Logo size="md" color="white" fontClassName="font-bold tracking-tight" />
+                    </Link>
+                    <p className="mt-6 text-sm leading-relaxed text-secondary max-w-xs font-medium">
+                        CottonBro handles the heavy lifting.
+                        <br />
+                        <span className="text-white">Launch your merch brand in minutes.</span>
                     </p>
                 </div>
                 <div>
-                    <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">
+                    <h4 className="mb-6 text-xs font-bold text-white uppercase tracking-widest">
                         Product
-                    </div>
-                    <ul className="space-y-2 text-sm font-medium text-black">
+                    </h4>
+                    <ul className="space-y-4 text-sm font-medium text-secondary">
                         <li>
-                            <Link
-                                href="/#features"
-                                className="hover:text-street-red transition-colors"
-                            >
+                            <Link href="/#features" className="hover:text-white transition-colors">
                                 Features
                             </Link>
                         </li>
                         <li>
-                            <Link
-                                href="/#how"
-                                className="hover:text-street-red transition-colors"
-                            >
+                            <Link href="/#how" className="hover:text-white transition-colors">
                                 How it works
                             </Link>
                         </li>
                         <li>
-                            <Link
-                                href="/#faq"
-                                className="hover:text-street-red transition-colors"
-                            >
+                            <Link href="/#faq" className="hover:text-white transition-colors">
                                 FAQ
                             </Link>
                         </li>
                     </ul>
                 </div>
                 <div>
-                    <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">
+                    <h4 className="mb-6 text-xs font-bold text-white uppercase tracking-widest">
                         Company
-                    </div>
-                    <ul className="space-y-2 text-sm font-medium text-black">
+                    </h4>
+                    <ul className="space-y-4 text-sm font-medium text-secondary">
                         <li>
-                            <Link href="#" className="hover:text-street-red transition-colors">
+                            <Link href="#" className="hover:text-white transition-colors">
                                 About
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-street-red transition-colors">
+                            <Link href="#" className="hover:text-white transition-colors">
                                 Contact
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-street-red transition-colors">
-                                Privacy
+                            <Link href="#" className="hover:text-white transition-colors">
+                                Privacy Policy
                             </Link>
                         </li>
                     </ul>
                 </div>
                 <div>
-                    <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">
-                        Newsletter
-                    </div>
-                    <form className="flex flex-col gap-2">
+                    <h4 className="mb-6 text-xs font-bold text-white uppercase tracking-widest">
+                        Stay Updated
+                    </h4>
+                    <form className="flex flex-col gap-3">
                         <input
                             type="email"
                             placeholder="Email address"
-                            className="w-full border-2 border-black bg-white px-3 py-2 text-sm text-black outline-none placeholder:text-zinc-400 focus:border-street-red transition"
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-tertiary focus:border-white focus:shadow-glow-silver transition-all"
                         />
-                        <button className="w-full bg-black border-2 border-black px-3 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition">
+                        <button className="w-full rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-silver transition shadow-glow-silver hover:shadow-glow-silver">
                             Subscribe
                         </button>
                     </form>
                 </div>
             </div>
-            <div className="border-t border-black py-8 text-center text-xs font-bold uppercase tracking-widest text-black">
+            <div className="mt-16 border-t border-white/5 pt-8 text-center text-sm font-medium text-tertiary uppercase tracking-wide">
                 © {new Date().getFullYear()} CottonBro. All rights reserved.
             </div>
         </footer>

@@ -4,509 +4,393 @@ import { useState } from "react";
 import { Button } from "@cottonbro/ui";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+
+// Icons - Silver/Chrome Aesthetic
+const RocketIcon = () => (
+  <svg
+    className="w-6 h-6 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M13 10V3L4 14h7v7l9-11h-7z"
+    />
+  </svg>
+);
+const CubeIcon = () => (
+  <svg
+    className="w-6 h-6 text-silver drop-shadow-[0_0_8px_rgba(200,200,200,0.5)]"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+    />
+  </svg>
+);
+const WalletIcon = () => (
+  <svg
+    className="w-6 h-6 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+    />
+  </svg>
+);
+const GlobeIcon = () => (
+  <svg
+    className="w-6 h-6 text-silver drop-shadow-[0_0_8px_rgba(200,200,200,0.5)]"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+    />
+  </svg>
+);
 
 export default function LandingPage() {
   const [hoveredFaqIndex, setHoveredFaqIndex] = useState<number | null>(null);
 
-  const benefits = [
+  const features = [
     {
-      title: "Launch with confidence",
-      copy: "Upload your design, pick a product, and publish once your design is approved.",
+      title: "Launch Instantly",
+      desc: "Upload art. Pick blanks. Go live. No tech skills needed.",
+      icon: <RocketIcon />,
     },
     {
-      title: "Zero ops",
-      copy: "We handle printing, packing, shipping, returns, and customer support behind the scenes.",
+      title: "Zero Inventory",
+      desc: "We print and ship. You never touch a box.",
+      icon: <CubeIcon />,
     },
     {
-      title: "Transparent earnings",
-      copy: "Set your price and see your margin per item before going live.",
+      title: "Fast Payouts",
+      desc: "Money in your account weekly. No holding periods.",
+      icon: <WalletIcon />,
     },
     {
-      title: "3D previews",
-      copy: "Realistic photo and 3D previews so you can sanity-check before launch.",
-    },
-    { title: "Delivery around Kampala", copy: "Coverage across 40+ areas." },
-    {
-      title: "Simple payouts",
-      copy: "Connect your account and get paid automatically every week.",
+      title: "Kampala Wide",
+      desc: "We handle delivery to your customers across Kampala.",
+      icon: <GlobeIcon />,
     },
   ];
 
   const steps = [
-    {
-      n: 1,
-      t: "Create",
-      d: "Start with a template or upload artwork. Pick colors, sizes, variants.",
-    },
-    { n: 2, t: "Preview", d: "Review photo & 3D mockups and confirm quality." },
-    {
-      n: 3,
-      t: "Approval",
-      d: "Submit your design for a final check before publishing.",
-    },
-    {
-      n: 4,
-      t: "Publish",
-      d: "Share a store link. We fulfill and you get paid.",
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: "Nia K.",
-      role: "Artist",
-      body: "Launched a capsule in a weekend. The previews looked exactly like the final pieces.",
-      rotate: -2,
-    },
-    {
-      name: "Tendo M.",
-      role: "Creator",
-      body: "No logistics, just design. Payouts arrive weekly without me touching anything.",
-      rotate: 1,
-    },
-    {
-      name: "Jonas O.",
-      role: "Brand lead",
-      body: "We swapped from spreadsheets to a single link. Conversion went up 18%.",
-      rotate: -1,
-    },
+    { n: 1, title: "Create", desc: "Premium blanks. Your vision." },
+    { n: 2, title: "Preview", desc: "Realistic 3D mockups." },
+    { n: 3, title: "Drop", desc: "Push to store instantly." },
+    { n: 4, title: "Paid", desc: "We ship. You cash out." },
   ];
 
   const faqs = [
+    { q: "Monthly fees?", a: "Zero. We only make money when you sell." },
     {
-      q: "Do I need to buy inventory?",
-      a: "No. We print on demand after a customer orders, so there’s no upfront stock.",
+      q: "Shipping logistics?",
+      a: "Handled completely by us. Delivery across Kampala.",
     },
-    {
-      q: "Where do you deliver?",
-      a: "We currently deliver all around Kampala.",
-    },
-    {
-      q: "How do payouts work?",
-      a: "Connect your account once. Earnings are paid out automatically every week.",
-    },
+    { q: "Payout schedule?", a: "Weekly deposits to your preferred account." },
   ];
 
-  // Scroll animations
-  const { scrollY } = useScroll();
-  const heroParallax = useTransform(scrollY, [0, 1000], [0, 150]); // Subtle parallax for background (currently unused but kept)
-
   return (
-    <div className="min-h-dvh bg-black overflow-x-hidden font-urbanist">
-      {/* 
-        Mobile Nav Depth Effect:
-        We wrap the main content in a motion.div that scales down when the menu is open.
-      */}
-      <motion.div className="bg-white min-h-dvh text-black antialiased selection:bg-street-red selection:text-white origin-top shadow-2xl">
-        {/* NAV */}
-        <SiteHeader />
+    <div className="font-urbanist bg-page text-primary min-h-screen selection:bg-white selection:text-black">
+      <SiteHeader />
 
-        {/* HERO */}
-        <section className="relative overflow-hidden border-b-2 border-black pt-12 pb-0 md:pt-32">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 md:grid-cols-2 relative z-10 pb-24">
-            {/* Left: text */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex flex-col items-start z-10 max-w-full"
-            >
-              <h1 className="font-marcellus uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full relative">
-                Built for
-                <br />
-                <span className="relative inline-block">
-                  <span className="relative z-10 text-street-red italic">Creators</span>
-                  <span className="absolute -bottom-2 left-0 w-full h-4 bg-soft-pink -rotate-2 -z-0" />
+      {/* HERO SECTION */}
+      <section className="relative overflow-hidden pt-20 pb-32 lg:pt-40 lg:pb-40">
+        {/* Silver Spotlight */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-spotlight opacity-50 pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.05] pointer-events-none mix-blend-overlay" />
+
+        <div className="mx-auto max-w-7xl px-6 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter text-white mb-8 leading-[0.85] uppercase">
+              Make. Sell.
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500">
+                Cash Out.
+              </span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-secondary max-w-xl mx-auto mb-12 font-medium leading-relaxed">
+              Your merch, your money.{" "}
+              <span className="text-white">Zero fluff.</span>
+              <br />
+              Built for creators who are ready to build an empire.
+            </p>
+
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+              <Link href="/auth/login">
+                <Button className="group relative overflow-hidden rounded-full px-12 py-6 bg-white text-black font-black text-lg tracking-wider hover:bg-neon-red hover:text-white transition-all duration-300 shadow-glow-silver hover:shadow-glow-red hover:scale-105">
+                  <span className="relative z-10">START CREATING</span>
+                </Button>
+              </Link>
+              <Link href="#how">
+                <span className="text-secondary hover:text-white font-bold tracking-widest text-xs uppercase border-b border-transparent hover:border-white transition-all pb-1 cursor-pointer">
+                  View Lookbook
                 </span>
-              </h1>
-              <p className="mt-8 max-w-md text-xl font-bold leading-relaxed text-black uppercase tracking-wide">
-                Turn your ideas into real merch. You create; we handle printing,
-                packing, delivery, and payouts.
-              </p>
+              </Link>
+            </div>
+          </motion.div>
 
-              <div className="mt-12 flex flex-wrap items-center gap-6">
-                <Link href="/auth/login">
-                  <Button className="px-10 py-5 text-lg border-2 border-black bg-white text-black hover:bg-street-red hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all uppercase font-bold tracking-widest">
-                    Start free
-                  </Button>
-                </Link>
-                <a
-                  href="#demo"
-                  className="border-b-2 border-black pb-1 text-lg font-black uppercase tracking-widest text-black hover:text-street-red hover:border-street-red transition"
-                >
-                  View demo
-                </a>
-              </div>
-            </motion.div>
+          {/* Hero Visual - Chrome/Monochrome */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.3 }}
+            className="mt-24 relative max-w-5xl mx-auto"
+          >
+            {/* Chrome Glow */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-xl opacity-50" />
 
-            {/* Right: Flat Image Stack */}
-            <div className="relative">
-              <div className="relative z-10 cursor-pointer group">
-                {/* Stack Effect */}
-                <div className="absolute -inset-4 bg-soft-pink border-2 border-black translate-x-3 translate-y-3" />
-                <div className="absolute -inset-4 bg-black border-2 border-black" />
+            <div className="relative z-10 rounded-sm overflow-hidden border border-white/10 shadow-2xl bg-black group">
+              <Image
+                src="/img-1.png"
+                alt="Premium Merch"
+                width={1200}
+                height={800}
+                className="w-full h-auto object-cover transition-all duration-700 ease-out grayscale hover:grayscale-0"
+                priority
+              />
 
-                <div className="relative aspect-square overflow-hidden border-2 border-black bg-zinc-100">
-                  <Image
-                    src="/test-hero-7.png"
-                    alt="CottonBro preview"
-                    fill
-                    priority
-                    className="object-cover contrast-125 transition duration-500"
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                  />
-                  {/* Glitch/Shine effect on hover */}
-                  <div className="absolute inset-0 bg-street-red/10 opacity-0 group-hover:opacity-100 transition-opacity duration-100 pointer-events-none mix-blend-multiply" />
-                </div>
-
-
+              {/* Overlay UI - Minimal */}
+              <div className="absolute top-6 right-6 px-4 py-2 bg-black/80 backdrop-blur-md border border-white/20 text-xs font-mono text-white uppercase tracking-widest">
+                {"/// LIVE_PREVIEW"}
               </div>
             </div>
-          </div>
+          </motion.div>
+        </div>
+      </section>
 
-          {/* SCROLLING MARQUEE */}
-          <div className="w-full border-t-2 border-black bg-black py-4 overflow-hidden">
-            <motion.div
-              className="flex w-max"
-              animate={{ x: "-50%" }}
-              transition={{ repeat: Infinity, duration: 120, ease: "linear" }}
-            >
-              {[0, 1].map((setIndex) => (
-                <div key={setIndex} className="flex shrink-0 items-center">
-                  {[...Array(8)].map((_, i) => (
-                    <span
-                      key={i}
-                      className="text-3xl md:text-5xl font-black uppercase text-white tracking-widest mx-8 font-urbanist flex items-center gap-4"
-                    >
-                      Launch Your Merch{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span> No
-                      Inventory Needed{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span> We
-                      Handle Production{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span>{" "}
-                      Kampala Delivery{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span>
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* NEW SECTION: COLLECTIONS (Balanced Edition) */}
-        <section className="mx-auto max-w-7xl px-6 py-24 border-b-2 border-black">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Column 1 — Apparel Studio */}
-            <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
-                <Image
-                  src="/test-hero-7.png"
-                  alt="Apparel"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
-                />
-              </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
-                Apparel Studio
-              </h3>
-              <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
-                Redefining streetwear.
-              </p>
-              <span className="inline-block border-b-2 border-black pb-0.5 text-sm font-black uppercase tracking-widest group-hover:text-street-red group-hover:border-street-red transition-all">
-                Explore Apparel
-              </span>
-            </div>
-
-            {/* Column 2 — Outerwear */}
-            <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
-                <Image
-                  src="/test-img-2.png"
-                  alt="Outerwear"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
-                />
-              </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
-                Outerwear
-              </h3>
-              <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
-                Beyond bold layers.
-              </p>
-              <span className="inline-block border-b-2 border-black pb-0.5 text-sm font-black uppercase tracking-widest group-hover:text-street-red group-hover:border-street-red transition-all">
-                Shop Outerwear
-              </span>
-            </div>
-
-            {/* Column 3 — Limited Editions */}
-            <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black">
-                <Image
-                  src="/test-img-1.png"
-                  alt="Limited Editions"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
-                />
-              </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
-                Limited Editions
-              </h3>
-              <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
-                Exclusive drops.
-              </p>
-              <span className="inline-block border-b-2 border-black pb-0.5 text-sm font-black uppercase tracking-widest group-hover:text-street-red group-hover:border-street-red transition-all">
-                View Drops
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* BENEFITS ("The Studio") */}
-        <section
-          id="features"
-          className="mx-auto max-w-7xl px-6 py-32 border-b-2 border-black"
-        >
-          <div className="mb-16 md:mb-24">
-            <h2 className="font-marcellus text-6xl uppercase text-black md:text-8xl leading-[0.9]">
-              The Studio
+      {/* FEATURES - High Gloss */}
+      <section
+        id="features"
+        className="py-32 relative text-center md:text-left"
+      >
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-24">
+            <h2 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter">
+              Built for{" "}
+              <span className="text-stroke-white text-transparent">Scale.</span>
             </h2>
-            <p className="mt-8 max-w-xl text-xl font-black uppercase text-black bg-soft-pink inline-block px-4 py-2 transform -rotate-1 border-2 border-black">
-              No logistics. <span className="text-street-red">Just design.</span>
+            <p className="text-secondary text-xl max-w-xl mx-auto md:mx-0">
+              A complete infrastructure stack. We handle the atoms, you handle
+              the bits.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:grid-rows-2">
-            {benefits.map((f, i) => (
-              <motion.div
-                key={f.title}
-                className={[
-                  "group relative flex flex-col justify-between bg-white p-8 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(253,226,228,1)] hover:-translate-y-1 transition-all",
-                  i === 0 || i === 3 ? "md:col-span-2" : "",
-                ].join(" ")}
-              >
-                <div className="h-full flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-marcellus font-bold text-3xl uppercase text-black group-hover:text-street-red transition-colors">
-                      {f.title}
-                    </h3>
-                    <p className="mt-4 max-w-sm text-black font-bold uppercase tracking-wide text-sm">
-                      {f.copy}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section
-          id="how"
-          className="mx-auto max-w-7xl px-6 py-32 border-b-2 border-black"
-        >
-          <div className="mb-16">
-            <h2 className="font-marcellus text-6xl uppercase text-black md:text-8xl leading-[0.9]">
-              How it works
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
-            {steps.map((s, i) => (
-              <motion.div
-                key={s.n}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.15, duration: 0.6, ease: "backOut" }}
-                viewport={{ once: true, margin: "-50px" }}
-                className="flex flex-col gap-4 border-l-2 border-black pl-6 group"
-              >
-                {/* Embossed Number Effect */}
-                <span
-                  className="font-jamino text-7xl text-transparent stroke-black stroke-1 transition-transform duration-300 group-hover:-translate-y-2 group-hover:text-soft-pink"
-                  style={{ WebkitTextStroke: "1px black" }}
-                >
-                  0{s.n}
-                </span>
-                <h3 className="text-xl font-black uppercase text-black bg-zinc-100 inline-block px-2 self-start transform -rotate-1 group-hover:rotate-0 transition-transform group-hover:bg-soft-pink group-hover:text-black border border-transparent group-hover:border-black">
-                  {s.t}
-                </h3>
-                <p className="text-sm font-bold uppercase leading-relaxed text-zinc-700 group-hover:text-black transition-colors">
-                  {s.d}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* PRICING */}
-        <section
-          id="pricing"
-          className="mx-auto max-w-7xl px-6 py-32 border-b-2 border-black"
-        >
-          <div className="mb-16 text-center">
-            <h2 className="font-marcellus text-6xl uppercase text-black md:text-8xl leading-[0.9]">
-              Pricing
-            </h2>
-            <p className="mt-6 text-xl font-black uppercase text-black">
-              Clear plans.{" "}
-              <span className="text-street-red underline decoration-4 decoration-black">
-                Zero bs.
-              </span>
-            </p>
-          </div>
-          <div className="flex justify-center">
-            <div className="w-full max-w-2xl">
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="flex flex-col items-center border-2 border-black bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-[16px_16px_0px_0px_rgba(253,226,228,1)] transition-shadow relative"
-              >
-                <div className="absolute -top-4 bg-soft-pink text-black text-xs font-black uppercase px-4 py-1 border-2 border-black">
-                  Simple & Fair
-                </div>
-                <h3 className="mb-6 font-urbanist text-4xl font-black uppercase text-black">
-                  Transparent Pricing
-                </h3>
-                <div className="mb-8 flex flex-col items-center gap-2">
-                  <span className="text-7xl font-urbanist font-black text-street-red tracking-tighter">
-                    UGX 10k
-                  </span>
-                  <span className="text-xl font-black uppercase tracking-widest text-white bg-black px-4 py-1 transform -rotate-2">
-                    per sale
-                  </span>
-                </div>
-                <div className="mb-8 h-px w-24 bg-black" />
-                <p className="text-xl font-bold text-black uppercase">
-                  + 5% payment processing fee
-                </p>
-                <p className="mt-4 text-xs font-bold uppercase text-zinc-500 max-w-md">
-                  No monthly fees. No hidden costs. You only pay when you make a
-                  sale.
-                </p>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* TESTIMONIALS */}
-          <div className="mt-32">
-            <h3 className="mb-12 text-center font-marcellus text-4xl uppercase text-black md:text-5xl">
-              Loved by creators
-            </h3>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {testimonials.map((t, i) => (
-                <motion.figure
-                  key={t.name}
-                  initial={{ opacity: 0, rotate: t.rotate }}
-                  whileInView={{ opacity: 1 }}
-                  whileHover={{
-                    rotate: 0,
-                    scale: 1.05,
-                    zIndex: 10,
-                    boxShadow: "8px 8px 0px 0px rgba(0,0,0,1)",
-                  }}
-                  transition={{ type: "spring", stiffness: 300 }}
-
-                  viewport={{ once: true }}
-                  className="border-2 border-black bg-soft-pink/20 p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] origin-center cursor-default"
-                >
-                  <div className="flex gap-1 text-street-red mb-4 text-xl">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span key={star}>★</span>
-                    ))}
-                  </div>
-                  <blockquote className="text-lg font-bold uppercase text-black leading-tight">
-                    “{t.body}”
-                  </blockquote>
-                  <figcaption className="mt-6 text-xs font-black uppercase tracking-widest text-zinc-500 border-t-2 border-black pt-4 inline-block">
-                    {t.name} — {t.role}
-                  </figcaption>
-                </motion.figure>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section
-          id="faq"
-          className="mx-auto max-w-4xl px-6 py-32 border-b-2 border-black"
-        >
-          <h2 className="mb-12 font-marcellus text-5xl uppercase text-black text-center md:text-7xl">
-            FAQ
-          </h2>
-          <div className="divide-y-2 divide-black border-y-2 border-black">
-            {faqs.map((f, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {features.map((feature, idx) => (
               <div
-                key={f.q}
-                className="group py-8 cursor-pointer"
-                onMouseEnter={() => setHoveredFaqIndex(i)}
-                onMouseLeave={() => setHoveredFaqIndex(null)}
+                key={idx}
+                className="group p-8 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/40 hover:bg-white/[0.05] backdrop-blur-md transition-all duration-300 hover:-translate-y-2 relative overflow-hidden"
               >
-                <div className="flex list-none items-center justify-between gap-4">
-                  <span className="text-xl font-black text-black uppercase group-hover:text-street-red transition-colors">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                <div className="w-12 h-12 flex items-center justify-center mb-8 bg-black border border-white/10 rounded-lg group-hover:border-white transition-colors">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3 uppercase tracking-wide">
+                  {feature.title}
+                </h3>
+                <p className="text-secondary text-sm leading-relaxed font-medium">
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section id="how" className="py-32 bg-black border-t border-white/5">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="flex flex-col lg:flex-row gap-24 items-center">
+            <div className="lg:w-1/2 space-y-16">
+              <div>
+                <h2 className="text-6xl md:text-8xl font-black text-white mb-8 uppercase leading-[0.8]">
+                  Pure
+                  <br />
+                  <span className="text-secondary">Speed.</span>
+                </h2>
+                <p className="text-xl text-secondary font-medium max-w-md">
+                  From design file to customer doorstep in record time.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {steps.map((step) => (
+                  <div
+                    key={step.n}
+                    className="group flex items-baseline gap-8 border-b border-white/10 pb-6 hover:border-white transition-colors duration-300 cursor-default"
+                  >
+                    <div className="text-secondary text-sm font-mono group-hover:text-white transition-colors">
+                      0{step.n}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-2xl font-bold text-white mb-1 uppercase tracking-tight">
+                        {step.title}
+                      </h4>
+                      <p className="text-secondary text-sm">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:w-1/2 w-full">
+              <div className="relative aspect-[4/5] w-full max-w-md mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-sm" />
+                <div className="relative h-full w-full border border-white/10 bg-black overflow-hidden shadow-2xl transition-all duration-700">
+                  <Image
+                    src="/img-2.png"
+                    alt="App Interface"
+                    fill
+                    className="object-cover opacity-90 contrast-125"
+                  />
+                  <div className="absolute bottom-0 inset-x-0 p-8 bg-black/80 backdrop-blur-sm border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-secondary mb-1">
+                          Weekly Profit
+                        </p>
+                        <p className="text-3xl font-mono text-white">
+                          UGX 70,450.00
+                        </p>
+                      </div>
+                      <div className="px-3 py-1 bg-white text-black text-xs font-bold uppercase tracking-wider">
+                        +42%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING - Black Card */}
+      <section
+        id="pricing"
+        className="py-40 relative bg-black border-t border-white/5"
+      >
+        <div className="mx-auto max-w-5xl px-6 relative z-10">
+          <div className="border border-white/20 bg-black p-12 md:p-24 text-center shadow-[0_0_100px_rgba(255,255,255,0.05)] relative overflow-hidden group">
+            {/* Shine Effect */}
+            <div className="absolute top-0 -left-[100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out" />
+
+            <h2 className="text-6xl md:text-9xl font-black text-white mb-8 tracking-tighter">
+              10k{" "}
+              <span className="text-3xl md:text-5xl font-bold text-zinc-600 align-top">
+                UGX
+              </span>
+            </h2>
+            <p className="text-xl md:text-2xl text-white mb-16 font-medium max-w-xl mx-auto">
+              Flat fee per item. <br />
+              <span className="text-secondary">
+                We take 5%. You keep the rest.
+              </span>
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 text-left border-t border-b border-white/10 py-12">
+              <div>
+                <div className="text-white font-bold uppercase tracking-widest text-xs mb-2">
+                  No Fees
+                </div>
+                <p className="text-secondary text-sm">
+                  Pay only when you sell.
+                </p>
+              </div>
+              <div>
+                <div className="text-white font-bold uppercase tracking-widest text-xs mb-2">
+                  Kampala Delivery
+                </div>
+                <p className="text-secondary text-sm">We handle logistics.</p>
+              </div>
+              <div>
+                <div className="text-white font-bold uppercase tracking-widest text-xs mb-2">
+                  Payouts
+                </div>
+                <p className="text-secondary text-sm">
+                  Paid weekly. Automatic.
+                </p>
+              </div>
+            </div>
+
+            <Link href="/auth/login">
+              <Button className="w-full md:w-auto rounded-full px-16 py-6 bg-white hover:bg-neon-red text-black hover:text-white font-black text-lg tracking-widest shadow-glow-silver hover:shadow-glow-red transition-all transform hover:scale-105 uppercase">
+                Launch Empire
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-32 border-t border-white/5 bg-page">
+        <div className="mx-auto max-w-3xl px-6">
+          <h2 className="text-4xl font-black text-white mb-16 text-center uppercase tracking-tight">
+            Protocol Details
+          </h2>
+          <div className="space-y-px bg-white/10 border border-white/10">
+            {faqs.map((f, i) => (
+              <div key={i} className="bg-black group">
+                <button
+                  onClick={() =>
+                    setHoveredFaqIndex(hoveredFaqIndex === i ? null : i)
+                  }
+                  className="w-full flex items-center justify-between p-8 text-left hover:bg-white/5 transition-colors"
+                >
+                  <span className="font-bold text-white uppercase tracking-wide text-sm">
                     {f.q}
                   </span>
                   <span
-                    className={`text-street-red transition-transform duration-300 text-3xl font-black ${hoveredFaqIndex === i ? "rotate-45" : ""
-                      }`}
+                    className={`text-white transition-transform duration-300 ${hoveredFaqIndex === i ? "rotate-45 text-neon-red" : ""}`}
                   >
                     +
                   </span>
-                </div>
+                </button>
                 <motion.div
                   initial={false}
-                  animate={{
-                    height: hoveredFaqIndex === i ? "auto" : 0,
-                    opacity: hoveredFaqIndex === i ? 1 : 0,
-                  }}
+                  animate={{ height: hoveredFaqIndex === i ? "auto" : 0 }}
                   className="overflow-hidden"
                 >
-                  <p className="mt-4 text-lg font-bold uppercase text-zinc-700">
+                  <div className="p-8 pt-0 text-secondary leading-relaxed max-w-2xl">
                     {f.a}
-                  </p>
+                  </div>
                 </motion.div>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* CTA (3D Slab) */}
-        <section className="mx-auto max-w-7xl px-6 py-32">
-          <div className="w-full">
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="flex flex-col items-center justify-center gap-8 border-2 border-black bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"
-            >
-              <div>
-                <h2 className="font-marcellus text-5xl uppercase text-black md:text-7xl">
-                  Ready to launch?
-                </h2>
-                <p className="mt-4 text-xl font-black uppercase text-black">
-                  Join the new wave of creators.
-                </p>
-              </div>
-              <Link href="/auth/login">
-                <Button className="px-10 py-5 text-lg border-2 border-black bg-black text-white hover:bg-soft-pink hover:text-black shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all uppercase font-black tracking-widest">
-                  Create free account
-                </Button>
-              </Link>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* FOOTER */}
-        <SiteFooter />
-      </motion.div>
+      <SiteFooter />
     </div>
   );
 }

@@ -1,42 +1,62 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+const config = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "../../packages/frontend/ui/src/**/*.{js,ts,jsx,tsx}",
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        ink: "#0C0C0C", // page background
-        onyx: "#121212", // dark panels
-        graphite: "#1B1B1B", // cards on dark
-        cream: "#F6F0E6", // paper surfaces
-        bone: "#EDE6DA", // lines on cream
-        slatey: "#A6A6A6", // muted copy on dark
-        "street-red": "#D90429", // streetwear accent
-        "soft-pink": "#FDE2E4", // playful accent
-      },
-      boxShadow: {
-        subtle:
-          "0 0.5px 0.5px rgba(0,0,0,0.08), 0 6px 18px -8px rgba(0,0,0,0.35)",
-        insetSoft:
-          "inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.06)",
-      },
-      borderColor: {
-        hair: "#2A2A2A", // hairline on dark
-        paperhair: "#E6DECF", // hairline on cream
-      },
-      letterSpacing: {
-        tightish: "-0.01em",
-        label: "0.14em",
+        page: "#050505", // Deep Black
+        "page-gradient": "#0A0A0A",
+        glass: "rgba(255, 255, 255, 0.03)", // Dark Glass
+        "glass-hover": "rgba(255, 255, 255, 0.08)",
+        
+        // Typography
+        primary: "#FFFFFF", // White
+        secondary: "#A1A1AA", // Zinc 400
+        tertiary: "#52525B", // Zinc 600
+        
+        // Accents
+        silver: "#E1E1E1", // Chrome Silver
+        "chrome-hover": "#E4E4E7", // Zinc 200
+        "neon-red": "#FF0000", // High Fashion Red (Warning/Tag)
+        "neon-purple": "#A855F7",
+        
+        // Borders
+        "border-subtle": "rgba(255, 255, 255, 0.1)",
+        "border-glow": "rgba(255, 255, 255, 0.2)",
       },
       fontFamily: {
-        urbanist: ["var(--font-urbanist)"],
+        urbanist: ["var(--font-urbanist)", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "hero-glow": "conic-gradient(from 180deg at 50% 50%, #E4E4E7 0deg, #FFFFFF 180deg, #E4E4E7 360deg)",
+        "spotlight": "radial-gradient(circle at 50% 0%, rgba(225, 225, 225, 0.08) 0%, transparent 50%)", // Silver spotlight on dark
+        "chrome-mesh": "conic-gradient(at center top, #111, #333, #111)",
+      },
+      boxShadow: {
+        "glow-silver": "0 0 40px -10px rgba(225,225,225,0.1)",
+        "glow-red": "0 0 40px -10px rgba(255,59,48,0.3)",
+        glass: "0 8px 32px 0 rgba(0, 0, 0, 0.05)",
+        card: "0 1px 3px rgba(0,0,0,0.05)",
+        "card-hover": "0 10px 40px rgba(0,0,0,0.08)",
+      },
+      animation: {
+        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "float": "float 6s ease-in-out infinite",
+      },
+      keyframes: {
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        }
+      }
     },
   },
   plugins: [],
 };
+export default config;

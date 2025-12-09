@@ -11,6 +11,7 @@ export function SiteHeader() {
     const [loggingOut, setLoggingOut] = useState(false);
     const { user, logout, busy } = useAuth();
 
+    // ...existing logout logic...
     const isAuthenticated = Boolean(user);
 
     async function handleLogout() {
@@ -32,152 +33,125 @@ export function SiteHeader() {
     ];
 
     return (
-        <>
-            <header className="sticky top-0 z-40 border-b border-black bg-white/90 backdrop-blur-md">
-                <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-                    <Link href="/" className="flex items-center text-black">
-                        <Logo size="xl" color="current" fontClassName="font-jamino" />
+        <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-md">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+                <div className="flex items-center gap-12">
+                    <Link href="/" className="flex items-center gap-2 grayscale hover:grayscale-0 transition-opacity">
+                        <Logo size="md" color="white" fontClassName="font-bold tracking-tight" />
                     </Link>
 
-                    <div className="hidden items-center gap-8 md:flex">
-                        {nav.map((n) => (
+                    <nav className="hidden md:flex items-center gap-8">
+                        {['Features', 'How it works', 'Pricing'].map((item) => (
                             <Link
-                                key={n.href}
-                                href={n.href}
-                                className="text-sm font-bold uppercase tracking-widest text-black hover:text-street-red transition-colors"
+                                key={item}
+                                href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                className="text-sm font-medium text-secondary hover:text-white transition-colors tracking-wide uppercase"
                             >
-                                {n.label}
+                                {item}
                             </Link>
                         ))}
-                    </div>
+                    </nav>
+                </div>
 
-                    <div className="hidden md:flex items-center gap-3">
-                        {!isAuthenticated ? (
-                            <>
-                                <Link
-                                    href="/auth/login"
-                                    className="text-sm font-bold uppercase tracking-widest text-black hover:text-street-red transition"
-                                >
-                                    Sign in
-                                </Link>
-                                <Link
-                                    href="/auth/login"
-                                    className="bg-black border-2 border-black px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
-                                >
-                                    Create account
-                                </Link>
-                            </>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleLogout}
-                                disabled={loggingOut || busy}
-                                className="bg-black border-2 border-black px-6 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition disabled:opacity-60"
+                <div className="hidden md:flex items-center gap-6">
+                    {!isAuthenticated ? (
+                        <>
+                            <Link
+                                href="/auth/login"
+                                className="text-sm font-semibold text-secondary hover:text-white transition px-2 uppercase tracking-wide"
                             >
-                                {loggingOut ? "Logging out…" : "Log out"}
-                            </button>
-                        )}
+                                Sign In
+                            </Link>
+                            <Link href="/auth/login">
+                                <button className="rounded-full bg-white px-6 py-2 text-sm font-bold text-black shadow-glow-silver hover:bg-neon-red hover:text-white hover:shadow-glow-red transition-all uppercase tracking-wide">
+                                    Start Creating
+                                </button>
+                            </Link>
+                        </>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            disabled={loggingOut || busy}
+                            className="rounded-full border border-white/10 bg-glass px-5 py-2 text-sm font-medium text-secondary hover:text-white hover:bg-white/10 transition disabled:opacity-60 uppercase tracking-wide"
+                        >
+                            {loggingOut ? "Logging out…" : "Log out"}
+                        </button>
+                    )}
+                </div>
+
+                {/* Mobile Menu Button - White */}
+                <button
+                    className="md:hidden p-2 text-white group"
+                    onClick={() => setMobileMenuOpen(true)}
+                >
+                    <div className="space-y-1.5">
+                        <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-neon-red"></span>
+                        <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-neon-red"></span>
+                        <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-neon-red"></span>
                     </div>
+                </button>
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="flex md:hidden flex-col gap-1.5 p-2"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    >
-                        <div
-                            className={`h-0.5 w-6 bg-black transition-transform ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""
-                                }`}
-                        />
-                        <div
-                            className={`h-0.5 w-6 bg-black transition-opacity ${mobileMenuOpen ? "opacity-0" : ""
-                                }`}
-                        />
-                        <div
-                            className={`h-0.5 w-6 bg-black transition-transform ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
-                                }`}
-                        />
-                    </button>
-                </nav>
-            </header>
-
-            {/* Fixed Mobile Menu Overlay */}
-            <AnimatePresence>
-                {mobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, z: -100, scale: 0.9 }}
-                        animate={{ opacity: 1, z: 0, scale: 1 }}
-                        exit={{ opacity: 0, z: -100, scale: 0.9 }}
-                        transition={{ duration: 0.3 }}
-                        className="fixed inset-0 z-[200] bg-white/95 backdrop-blur-lg w-screen h-screen overflow-y-auto md:hidden"
-                    >
-                        <div className="flex flex-col h-full p-6">
-                            <div className="flex justify-between items-center mb-8">
-                                <Logo size="xl" color="current" fontClassName="font-jamino" />
+                {/* Mobile Menu Overlay */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="fixed inset-0 z-50 bg-black p-6 md:hidden flex flex-col"
+                        >
+                            <div className="flex items-center justify-between mb-12">
+                                <Logo size="md" color="white" />
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="p-2"
-                                    aria-label="Close menu"
+                                    className="p-2 text-secondary hover:text-white transition-colors"
                                 >
-                                    <svg
-                                        className="w-8 h-8 text-black"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
+                                    <span className="text-2xl">✕</span>
                                 </button>
                             </div>
-                            <div className="flex flex-col gap-6 items-center text-center">
-                                {nav.map((n) => (
+
+                            <nav className="flex flex-col gap-8 items-center text-center">
+                                {['Features', 'How it works', 'Pricing'].map((item) => (
                                     <Link
-                                        key={n.href}
-                                        href={n.href}
+                                        key={item}
+                                        href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="text-3xl font-jamino uppercase text-black hover:text-street-red transition-colors"
+                                        className="text-4xl font-black tracking-tighter text-white hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-white hover:to-secondary transition-all uppercase italic"
                                     >
-                                        {n.label}
+                                        {item}
                                     </Link>
                                 ))}
-                            </div>
-                            <div className="mt-auto flex flex-col gap-4 pb-8">
                                 {!isAuthenticated ? (
                                     <>
                                         <Link
                                             href="/auth/login"
                                             onClick={() => setMobileMenuOpen(false)}
-                                            className="text-xl font-bold uppercase tracking-widest text-black text-center hover:text-street-red transition"
+                                            className="text-2xl font-bold text-secondary hover:text-white mt-8 uppercase"
                                         >
-                                            Sign in
+                                            Sign In
                                         </Link>
                                         <Link
                                             href="/auth/login"
                                             onClick={() => setMobileMenuOpen(false)}
-                                            className="bg-black border-2 border-black px-6 py-4 text-center text-xl font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition"
+                                            className="rounded-full bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-silver mt-4 uppercase tracking-wide hover:bg-neon-red hover:text-white"
                                         >
-                                            Create account
+                                            Start Creating
                                         </Link>
                                     </>
                                 ) : (
                                     <button
-                                        type="button"
-                                        onClick={handleLogout}
-                                        disabled={loggingOut || busy}
-                                        className="bg-black border-2 border-black px-6 py-4 text-center text-xl font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition disabled:opacity-60"
+                                        onClick={() => { handleLogout(); }}
+                                        className="text-2xl font-bold text-secondary hover:text-white mt-8 uppercase"
                                     >
-                                        {loggingOut ? "Logging out…" : "Log out"}
+                                        Log Out
                                     </button>
                                 )}
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
+                            </nav>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </header>
     );
 }
