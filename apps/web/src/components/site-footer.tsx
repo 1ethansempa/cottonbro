@@ -3,6 +3,7 @@ import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
 
 export function SiteFooter() {
+    // ...existing code...
     return (
         <footer className="border-t border-white/5 bg-page pt-20 pb-10">
             <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 md:grid-cols-4 lg:gap-16">

@@ -141,6 +141,8 @@ function LoginView() {
     }
   }
 
+  // ...existing code...
+  // ...existing code...
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-page p-6 font-urbanist relative overflow-hidden">
       {/* Background Spotlights - Silver/Cold */}
@@ -171,16 +173,16 @@ function LoginView() {
 
           <div className="top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent absolute" />
 
-          <h1 className="text-xl font-mono font-bold text-white mb-2 text-center uppercase tracking-widest">
-            {"// ACCESS_PROTOCOL"}
+          <h1 className="text-xl font-bold text-white mb-2 text-center uppercase tracking-widest">
+            Sign In
           </h1>
-          <p className="text-secondary text-xs text-center mb-8 font-mono">
-            ESTABLISH SECURE CONNECTION
+          <p className="text-secondary text-xs text-center mb-8">
+            Access your dashboard
           </p>
 
-          {/* Google Buttom wrapper */}
-          <div className="mb-8 grayscale hover:grayscale-0 transition-all">
-            <GoogleButton onClick={onGoogle} disabled={busy} className="w-full justify-center rounded-none border border-white/20 bg-white/5 hover:bg-white/10" />
+          {/* Google Button */}
+          <div className="mb-8">
+            <GoogleButton onClick={onGoogle} disabled={busy} className="w-full justify-center rounded-sm border border-white/20 bg-white text-black hover:bg-gray-100" />
           </div>
 
           <div className="relative mb-8">

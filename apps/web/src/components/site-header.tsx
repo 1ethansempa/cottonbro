@@ -33,118 +33,125 @@ export function SiteHeader() {
     ];
 
     return (
-        <>
-            <header className="sticky top-0 z-40 border-b border-white/5 bg-page/80 backdrop-blur-xl transition-all">
-                <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-                    <Link href="/" className="flex items-center grayscale hover:grayscale-0 transition-all duration-300">
-                        {/* Assuming Logo can accept different props, or we wrap it to reset styles if needed.
-                             For now, keeping it simple. If Logo enforces Jamino, we might need to adjust it later. */}
-                        <Logo size="xl" color="white" fontClassName="font-bold tracking-tight" />
+        <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-md">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+                <div className="flex items-center gap-12">
+                    <Link href="/" className="flex items-center gap-2 grayscale hover:grayscale-0 transition-opacity">
+                        <Logo size="md" color="white" fontClassName="font-bold tracking-tight" />
                     </Link>
 
-                    <div className="hidden items-center gap-8 md:flex">
-                        {nav.map((n) => (
+                    <nav className="hidden md:flex items-center gap-8">
+                        {['Features', 'How it works', 'Pricing'].map((item) => (
                             <Link
-                                key={n.href}
-                                href={n.href}
+                                key={item}
+                                href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
                                 className="text-sm font-medium text-secondary hover:text-white transition-colors tracking-wide uppercase"
                             >
-                                {n.label}
+                                {item}
                             </Link>
                         ))}
-                    </div>
+                    </nav>
+                </div>
 
-                    <div className="hidden md:flex items-center gap-4">
-                        {!isAuthenticated ? (
-                            <>
-                                <Link
-                                    href="/auth/login"
-                                    className="text-sm font-semibold text-secondary hover:text-white transition px-2 uppercase tracking-wide"
-                                >
-                                    Log in
-                                </Link>
-                                <Link
-                                    href="/auth/login"
-                                    className="relative group overflow-hidden rounded-full bg-white px-6 py-2 text-sm font-bold text-black shadow-glow-silver transition-all hover:scale-105 hover:bg-neon-red hover:text-white hover:shadow-glow-red"
-                                >
-                                    <span className="relative z-10 uppercase tracking-widest text-xs">Start Creating</span>
-                                </Link>
-                            </>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleLogout}
-                                disabled={loggingOut || busy}
-                                className="rounded-full border border-white/10 bg-glass px-5 py-2 text-sm font-medium text-secondary hover:text-white hover:bg-white/10 transition disabled:opacity-60 uppercase tracking-wide"
+                <div className="hidden md:flex items-center gap-6">
+                    {!isAuthenticated ? (
+                        <>
+                            <Link
+                                href="/auth/login"
+                                className="text-sm font-semibold text-secondary hover:text-white transition px-2 uppercase tracking-wide"
                             >
-                                {loggingOut ? "Logging out…" : "Log out"}
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Mobile Menu Button - White */}
-                    <button
-                        className="flex md:hidden flex-col gap-1.5 p-2 justify-center items-center group"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    >
-                        <div className={`h-0.5 w-5 bg-white rounded-full transition-all group-hover:bg-neon-red ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
-                        <div className={`h-0.5 w-5 bg-white rounded-full transition-all group-hover:bg-neon-red ${mobileMenuOpen ? "opacity-0" : ""}`} />
-                        <div className={`h-0.5 w-5 bg-white rounded-full transition-all group-hover:bg-neon-red ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
-                    </button>
-                </nav>
-            </header>
-
-            {/* Fixed Mobile Menu Overlay - Dark */}
-            <AnimatePresence>
-                {mobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 z-[100] bg-page pt-20 px-6 md:hidden"
-                    >
-                        <div className="flex flex-col gap-8">
-                            {nav.map((n) => (
-                                <Link
-                                    key={n.href}
-                                    href={n.href}
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="text-4xl font-black tracking-tighter text-white hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-white hover:to-secondary transition-all uppercase italic"
-                                >
-                                    {n.label}
-                                </Link>
-                            ))}
-                            <hr className="border-white/10 my-2" />
-                            {!isAuthenticated ? (
-                                <div className="flex flex-col gap-6">
-                                    <Link
-                                        href="/auth/login"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="text-xl font-medium text-secondary uppercase tracking-widest"
-                                    >
-                                        Log in
-                                    </Link>
-                                    <Link
-                                        href="/auth/login"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="rounded-full bg-white px-6 py-4 text-center text-lg font-bold text-black shadow-glow-silver hover:bg-neon-red hover:text-white transition-colors uppercase tracking-widest"
-                                    >
-                                        Start Creating
-                                    </Link>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={handleLogout}
-                                    className="rounded-full border border-white/10 bg-glass px-6 py-4 text-lg font-semibold text-white text-left uppercase tracking-widest"
-                                >
-                                    Log out
+                                Sign In
+                            </Link>
+                            <Link href="/auth/login">
+                                <button className="rounded-full bg-white px-6 py-2 text-sm font-bold text-black shadow-glow-silver hover:bg-neon-red hover:text-white hover:shadow-glow-red transition-all uppercase tracking-wide">
+                                    Start Creating
                                 </button>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
+                            </Link>
+                        </>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            disabled={loggingOut || busy}
+                            className="rounded-full border border-white/10 bg-glass px-5 py-2 text-sm font-medium text-secondary hover:text-white hover:bg-white/10 transition disabled:opacity-60 uppercase tracking-wide"
+                        >
+                            {loggingOut ? "Logging out…" : "Log out"}
+                        </button>
+                    )}
+                </div>
+
+                {/* Mobile Menu Button - White */}
+                <button
+                    className="md:hidden p-2 text-white group"
+                    onClick={() => setMobileMenuOpen(true)}
+                >
+                    <div className="space-y-1.5">
+                        <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-neon-red"></span>
+                        <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-neon-red"></span>
+                        <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-neon-red"></span>
+                    </div>
+                </button>
+
+                {/* Mobile Menu Overlay */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="fixed inset-0 z-50 bg-black p-6 md:hidden flex flex-col"
+                        >
+                            <div className="flex items-center justify-between mb-12">
+                                <Logo size="md" color="white" />
+                                <button
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="p-2 text-secondary hover:text-white transition-colors"
+                                >
+                                    <span className="text-2xl">✕</span>
+                                </button>
+                            </div>
+
+                            <nav className="flex flex-col gap-8 items-center text-center">
+                                {['Features', 'How it works', 'Pricing'].map((item) => (
+                                    <Link
+                                        key={item}
+                                        href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="text-4xl font-black tracking-tighter text-white hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-white hover:to-secondary transition-all uppercase italic"
+                                    >
+                                        {item}
+                                    </Link>
+                                ))}
+                                {!isAuthenticated ? (
+                                    <>
+                                        <Link
+                                            href="/auth/login"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-2xl font-bold text-secondary hover:text-white mt-8 uppercase"
+                                        >
+                                            Sign In
+                                        </Link>
+                                        <Link
+                                            href="/auth/login"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="rounded-full bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-silver mt-4 uppercase tracking-wide hover:bg-neon-red hover:text-white"
+                                        >
+                                            Start Creating
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => { handleLogout(); }}
+                                        className="text-2xl font-bold text-secondary hover:text-white mt-8 uppercase"
+                                    >
+                                        Log Out
+                                    </button>
+                                )}
+                            </nav>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </header>
     );
 }
