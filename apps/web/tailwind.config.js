@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,33 +8,58 @@ module.exports = {
   ],
   theme: {
     extend: {
+// ...exisiting code...
       colors: {
-        ink: "#0C0C0C", // page background
-        onyx: "#121212", // dark panels
-        graphite: "#1B1B1B", // cards on dark
-        cream: "#F6F0E6", // paper surfaces
-        bone: "#EDE6DA", // lines on cream
-        slatey: "#A6A6A6", // muted copy on dark
-        "street-red": "#D90429", // streetwear accent
-        "soft-pink": "#FDE2E4", // playful accent
+        // Premium Black Palette
+        page: "#030303",  // Deepest black
+        "page-gradient": "#0A0A0B", 
+        
+        // Glass & Surface
+        glass: "rgba(255, 255, 255, 0.03)",
+        "glass-hover": "rgba(255, 255, 255, 0.08)",
+        "border-subtle": "rgba(255, 255, 255, 0.15)", // Increased visibility for chrome feel
+        "border-glow": "rgba(255, 255, 255, 0.3)",
+        "surface-gloss": "rgba(255, 255, 255, 0.08)",
+        
+        // Accents
+        silver: "#E1E1E1",
+        "chrome-hover": "#FFFFFF",
+        "neon-red": "#FF3B30", // Kept for interaction pop
+        
+        // Text
+        primary: "#FFFFFF",
+        secondary: "#A1A1AA", // Zinc 400
+        tertiary: "#52525B", // Zinc 600
+        
+        // Utility
+        ink: "#0C0C0C",
       },
       boxShadow: {
-        subtle:
-          "0 0.5px 0.5px rgba(0,0,0,0.08), 0 6px 18px -8px rgba(0,0,0,0.35)",
-        insetSoft:
-          "inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.06)",
-      },
-      borderColor: {
-        hair: "#2A2A2A", // hairline on dark
-        paperhair: "#E6DECF", // hairline on cream
-      },
-      letterSpacing: {
-        tightish: "-0.01em",
-        label: "0.14em",
+        "glow-silver": "0 0 20px rgba(225, 225, 225, 0.15)",
+        "glow-red": "0 0 20px rgba(255, 59, 48, 0.6)",
+        "glow-subtle": "0 0 10px rgba(255, 255, 255, 0.05)",
+        glass: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
       },
       fontFamily: {
-        urbanist: ["var(--font-urbanist)"],
+        urbanist: ["var(--font-urbanist)", "sans-serif"],
+        sans: ["var(--font-urbanist)", "sans-serif"],
       },
+      backgroundImage: {
+        "spotlight": "radial-gradient(circle at 50% 0%, rgba(225, 225, 225, 0.08) 0%, transparent 50%)", // Silver spotlight
+        "chrome-mesh": "conic-gradient(from 180deg at 50% 50%, #1a1a1a 0deg, #000000 180deg, #333333 360deg)",
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+      },
+// ...existing code...
+      animation: {
+        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "float": "float 6s ease-in-out infinite",
+      },
+      keyframes: {
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        }
+      }
     },
   },
   plugins: [],
