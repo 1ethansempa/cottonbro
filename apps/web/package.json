@@ -14,7 +14,6 @@
     "start": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next start -p 5173",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky install",
     "firebase:login": "firebase login",
     "deploy:qa": "pnpm build:qa && firebase deploy --only hosting --project qa",
     "deploy:prod": "pnpm build:prod && firebase deploy --only hosting --project prod"
@@ -42,7 +41,6 @@
     "env-cmd": "^11.0.0",
     "eslint": "^9.36.0",
     "eslint-config-next": "^15.5.4",
-    "firebase-admin": "^12.7.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",

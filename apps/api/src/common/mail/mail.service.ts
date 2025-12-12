@@ -43,72 +43,63 @@ export class MailService {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;700;900&display=swap" rel="stylesheet">
 </head>
 <body style="margin: 0; padding: 0; background-color: #000000; font-family: 'Urbanist', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #000000; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #ffffff; border: 2px solid #000000;">
+        <!-- Main Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #000000; border: 1px solid #333333; border-radius: 24px; overflow: hidden;">
           
           <!-- Header -->
           <tr>
-            <td style="background-color: #000000; padding: 20px; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; color: #ffffff;">
+            <td style="padding: 40px 0 32px 0; text-align: center;">
+              <h1 style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; color: #ffffff;">
                 COTTON BRO
               </h1>
             </td>
           </tr>
           
-          <!-- Main Content -->
+          <!-- Content -->
           <tr>
-            <td style="padding: 48px 32px;">
-              <h2 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #000000;">
-                YOUR LOGIN CODE
+            <td style="padding: 0 40px 48px 40px; text-align: center;">
+              <h2 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 700; color: #A1A1AA; letter-spacing: 1px; text-transform: uppercase;">
+                One-Time Password
               </h2>
               
-              <!-- Code Box with offset shadow effect -->
-              <div style="position: relative; margin: 24px 0 32px 0;">
-                <table cellpadding="0" cellspacing="0" style="margin-left: 4px; margin-top: 4px;">
-                  <tr>
-                    <td style="background-color: #FDE2E4; border: 2px solid #000000; padding: 24px 40px; text-align: center;">
-                      <span style="font-size: 48px; font-weight: 900; letter-spacing: 8px; color: #000000; font-family: 'Urbanist', monospace;">
-                        ${code}
-                      </span>
-                    </td>
-                  </tr>
-                </table>
-                <!-- Shadow layer (positioned behind) -->
-                <div style="position: absolute; top: 8px; left: 8px; right: -4px; bottom: -4px; background-color: #000000; z-index: -1;"></div>
-              </div>
+              <p style="margin: 0 0 32px 0; font-size: 14px; color: #ffffff; line-height: 1.6;">
+                Enter this code to sign in to your creative studio.
+              </p>
               
-              <!-- Expiry tag -->
-              <table cellpadding="0" cellspacing="0">
+              <!-- Code Box -->
+              <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background-color: #E5383B; padding: 6px 12px;">
-                    <span style="font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #ffffff;">
-                      EXPIRES IN 10 MIN
-                    </span>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="background-color: #111111; border: 1px solid #333333; border-radius: 16px; padding: 24px 48px;">
+                          <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #22D3EE; font-family: monospace;">
+                            ${code}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="border-top: 2px solid #000000; padding: 24px 32px; background-color: #FAFAFA;">
-              <p style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #666666; line-height: 1.6;">
-                IF YOU DIDN'T REQUEST THIS CODE, YOU CAN SAFELY IGNORE THIS EMAIL.
+              
+              <p style="margin: 32px 0 0 0; font-size: 12px; color: #6B7280;">
+                This code expires in 10 minutes.
               </p>
             </td>
           </tr>
           
         </table>
         
-        <!-- Bottom branding -->
-        <p style="margin-top: 24px; font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #666666;">
-          BUILT FOR CREATORS • COTTONBRO.COM
+        <!-- Footer -->
+        <p style="margin-top: 32px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #404040;">
+          COTTONBRO.COM • BUILT FOR CREATORS
         </p>
       </td>
     </tr>

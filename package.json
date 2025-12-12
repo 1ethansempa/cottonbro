@@ -25,9 +25,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
-    "@nestjs/config": "^4.0.2",
     "@types/node": "^24.5.2",
-    "aws-cdk": "^2.1029.3",
     "dotenv": "^17.2.3",
     "esbuild": "^0.23.1",
     "eslint": "^9.36.0",
