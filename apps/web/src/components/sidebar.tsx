@@ -56,9 +56,9 @@ export default function Sidebar({
           "block rounded-md px-3 py-2 text-sm font-medium tracking-wide",
           "transition-colors duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
           active
-            ? "text-white bg-white/6 ring-1 ring-white/10"
-            : "text-gray-300 hover:text-white hover:bg-white/5 hover:ring-1 hover:ring-white/10",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+            ? "text-cyan bg-cyan/10 ring-1 ring-cyan/20"
+            : "text-gray-400 hover:text-cyan hover:bg-white/5 hover:ring-1 hover:ring-white/5",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/30",
         ].join(" ")}
       >
         {label}
@@ -69,14 +69,12 @@ export default function Sidebar({
   return (
     <aside
       className={[
-        "bg-[#141414] text-white",
+        "bg-black text-white",
         "fixed inset-y-0 left-0 z-40 w-64",
         "px-4 pb-[env(safe-area-inset-bottom)]",
-        "shadow-[8px_0_30px_rgba(0,0,0,0.45)] ring-1 ring-white/5",
+        "shadow-2xl border-r border-white/5",
         "transform transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
         open ? "translate-x-0" : "-translate-x-64",
-        "before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] before:bg-[length:12px_12px] before:opacity-[0.15]",
-        "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-gradient-to-b after:from-white/15 after:via-white/5 after:to-white/15",
       ].join(" ")}
       aria-hidden={!open}
     >
@@ -113,9 +111,9 @@ export default function Sidebar({
                 <button
                   onClick={onLogout}
                   disabled={busy}
-                  className="w-full text-left block rounded-md px-3 py-2 text-sm font-medium tracking-wide text-gray-300
-                             hover:text-white hover:bg-white/5 hover:ring-1 hover:ring-white/10
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full text-left block rounded-md px-3 py-2 text-sm font-medium tracking-wide text-gray-400
+                             hover:text-cyan hover:bg-white/5 hover:ring-1 hover:ring-white/5
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Logout
                 </button>

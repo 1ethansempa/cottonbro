@@ -145,12 +145,7 @@ function LoginView() {
   // ...existing code...
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-page p-6 font-urbanist relative overflow-hidden">
-      {/* Background Spotlights - Silver/Cold */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 opacity-20" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2 opacity-20" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.05] pointer-events-none mix-blend-overlay" />
-      </div>
+      {/* Solid Black Background - No Noise */}
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -164,12 +159,12 @@ function LoginView() {
           </Link>
         </div>
 
-        <div className="rounded-sm border border-white/20 bg-black p-8 shadow-[0_0_50px_rgba(255,255,255,0.05)] relative overflow-hidden">
-          {/* Decorative Corner lines */}
-          <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white/40" />
-          <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-white/40" />
-          <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-white/40" />
-          <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/40" />
+        <div className="rounded-3xl border border-white/20 bg-black p-8 shadow-glow-cyan relative overflow-hidden">
+          {/* Decorative Corner lines - Adjusted for rounded corners */}
+          <div className="absolute top-6 left-6 w-4 h-4 border-t border-l border-white/40 rounded-tl-lg" />
+          <div className="absolute top-6 right-6 w-4 h-4 border-t border-r border-white/40 rounded-tr-lg" />
+          <div className="absolute bottom-6 left-6 w-4 h-4 border-b border-l border-white/40 rounded-bl-lg" />
+          <div className="absolute bottom-6 right-6 w-4 h-4 border-b border-r border-white/40 rounded-br-lg" />
 
           <div className="top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent absolute" />
 
@@ -182,7 +177,11 @@ function LoginView() {
 
           {/* Google Button */}
           <div className="mb-8">
-            <GoogleButton onClick={onGoogle} disabled={busy} className="w-full justify-center rounded-sm border border-white/20 bg-white text-black hover:bg-gray-100" />
+            <GoogleButton
+              onClick={onGoogle}
+              disabled={busy}
+              className="w-full justify-center rounded-full border border-white/20 bg-white text-black hover:bg-gray-200 hover:text-black font-bold transition-all"
+            />
           </div>
 
           <div className="relative mb-8">
@@ -195,21 +194,21 @@ function LoginView() {
           </div>
 
           {isAuthenticated ? (
-            <div className="bg-white/5 border border-white/10 p-6 text-center">
+            <div className="bg-white/5 border border-white/10 p-6 text-center rounded-2xl">
               <p className="text-sm font-medium text-white mb-1 font-mono">
                 ID: {user?.email}
               </p>
               <div className="flex flex-col gap-3 mt-6">
                 <Button
                   onClick={handleContinue}
-                  className="w-full bg-white hover:bg-silver text-black font-bold py-4 rounded-sm shadow-glow-silver uppercase tracking-widest text-xs"
+                  className="w-full bg-white hover:bg-cyan text-black font-bold py-4 rounded-full shadow-glow-cyan hover:shadow-cyan/50 uppercase tracking-widest text-xs cursor-pointer transition-all hover:scale-105"
                 >
                   Proceed to Dashboard
                 </Button>
                 <button
                   onClick={handleSwitchAccount}
                   disabled={switchingAccount || busy}
-                  className="text-xs text-secondary hover:text-white transition-colors uppercase tracking-widest font-mono"
+                  className="text-xs text-secondary hover:text-cyan transition-colors uppercase tracking-widest font-mono cursor-pointer"
                 >
                   {switchingAccount ? "TERMINATING SESSION..." : "TERMINATE SESSION"}
                 </button>
@@ -219,15 +218,15 @@ function LoginView() {
             !sent ? (
               <form onSubmit={onSend} className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-silver mb-2 font-mono">
-                    Identifier (Email)
+                  <label className="block text-sm font-bold text-secondary mb-2 font-mono ml-1">
+                    Email
                   </label>
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="USER@COTTONBRO.COM"
-                    className="w-full bg-black border-white/20 text-white placeholder:text-tertiary focus:border-white focus:ring-1 focus:ring-white rounded-none py-3 px-4 transition-all font-mono text-sm"
+                    placeholder="name@example.com"
+                    className="w-full bg-black border-white/20 text-white placeholder:text-zinc-600 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-6 transition-all font-medium text-base"
                     required
                   />
                 </div>
@@ -247,24 +246,24 @@ function LoginView() {
 
                 <Button
                   type="submit"
-                  disabled={!email || busy || !captchaToken}
-                  className="w-full bg-white hover:bg-gray-200 text-black font-bold py-4 rounded-none shadow-glow-silver transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-xs group"
+                  disabled={!email || busy}
+                  className="w-full bg-white hover:bg-cyan text-black font-bold py-4 rounded-full shadow-glow-cyan hover:shadow-cyan/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm group cursor-pointer hover:scale-[1.02]"
                 >
-                  {busy ? "INITIATING..." : "REQUEST ACCESS CODE"}
+                  {busy ? "Sending..." : "Send Login Code"}
                 </Button>
               </form>
             ) : (
               <form onSubmit={onConfirm} className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-silver mb-2 font-mono">
-                    Security Code
+                  <label className="block text-sm font-bold text-secondary mb-2 font-mono ml-1">
+                    One-Time Password
                   </label>
                   <Input
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="000000"
                     maxLength={6}
-                    className="w-full bg-black border-white/20 text-white text-center text-2xl font-bold placeholder:text-tertiary focus:border-neon-red focus:ring-1 focus:ring-neon-red rounded-none py-4 px-4 tracking-[0.5em] transition-all font-mono"
+                    className="w-full bg-black border-white/20 text-white text-center text-2xl font-bold placeholder:text-zinc-700 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-4 tracking-[0.5em] transition-all font-mono"
                     required
                   />
                 </div>
@@ -272,17 +271,17 @@ function LoginView() {
                 <Button
                   type="submit"
                   disabled={code.length !== 6 || busy}
-                  className="w-full bg-white hover:bg-gray-200 text-black font-bold py-4 rounded-none shadow-glow-silver transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-xs"
+                  className="w-full bg-white hover:bg-cyan text-black font-bold py-4 rounded-full shadow-glow-cyan hover:shadow-cyan/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer hover:scale-[1.02]"
                 >
-                  {busy ? "VERIFYING..." : "AUTHENTICATE"}
+                  {busy ? "Verifying..." : "Sign In"}
                 </Button>
 
                 <button
                   type="button"
                   onClick={() => { setSent(false); setCode(""); }}
-                  className="w-full text-[10px] font-bold text-secondary hover:text-white transition-colors uppercase tracking-widest font-mono"
+                  className="w-full text-xs font-bold text-secondary hover:text-cyan transition-colors font-mono cursor-pointer"
                 >
-                  [ RETRY_IDENTIFIER ]
+                  Enter a different email
                 </button>
               </form>
             )
@@ -293,28 +292,29 @@ function LoginView() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-3 bg-white/5 border border-white/10 text-center"
+              className="mt-6 p-3 bg-white/5 border border-white/10 text-center rounded-xl"
             >
-              <p className="text-xs font-mono text-emerald-400 uppercase">{status}</p>
+              <p className="text-xs text-cyan">{status}</p>
             </motion.div>
           )}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-3 bg-red-500/10 border border-red-500/20 text-center"
+              className="mt-6 p-3 bg-red-500/10 border border-red-500/20 text-center rounded-xl"
             >
-              <p className="text-xs font-mono text-neon-red uppercase">ERROR: {error}</p>
+              <p className="text-xs text-neon-red">{error}</p>
             </motion.div>
           )}
         </div>
 
-        <div className="mt-8 text-center text-[10px] text-tertiary font-mono uppercase">
-          SECURE CONNECTION ESTABLISHED <br />
-          <Link href="#" className="hover:text-white border-b border-transparent hover:border-white transition-all">Privacy</Link> :: <Link href="#" className="hover:text-white border-b border-transparent hover:border-white transition-all">Terms</Link>
+        <div className="mt-8 text-center text-xs text-secondary">
+          <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+          <span className="mx-2">•</span>
+          <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
         </div>
-      </motion.div>
-    </div>
+      </motion.div >
+    </div >
   );
 }
 
