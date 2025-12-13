@@ -20,6 +20,7 @@ const config = {
         
         // Primary & Secondary
         cyan: "#22D3EE", // Primary Accent - Electric Cyan
+        "cyan-bold": "#0891b2", // Darker Cyan for Light Mode Text
         graphite: "#6B7280", // Secondary - Cool Neutral Gray
         
         "neon-red": "#FF2E2E", // Errors/Urgency only

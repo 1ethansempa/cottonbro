@@ -6,7 +6,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@cottonbro/auth-react";
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+    theme?: "light" | "dark";
+}
+
+export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const { user, logout, busy } = useAuth();
@@ -34,11 +38,14 @@ export function SiteHeader() {
 
     return (
         <>
-            <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-md">
+            <header className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-colors duration-300 ${theme === "light"
+                ? "bg-white/80 border-black/5"
+                : "bg-black/80 border-white/5"
+                }`}>
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                     <div className="flex items-center gap-12">
-                        <Link href="/" className="flex items-center gap-2 grayscale hover:grayscale-0 transition-opacity">
-                            <Logo size="md" color="white" fontClassName="font-bold tracking-tight" />
+                        <Link href="/" className="flex items-center gap-2">
+                            <Logo size="md" color={theme === "light" ? "black" : "white"} fontClassName="font-bold tracking-tight" />
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-8">
@@ -46,7 +53,10 @@ export function SiteHeader() {
                                 <Link
                                     key={item}
                                     href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
-                                    className="text-sm font-medium text-secondary hover:text-white transition-colors tracking-wide uppercase"
+                                    className={`text-sm font-medium transition-colors tracking-wide uppercase ${theme === "light"
+                                        ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
+                                        : "text-gray-400 hover:text-cyan hover:underline underline-offset-4"
+                                        }`}
                                 >
                                     {item}
                                 </Link>
@@ -59,13 +69,19 @@ export function SiteHeader() {
                             <>
                                 <Link
                                     href="/auth/login"
-                                    className="text-sm font-semibold text-secondary hover:text-white transition px-2 tracking-wide"
+                                    className={`text-sm font-semibold transition px-2 tracking-wide ${theme === "light"
+                                        ? "text-black hover:opacity-70"
+                                        : "text-white hover:text-cyan"
+                                        }`}
                                 >
-                                    Enter Studio
+                                    Login
                                 </Link>
                                 <Link href="/auth/login">
-                                    <button className="rounded-full bg-white px-6 py-2 text-sm font-bold text-black shadow-glow-cyan hover:bg-cyan hover:shadow-cyan/50 transition-all tracking-wide transform hover:scale-105 cursor-pointer">
-                                        Open Studio
+                                    <button className={`rounded-full px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
+                                        ? "bg-black text-white hover:bg-gray-900"
+                                        : "bg-cyan text-black hover:bg-cyan-bold shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                                        }`}>
+                                        Sign Up
                                     </button>
                                 </Link>
                             </>
@@ -74,22 +90,27 @@ export function SiteHeader() {
                                 type="button"
                                 onClick={handleLogout}
                                 disabled={loggingOut || busy}
-                                className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-secondary hover:text-white hover:bg-white/10 transition disabled:opacity-60 tracking-wide cursor-pointer"
+                                className={`rounded-full border px-5 py-2 text-sm font-medium transition disabled:opacity-60 tracking-wide cursor-pointer ${theme === "light"
+                                    ? "border-black/10 bg-black/5 text-gray-600 hover:text-black hover:bg-black/10"
+                                    : "border-white/10 bg-white/5 text-secondary hover:text-white hover:bg-white/10"
+                                    }`}
                             >
                                 {loggingOut ? "Logging out…" : "Log out"}
                             </button>
                         )}
                     </div>
 
-                    {/* Mobile Menu Button - White */}
+                    {/* Mobile Menu Button */}
                     <button
-                        className="md:hidden p-2 text-white group cursor-pointer"
+                        className={`md:hidden p-2 group cursor-pointer ${theme === "light" ? "text-black" : "text-white"}`}
                         onClick={() => setMobileMenuOpen(true)}
                     >
                         <div className="space-y-1.5">
-                            <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-cyan"></span>
-                            <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-cyan"></span>
-                            <span className="block w-6 h-0.5 bg-white transition-colors group-hover:bg-cyan"></span>
+                            <div className="space-y-1.5">
+                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
+                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
+                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
+                            </div>
                         </div>
                     </button>
 
