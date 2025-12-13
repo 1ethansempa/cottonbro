@@ -1,42 +1,58 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
+const config = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "../../packages/frontend/ui/src/**/*.{js,ts,jsx,tsx}",
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        ink: "#0C0C0C", // page background
-        onyx: "#121212", // dark panels
-        graphite: "#1B1B1B", // cards on dark
-        cream: "#F6F0E6", // paper surfaces
-        bone: "#EDE6DA", // lines on cream
-        slatey: "#A6A6A6", // muted copy on dark
-        "street-red": "#D90429", // streetwear accent
-        "soft-pink": "#FDE2E4", // playful accent
-      },
-      boxShadow: {
-        subtle:
-          "0 0.5px 0.5px rgba(0,0,0,0.08), 0 6px 18px -8px rgba(0,0,0,0.35)",
-        insetSoft:
-          "inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.06)",
-      },
-      borderColor: {
-        hair: "#2A2A2A", // hairline on dark
-        paperhair: "#E6DECF", // hairline on cream
-      },
-      letterSpacing: {
-        tightish: "-0.01em",
-        label: "0.14em",
+        page: "#030303", // Softer Deep Black
+        "page-gradient": "#080808",
+        
+        // Typography
+        primary: "#FFFFFF",
+        secondary: "#A1A1AA",
+        tertiary: "#52525B",
+        
+        // Creative Lab Accents
+        silver: "#E1E1E1", // Kept for generic structure
+        
+        // Primary & Secondary
+        cyan: "#22D3EE", // Primary Accent - Electric Cyan
+        "cyan-bold": "#0891b2", // Darker Cyan for Light Mode Text
+        graphite: "#6B7280", // Secondary - Cool Neutral Gray
+        
+        "neon-red": "#FF2E2E", // Errors/Urgency only
+        
+        // Borders
+        "border-subtle": "rgba(255, 255, 255, 0.08)",
+        "border-glow": "rgba(255, 255, 255, 0.15)",
       },
       fontFamily: {
-        urbanist: ["var(--font-urbanist)"],
+        urbanist: ["var(--font-urbanist)", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "page-gradient": "linear-gradient(to bottom, #050505, #000000)",
+      },
+      boxShadow: {
+        "glow-cyan": "0 0 40px -10px rgba(34, 211, 238, 0.4)", 
+        "card": "0 1px 3px rgba(0,0,0,0.05)",
+        "card-hover": "0 10px 40px rgba(0,0,0,0.08)",
+      },
+      animation: {
+        "shimmer": "shimmer 2.5s linear infinite",
+      },
+      keyframes: {
+        shimmer: {
+          "0%": { backgroundPosition: "100% 0" },
+          "100%": { backgroundPosition: "-100% 0" },
+        }
+      }
     },
   },
   plugins: [],
 };
+export default config;

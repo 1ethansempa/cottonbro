@@ -4,6 +4,9 @@ import * as React from "react";
 import { useAuth } from "@cottonbro/auth-react";
 import { Button, Input, GoogleButton } from "@cottonbro/ui";
 import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { Logo } from "@cottonbro/ui";
 
 declare global {
   interface Window {
@@ -79,7 +82,7 @@ function LoginView() {
   const handleSwitchAccount = React.useCallback(async () => {
     if (switchingAccount) return;
     setSwitchingAccount(true);
-    setStatus("Signing you out so you can log in again…");
+    setStatus("Signing you out…");
     try {
       await logout();
       setSent(false);
@@ -138,195 +141,175 @@ function LoginView() {
     }
   }
 
+  // ...existing code...
+  // ...existing code...
   return (
-    <div className="w-full max-w-5xl mx-auto px-6 py-12 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-start">
-      {/* LEFT COLUMN: SIGN IN */}
-      <div className="w-full max-w-md mx-auto md:mx-0">
-        <h1 className="font-jamino text-5xl md:text-7xl uppercase text-black mb-8 md:mb-12 tracking-tight">
-          Sign In
-        </h1>
+    <div className="min-h-screen w-full flex items-center justify-center bg-page p-6 font-urbanist relative overflow-hidden">
+      {/* Solid Black Background - No Noise */}
 
-        {/* Google button */}
-        <div className="mb-8">
-          <GoogleButton
-            onClick={onGoogle}
-            disabled={busy}
-          />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="mb-10 text-center">
+          <Link href="/" className="inline-block grayscale hover:grayscale-0 transition-opacity">
+            <Logo size="xl" color="white" fontClassName="font-bold tracking-tight" />
+          </Link>
         </div>
 
-        {/* Divider */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t-2 border-black/10"></div>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest">
-            <span className="bg-white px-4 text-zinc-500">Or using email</span>
-          </div>
-        </div>
+        <div className="rounded-3xl border border-white/10 bg-[#0A0A0A] p-8 relative overflow-hidden shadow-2xl">
 
-        {/* Forms */}
-        <div>
-          {isAuthenticated && (
-            <div className="mb-6 rounded border-2 border-black bg-zinc-50 p-4">
-              <p className="text-sm font-bold uppercase tracking-widest text-black">
-                You&apos;re already signed in
-                {user?.email ? ` as ${user.email}` : ""}.
+          <div className="top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan/50 to-transparent absolute" />
+
+          <h1 className="text-3xl font-black text-white mb-2 text-center tracking-tighter uppercase">
+            Sign In / Sign Up
+          </h1>
+          <p className="text-gray-400 text-sm text-center mb-8 font-medium">
+            Access your studio dashboard
+          </p>
+
+          {/* Google Button */}
+          <div className="mb-8">
+            <GoogleButton
+              onClick={onGoogle}
+              disabled={busy}
+              className="w-full justify-center rounded-full border border-white/10 bg-white text-black hover:bg-gray-200 font-bold transition-all py-3 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+            />
+          </div>
+
+          <div className="relative mb-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/5"></div>
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest font-mono">
+              <span className="bg-[#0A0A0A] px-4 text-gray-500">Or use email</span>
+            </div>
+          </div>
+
+          {isAuthenticated ? (
+            <div className="bg-white/5 border border-white/10 p-6 text-center rounded-2xl">
+              <p className="text-sm font-medium text-white mb-1 font-mono">
+                ID: {user?.email}
               </p>
-              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Continue to your account or sign out to switch profiles.
-              </p>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
+              <div className="flex flex-col gap-3 mt-6">
+                <Button
                   onClick={handleContinue}
-                  className="w-full rounded border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-white hover:text-black"
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] uppercase tracking-widest text-xs cursor-pointer transition-all hover:scale-[1.02]"
                 >
-                  Continue
-                </button>
+                  Proceed to Dashboard
+                </Button>
                 <button
-                  type="button"
                   onClick={handleSwitchAccount}
                   disabled={switchingAccount || busy}
-                  className="w-full rounded border-2 border-black bg-white px-4 py-2 text-sm font-bold uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:opacity-60"
+                  className="text-xs text-gray-500 hover:text-white transition-colors uppercase tracking-widest font-bold cursor-pointer mt-2"
                 >
-                  {switchingAccount ? "Signing out…" : "Switch account"}
+                  {switchingAccount ? "Signing out..." : "Sign Out"}
                 </button>
               </div>
             </div>
-          )}
-
-          {!sent ? (
-            <form onSubmit={onSend}>
-              <fieldset
-                disabled={isAuthenticated && !switchingAccount}
-                className="space-y-6 disabled:opacity-60"
-              >
+          ) : (
+            !sent ? (
+              <form onSubmit={onSend} className="space-y-6">
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
-                  >
-                    Email Address
+                  <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider ml-1">
+                    Email
                   </label>
                   <Input
-                    id="email"
-                    name="email"
                     type="email"
-                    autoComplete="email"
-                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="YOU@EXAMPLE.COM"
+                    placeholder="name@example.com"
+                    className="w-full bg-black/50 border-white/10 text-white placeholder:text-zinc-700 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-6 transition-all font-medium text-base h-14"
+                    required
                   />
                 </div>
 
-                {turnstileConfigured ? (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                      Verify you&apos;re human
-                    </p>
+                {turnstileConfigured && (
+                  <div className="mb-4">
                     <div
-                      className="cf-turnstile mt-3"
+                      className="cf-turnstile"
                       data-sitekey={TURNSTILE_SITE_KEY}
                       data-callback="cottonbroTurnstileCallback"
                       data-expired-callback="cottonbroTurnstileExpired"
                       data-error-callback="cottonbroTurnstileError"
-                      data-action="otp_start"
-                      data-theme="light"
-                      role="presentation"
+                      data-theme="dark"
                     />
                   </div>
-                ) : (
-                  <p className="text-sm font-semibold text-red-600">
-                    Turnstile site key missing. Add
-                    NEXT_PUBLIC_TURNSTILE_SITE_KEY to use captcha protection.
-                  </p>
                 )}
 
                 <Button
                   type="submit"
-                  disabled={
-                    !email ||
-                    busy ||
-                    !captchaToken ||
-                    !turnstileConfigured ||
-                    switchingAccount
-                  }
-                  className="w-full"
+                  disabled={!email || busy}
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest group cursor-pointer hover:scale-[1.02]"
                 >
-                  {busy ? "Sending…" : "Sign In"}
+                  {busy ? "Sending..." : "Send Login Code"}
                 </Button>
-              </fieldset>
-            </form>
-          ) : (
-            <form onSubmit={onConfirm} className="space-y-6">
-              <div>
-                <label
-                  htmlFor="code"
-                  className="mb-2 block text-sm font-bold uppercase tracking-widest text-black"
+              </form>
+            ) : (
+              <form onSubmit={onConfirm} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider ml-1">
+                    Enter Code
+                  </label>
+                  <Input
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="000000"
+                    maxLength={6}
+                    className="w-full bg-black/50 border-white/10 text-white text-center text-3xl font-black placeholder:text-zinc-800 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-4 tracking-[0.5em] transition-all font-mono h-20"
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={code.length !== 6 || busy}
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest cursor-pointer hover:scale-[1.02]"
                 >
-                  Enter 6-digit code
-                </label>
-                <Input
-                  id="code"
-                  name="code"
-                  inputMode="numeric"
-                  pattern="\d{6}"
-                  maxLength={6}
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  className="tracking-[0.5em] text-center text-xl font-bold"
-                  placeholder="••••••"
-                />
-              </div>
+                  {busy ? "Verifying..." : "Open Studio"}
+                </Button>
 
-              <Button
-                type="submit"
-                disabled={code.length !== 6 || busy}
-                className="w-full"
-              >
-                {busy ? "Verifying…" : "Confirm Code"}
-              </Button>
+                <button
+                  type="button"
+                  onClick={() => { setSent(false); setCode(""); }}
+                  className="w-full text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest cursor-pointer"
+                >
+                  Use different email
+                </button>
+              </form>
+            )
+          )}
 
-              <button
-                type="button"
-                onClick={onSend}
-                disabled={busy || !captchaToken || !turnstileConfigured}
-                className="w-full text-xs font-bold uppercase tracking-widest text-zinc-500 underline underline-offset-4 hover:text-black transition disabled:opacity-60 text-center block"
-              >
-                Resend code
-              </button>
-            </form>
+          {/* Status Messages */}
+          {status && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-3 bg-cyan/10 border border-cyan/20 text-center rounded-lg"
+            >
+              <p className="text-xs font-bold text-cyan">{status}</p>
+            </motion.div>
+          )}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-3 bg-red-500/10 border border-red-500/20 text-center rounded-lg"
+            >
+              <p className="text-xs font-bold text-red-400">{error}</p>
+            </motion.div>
           )}
         </div>
 
-        {status && (
-          <p className="mt-6 text-center text-sm font-bold text-green-700 uppercase tracking-wide">
-            {status}
-          </p>
-        )}
-        {error && (
-          <p className="mt-2 text-center text-sm font-bold text-red-600 uppercase tracking-wide">
-            {error}
-          </p>
-        )}
-      </div>
-
-      {/* RIGHT COLUMN: INFO SNIPPET */}
-      <div className="hidden md:block w-full max-w-md mx-auto md:mx-0 pt-8 md:pt-24">
-        <div className="p-8 border-2 border-black bg-zinc-50 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          <p className="font-bold uppercase tracking-wide text-sm mb-4 text-black">
-            New to Cotton Bro?
-          </p>
-          <p className="text-base font-medium text-zinc-600 mb-6 leading-relaxed">
-            Use the form on the left. We&apos;ll create an account for you
-            automatically if you don&apos;t have one.
-          </p>
-          <div className="h-1 w-12 bg-street-red" />
+        <div className="mt-8 text-center text-xs text-secondary">
+          <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+          <span className="mx-2">•</span>
+          <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
         </div>
-      </div>
-    </div>
+      </motion.div >
+    </div >
   );
 }
 

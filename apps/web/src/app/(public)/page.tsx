@@ -4,509 +4,586 @@ import { useState } from "react";
 import { Button } from "@cottonbro/ui";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
-export default function LandingPage() {
-  const [hoveredFaqIndex, setHoveredFaqIndex] = useState<number | null>(null);
+// Icons - Solid Creative Lab Aesthetic (Cyan/White)
+const PaletteIcon = () => (
+  <svg
+    className="w-10 h-10 text-current"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.5}
+      d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+    />
+  </svg>
+);
+const BoxIcon = () => (
+  <svg
+    className="w-10 h-10 text-current"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.5}
+      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+    />
+  </svg>
+);
+const MoneyIcon = () => (
+  <svg
+    className="w-10 h-10 text-current"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.5}
+      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+    />
+  </svg>
+);
+const SparklesIcon = () => (
+  <svg
+    className="w-10 h-10 text-current"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.5}
+      d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+    />
+  </svg>
+);
 
-  const benefits = [
+export default function LandingPage() {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("Most Popular");
+
+  const products = [
     {
-      title: "Launch with confidence",
-      copy: "Upload your design, pick a product, and publish once your design is approved.",
+      id: 1,
+      name: "Street Soul Shirt",
+      creator: "Cotton Bro",
+      price: "UGX 45,000",
+      img: "/product-1.png",
     },
     {
-      title: "Zero ops",
-      copy: "We handle printing, packing, shipping, returns, and customer support behind the scenes.",
+      id: 2,
+      name: "Mira Tee",
+      creator: "Mira Studios",
+      price: "UGX 85,000",
+      img: "/product-2.png",
     },
     {
-      title: "Transparent earnings",
-      copy: "Set your price and see your margin per item before going live.",
+      id: 3,
+      name: "Ribbed Beanie",
+      creator: "Headwear Co",
+      price: "UGX 35,000",
+      img: "/product-3.png",
     },
     {
-      title: "3D previews",
-      copy: "Realistic photo and 3D previews so you can sanity-check before launch.",
+      id: 4,
+      name: "Sweat Shirt",
+      creator: "Urban Fits",
+      price: "UGX 40,000",
+      img: "/product-4.png",
     },
-    { title: "Delivery around Kampala", copy: "Coverage across 40+ areas." },
     {
-      title: "Simple payouts",
-      copy: "Connect your account and get paid automatically every week.",
+      id: 5,
+      name: "Happy Vibes Crop Top",
+      creator: "Vibe Check",
+      price: "UGX 45,000",
+      img: "/product-5.png",
+    },
+    {
+      id: 6,
+      name: "Cargo Utility Pant",
+      creator: "Utility Gear",
+      price: "UGX 95,000",
+      img: "/product-1.png",
+    },
+    {
+      id: 7,
+      name: "Graphic Art Tee",
+      creator: "Art House",
+      price: "UGX 50,000",
+      img: "/product-2.png",
+    },
+    {
+      id: 8,
+      name: "Essential Zip-Up",
+      creator: "Cotton Bro",
+      price: "UGX 90,000",
+      img: "/product-3.png",
+    },
+    {
+      id: 9,
+      name: "Running Short",
+      creator: "Active Lab",
+      price: "UGX 45,000",
+      img: "/product-4.png",
+    },
+    {
+      id: 10,
+      name: "Performance Tank",
+      creator: "Active Lab",
+      price: "UGX 40,000",
+      img: "/product-5.png",
+    },
+    {
+      id: 11,
+      name: "Relaxed Fit Chino",
+      creator: "Urban Fits",
+      price: "UGX 80,000",
+      img: "/product-1.png",
+    },
+    {
+      id: 12,
+      name: "Vintage Crewneck",
+      creator: "Cotton Bro",
+      price: "UGX 75,000",
+      img: "/product-2.png",
+    },
+  ];
+
+  const features = [
+    {
+      title: "Design Studio",
+      desc: "Pro tools. Zero learning curve. Build it fast.",
+      icon: <PaletteIcon />,
+    },
+    {
+      title: "Real Body 3D",
+      desc: "Preview sizes S–XXL on real models. Front, back, and angles.",
+      icon: <BoxIcon />,
+    },
+    {
+      title: "Asset Protection",
+      desc: "First-to-upload ownership. We protect your original designs.",
+      icon: <MoneyIcon />,
+    },
+    {
+      title: "Fulfillment",
+      desc: "Printed locally. No imports. No customs delays.",
+      icon: <SparklesIcon />,
     },
   ];
 
   const steps = [
     {
       n: 1,
-      t: "Create",
-      d: "Start with a template or upload artwork. Pick colors, sizes, variants.",
-    },
-    { n: 2, t: "Preview", d: "Review photo & 3D mockups and confirm quality." },
-    {
-      n: 3,
-      t: "Approval",
-      d: "Submit your design for a final check before publishing.",
+      title: "Design",
+      desc: "Create your piece using our studio tools.",
     },
     {
-      n: 4,
-      t: "Publish",
-      d: "Share a store link. We fulfill and you get paid.",
+      n: 2,
+      title: "Submit",
+      desc: "Send your design for quality & safety review.",
     },
-  ];
-
-  const testimonials = [
-    {
-      name: "Nia K.",
-      role: "Artist",
-      body: "Launched a capsule in a weekend. The previews looked exactly like the final pieces.",
-      rotate: -2,
-    },
-    {
-      name: "Tendo M.",
-      role: "Creator",
-      body: "No logistics, just design. Payouts arrive weekly without me touching anything.",
-      rotate: 1,
-    },
-    {
-      name: "Jonas O.",
-      role: "Brand lead",
-      body: "We swapped from spreadsheets to a single link. Conversion went up 18%.",
-      rotate: -1,
-    },
+    { n: 3, title: "Drop", desc: "Share your link. Cashless checkout. Mobile Money supported." },
+    { n: 4, title: "Earn", desc: "Track every order, revenue & payout in one place. Weekly settlements." },
   ];
 
   const faqs = [
     {
-      q: "Do I need to buy inventory?",
-      a: "No. We print on demand after a customer orders, so there’s no upfront stock.",
+      q: "Skills Required?",
+      a: "None. We provide the tools. You bring the vision.",
     },
     {
-      q: "Where do you deliver?",
-      a: "We currently deliver all around Kampala.",
+      q: "Inventory?",
+      a: "Zero. We print on demand. Never overstock.",
     },
-    {
-      q: "How do payouts work?",
-      a: "Connect your account once. Earnings are paid out automatically every week.",
-    },
+    { q: "Payouts?", a: "Weekly. Direct to Mobile Money." },
   ];
 
-  // Scroll animations
-  const { scrollY } = useScroll();
-  const heroParallax = useTransform(scrollY, [0, 1000], [0, 150]); // Subtle parallax for background (currently unused but kept)
-
   return (
-    <div className="min-h-dvh bg-black overflow-x-hidden font-urbanist">
-      {/* 
-        Mobile Nav Depth Effect:
-        We wrap the main content in a motion.div that scales down when the menu is open.
-      */}
-      <motion.div className="bg-white min-h-dvh text-black antialiased selection:bg-street-red selection:text-white origin-top shadow-2xl">
-        {/* NAV */}
-        <SiteHeader />
+    <div className="font-urbanist bg-page text-primary min-h-screen selection:bg-cyan selection:text-black">
+      <SiteHeader theme="dark" />
 
-        {/* HERO */}
-        <section className="relative overflow-hidden border-b-2 border-black pt-12 pb-0 md:pt-32">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 md:grid-cols-2 relative z-10 pb-24">
-            {/* Left: text */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex flex-col items-start z-10 max-w-full"
-            >
-              <h1 className="font-marcellus uppercase leading-[0.9] tracking-tighter text-black text-[12vw] md:text-[8vw] lg:text-[6vw] xl:text-8xl break-words w-full relative">
-                Built for
-                <br />
-                <span className="relative inline-block">
-                  <span className="relative z-10 text-street-red italic">Creators</span>
-                  <span className="absolute -bottom-2 left-0 w-full h-4 bg-soft-pink -rotate-2 -z-0 rounded-full" />
-                </span>
-              </h1>
-              <p className="mt-8 max-w-md text-xl font-bold leading-relaxed text-black uppercase tracking-wide">
-                Turn your ideas into real merch. You create; we handle printing,
-                packing, delivery, and payouts.
-              </p>
+      {/* HERO SECTION - Centered Typography & Dashboard */}
+      <section className="relative pt-48 pb-20 flex flex-col items-center justify-center overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[600px] bg-cyan/20 blur-[120px] rounded-full opacity-20 pointer-events-none" />
 
-              <div className="mt-12 flex flex-wrap items-center gap-6">
+        <div className="mx-auto max-w-5xl px-6 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter text-white mb-8 leading-[0.9] select-none">
+              Your Studio.
+              <br />
+              <span className="text-cyan">Your Brand.</span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto mb-10 font-medium leading-relaxed">
+              Design merch, launch a link, and we print + deliver in Kampala.
+              <br className="hidden md:block" />
+              No inventory. No limits. Just create.
+            </p>
+
+            <div className="flex flex-col items-center gap-8 mb-24">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-6">
                 <Link href="/auth/login">
-                  <Button className="px-10 py-5 text-lg rounded-full border-2 border-black bg-white text-black hover:bg-street-red hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all uppercase font-bold tracking-widest">
-                    Start free
+                  <Button className="group rounded-full px-12 py-6 bg-white text-black font-bold text-base tracking-widest uppercase hover:bg-gray-200 hover:scale-[1.02] transition-all duration-200 ease-out cursor-pointer border border-transparent shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                    <span className="relative z-10">Open Studio</span>
                   </Button>
                 </Link>
-                <a
-                  href="#demo"
-                  className="border-b-2 border-black pb-1 text-lg font-black uppercase tracking-widest text-black hover:text-street-red hover:border-street-red transition"
-                >
-                  View demo
-                </a>
+                <Link href="#how">
+                  <span className="text-gray-400 font-bold tracking-wide text-sm hover:text-white hover:underline underline-offset-4 decoration-1 decoration-gray-500 transition-all duration-200 cursor-pointer">
+                    See how it works
+                  </span>
+                </Link>
               </div>
-            </motion.div>
-
-            {/* Right: Flat Image Stack */}
-            <div className="relative">
-              <div className="relative z-10 cursor-pointer group">
-                {/* Stack Effect */}
-                <div className="absolute -inset-4 bg-soft-pink border-2 border-black translate-x-3 translate-y-3 rounded-2xl" />
-                <div className="absolute -inset-4 bg-black border-2 border-black rounded-2xl" />
-
-                <div className="relative aspect-square overflow-hidden border-2 border-black bg-zinc-100 rounded-2xl">
-                  <Image
-                    src="/test-hero-7.png"
-                    alt="CottonBro preview"
-                    fill
-                    priority
-                    className="object-cover contrast-125 transition duration-500"
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                  />
-                  {/* Glitch/Shine effect on hover */}
-                  <div className="absolute inset-0 bg-street-red/10 opacity-0 group-hover:opacity-100 transition-opacity duration-100 pointer-events-none mix-blend-multiply" />
-                </div>
-
-
-              </div>
+              <p className="text-sm text-gray-500 font-medium max-w-sm mx-auto">
+                Get a shareable checkout link for every design. <br className="hidden md:block" /> Ready for WhatsApp & Instagram.
+              </p>
             </div>
-          </div>
+          </motion.div>
+        </div>
 
-          {/* SCROLLING MARQUEE */}
-          <div className="w-full border-t-2 border-black bg-black py-4 overflow-hidden">
-            <motion.div
-              className="flex w-max"
-              animate={{ x: "-50%" }}
-              transition={{ repeat: Infinity, duration: 120, ease: "linear" }}
+        {/* HERO IMAGE - Clean Visual */}
+        <div className="relative w-full max-w-[1600px] px-6 mx-auto z-10 mt-16">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+          >
+            <div className="relative rounded-3xl border border-white/10 overflow-hidden shadow-2xl group w-full aspect-video">
+              <Image
+                src="/hero-1.png"
+                alt="Cotton Bro Creator"
+                fill
+                className="object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700 ease-in-out"
+                priority
+              />
+
+              {/* Subtle Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+
+              {/* Optional: Floating CTA or Badge if needed, currently kept clean as requested */}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* PRODUCT GRID - Clean Reference Style */}
+      <section className="pt-12 pb-24 bg-page border-b border-white/10">
+        <div className="mx-auto max-w-[1400px] px-6">
+          {/* Header & Filters */}
+          <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-8">
+            <div className="flex gap-8 items-center overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+              <h2 className="text-xl font-bold text-white tracking-tight shrink-0 mr-4">
+                Trending Creator Drops
+              </h2>
+              {["Most Popular", "Just Launched"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`text-base font-medium transition-colors duration-200 ease-out whitespace-nowrap relative ${activeTab === tab
+                    ? "text-cyan drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                    : "text-gray-500 hover:text-cyan"
+                    }`}
+                >
+                  {tab}
+                  {/* Dot Indicator */}
+                  {activeTab === tab && (
+                    <span className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-cyan rounded-full shadow-[0_0_5px_#22d3ee]" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <Link
+              href="/products"
+              className="hidden md:flex items-center gap-2 group"
             >
-              {[0, 1].map((setIndex) => (
-                <div key={setIndex} className="flex shrink-0 items-center">
-                  {[...Array(8)].map((_, i) => (
-                    <span
-                      key={i}
-                      className="text-3xl md:text-5xl font-black uppercase text-white tracking-widest mx-8 font-urbanist flex items-center gap-4"
-                    >
-                      Launch Your Merch{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span> No
-                      Inventory Needed{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span> We
-                      Handle Production{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span>{" "}
-                      Kampala Delivery{" "}
-                      <span className="text-soft-pink mx-2 text-6xl">•</span>
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* NEW SECTION: COLLECTIONS (Balanced Edition) */}
-        <section className="mx-auto max-w-7xl px-6 py-24 border-b-2 border-black">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Column 1 — Apparel Studio */}
-            <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black rounded-xl">
-                <Image
-                  src="/test-hero-7.png"
-                  alt="Apparel"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
-                />
-              </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
-                Apparel Studio
-              </h3>
-              <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
-                Redefining streetwear.
-              </p>
-              <span className="inline-block border-b-2 border-black pb-0.5 text-sm font-black uppercase tracking-widest group-hover:text-street-red group-hover:border-street-red transition-all">
-                Explore Apparel
+              <span className="text-sm font-bold uppercase tracking-widest text-white group-hover:text-cyan transition-colors duration-200">
+                Shop All Products
               </span>
-            </div>
-
-            {/* Column 2 — Outerwear */}
-            <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black rounded-xl">
-                <Image
-                  src="/test-img-2.png"
-                  alt="Outerwear"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
-                />
-              </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
-                Outerwear
-              </h3>
-              <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
-                Beyond bold layers.
-              </p>
-              <span className="inline-block border-b-2 border-black pb-0.5 text-sm font-black uppercase tracking-widest group-hover:text-street-red group-hover:border-street-red transition-all">
-                Shop Outerwear
-              </span>
-            </div>
-
-            {/* Column 3 — Limited Editions */}
-            <div className="group cursor-pointer relative">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-black mb-6 bg-black rounded-xl">
-                <Image
-                  src="/test-img-1.png"
-                  alt="Limited Editions"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
-                />
-              </div>
-              <h3 className="font-marcellus text-3xl uppercase text-black mb-2 group-hover:text-street-red transition-colors">
-                Limited Editions
-              </h3>
-              <p className="text-sm font-bold text-zinc-600 mb-4 uppercase tracking-wide group-hover:text-black transition-colors">
-                Exclusive drops.
-              </p>
-              <span className="inline-block border-b-2 border-black pb-0.5 text-sm font-black uppercase tracking-widest group-hover:text-street-red group-hover:border-street-red transition-all">
-                View Drops
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* BENEFITS ("The Studio") */}
-        <section
-          id="features"
-          className="mx-auto max-w-7xl px-6 py-32 border-b-2 border-black"
-        >
-          <div className="mb-16 md:mb-24">
-            <h2 className="font-marcellus text-6xl uppercase text-black md:text-8xl leading-[0.9]">
-              The Studio
-            </h2>
-            <p className="mt-8 max-w-xl text-xl font-black uppercase text-black bg-soft-pink inline-block px-4 py-2 transform -rotate-1 rounded-lg border-2 border-black">
-              No logistics. <span className="text-street-red">Just design.</span>
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:grid-rows-2">
-            {benefits.map((f, i) => (
-              <motion.div
-                key={f.title}
-                className={[
-                  "group relative flex flex-col justify-between bg-white p-8 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(253,226,228,1)] hover:-translate-y-1 transition-all rounded-xl",
-                  i === 0 || i === 3 ? "md:col-span-2" : "",
-                ].join(" ")}
+              <svg
+                className="w-4 h-4 text-white group-hover:text-cyan transform group-hover:translate-x-1 transition-all duration-200"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <div className="h-full flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-marcellus font-bold text-3xl uppercase text-black group-hover:text-street-red transition-colors">
-                      {f.title}
-                    </h3>
-                    <p className="mt-4 max-w-sm text-black font-bold uppercase tracking-wide text-sm">
-                      {f.copy}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section
-          id="how"
-          className="mx-auto max-w-7xl px-6 py-32 border-b-2 border-black"
-        >
-          <div className="mb-16">
-            <h2 className="font-marcellus text-6xl uppercase text-black md:text-8xl leading-[0.9]">
-              How it works
-            </h2>
+                <path
+                  strokeLinecap="square"
+                  strokeLinejoin="miter"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
-            {steps.map((s, i) => (
-              <motion.div
-                key={s.n}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.15, duration: 0.6, ease: "backOut" }}
-                viewport={{ once: true, margin: "-50px" }}
-                className="flex flex-col gap-4 border-l-2 border-black pl-6 group"
-              >
-                {/* Embossed Number Effect */}
-                <span
-                  className="font-jamino text-7xl text-transparent stroke-black stroke-1 transition-transform duration-300 group-hover:-translate-y-2 group-hover:text-soft-pink"
-                  style={{ WebkitTextStroke: "1px black" }}
-                >
-                  0{s.n}
-                </span>
-                <h3 className="text-xl font-black uppercase text-black bg-zinc-100 inline-block px-2 self-start transform -rotate-1 group-hover:rotate-0 transition-transform group-hover:bg-soft-pink group-hover:text-black rounded-md border border-transparent group-hover:border-black">
-                  {s.t}
-                </h3>
-                <p className="text-sm font-bold uppercase leading-relaxed text-zinc-700 group-hover:text-black transition-colors">
-                  {s.d}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* PRICING */}
-        <section
-          id="pricing"
-          className="mx-auto max-w-7xl px-6 py-32 border-b-2 border-black"
-        >
-          <div className="mb-16 text-center">
-            <h2 className="font-marcellus text-6xl uppercase text-black md:text-8xl leading-[0.9]">
-              Pricing
-            </h2>
-            <p className="mt-6 text-xl font-black uppercase text-black">
-              Clear plans.{" "}
-              <span className="text-street-red underline decoration-4 decoration-black">
-                Zero bs.
-              </span>
-            </p>
-          </div>
-          <div className="flex justify-center">
-            <div className="w-full max-w-2xl">
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="flex flex-col items-center border-2 border-black bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-[16px_16px_0px_0px_rgba(253,226,228,1)] transition-shadow rounded-3xl relative"
-              >
-                <div className="absolute -top-4 bg-soft-pink text-black text-xs font-black uppercase px-4 py-1 rounded-full border-2 border-black">
-                  Simple & Fair
-                </div>
-                <h3 className="mb-6 font-urbanist text-4xl font-black uppercase text-black">
-                  Transparent Pricing
-                </h3>
-                <div className="mb-8 flex flex-col items-center gap-2">
-                  <span className="text-7xl font-urbanist font-black text-street-red tracking-tighter">
-                    UGX 10k
-                  </span>
-                  <span className="text-xl font-black uppercase tracking-widest text-white bg-black px-4 py-1 transform -rotate-2">
-                    per sale
-                  </span>
-                </div>
-                <div className="mb-8 h-px w-24 bg-black" />
-                <p className="text-xl font-bold text-black uppercase">
-                  + 5% payment processing fee
-                </p>
-                <p className="mt-4 text-xs font-bold uppercase text-zinc-500 max-w-md">
-                  No monthly fees. No hidden costs. You only pay when you make a
-                  sale.
-                </p>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* TESTIMONIALS */}
-          <div className="mt-32">
-            <h3 className="mb-12 text-center font-marcellus text-4xl uppercase text-black md:text-5xl">
-              Loved by creators
-            </h3>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {testimonials.map((t, i) => (
-                <motion.figure
-                  key={t.name}
-                  initial={{ opacity: 0, rotate: t.rotate }}
-                  whileInView={{ opacity: 1 }}
-                  whileHover={{
-                    rotate: 0,
-                    scale: 1.05,
-                    zIndex: 10,
-                    boxShadow: "8px 8px 0px 0px rgba(0,0,0,1)",
-                  }}
-                  transition={{ type: "spring", stiffness: 300 }}
-
-                  viewport={{ once: true }}
-                  className="border-2 border-black bg-soft-pink/20 p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] origin-center cursor-default rounded-2xl"
-                >
-                  <div className="flex gap-1 text-street-red mb-4 text-xl">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span key={star}>★</span>
-                    ))}
-                  </div>
-                  <blockquote className="text-lg font-bold uppercase text-black leading-tight">
-                    “{t.body}”
-                  </blockquote>
-                  <figcaption className="mt-6 text-xs font-black uppercase tracking-widest text-zinc-500 border-t-2 border-black pt-4 inline-block">
-                    {t.name} — {t.role}
-                  </figcaption>
-                </motion.figure>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section
-          id="faq"
-          className="mx-auto max-w-4xl px-6 py-32 border-b-2 border-black"
-        >
-          <h2 className="mb-12 font-marcellus text-5xl uppercase text-black text-center md:text-7xl">
-            FAQ
-          </h2>
-          <div className="divide-y-2 divide-black border-y-2 border-black">
-            {faqs.map((f, i) => (
+          {/* Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-10">
+            {products.map((product) => (
               <div
-                key={f.q}
-                className="group py-8 cursor-pointer"
-                onMouseEnter={() => setHoveredFaqIndex(i)}
-                onMouseLeave={() => setHoveredFaqIndex(null)}
+                key={product.id}
+                className="group cursor-pointer text-center"
               >
-                <div className="flex list-none items-center justify-between gap-4">
-                  <span className="text-xl font-black text-black uppercase group-hover:text-street-red transition-colors">
-                    {f.q}
-                  </span>
-                  <span
-                    className={`text-street-red transition-transform duration-300 text-3xl font-black ${hoveredFaqIndex === i ? "rotate-45" : ""
-                      }`}
-                  >
-                    +
-                  </span>
+                <div className="relative aspect-[3/4] w-full mb-4 overflow-hidden bg-zinc-900 border border-white/5 group-hover:border-cyan/30 transition-colors duration-300">
+                  <Image
+                    src={product.img}
+                    alt={product.name}
+                    fill
+                    className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03] opacity-90 group-hover:opacity-100"
+                  />
+
+                  {/* Hover Interaction: Circle Arrow */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    <div className="w-14 h-14 bg-cyan rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      <svg
+                        className="w-6 h-6 text-black"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="square"
+                          strokeLinejoin="miter"
+                          strokeWidth={2}
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+
                 </div>
-                <motion.div
-                  initial={false}
-                  animate={{
-                    height: hoveredFaqIndex === i ? "auto" : 0,
-                    opacity: hoveredFaqIndex === i ? 1 : 0,
-                  }}
-                  className="overflow-hidden"
-                >
-                  <p className="mt-4 text-lg font-bold uppercase text-zinc-700">
-                    {f.a}
+
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-white tracking-tight group-hover:text-cyan transition-colors duration-200 uppercase">
+                    {product.name}
+                  </h3>
+                  <p className="text-sm text-gray-400 font-medium">
+                    by <span className="text-gray-300">{product.creator}</span>
                   </p>
-                </motion.div>
+                </div>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* CTA (3D Slab) */}
-        <section className="mx-auto max-w-7xl px-6 py-32">
-          <div className="w-full">
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="flex flex-col items-center justify-center gap-8 border-2 border-black bg-white p-12 text-center shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"
-            >
-              <div>
-                <h2 className="font-marcellus text-5xl uppercase text-black md:text-7xl">
-                  Ready to launch?
-                </h2>
-                <p className="mt-4 text-xl font-black uppercase text-black">
-                  Join the new wave of creators.
+      {/* FEATURES - The Lab */}
+      <section
+        id="features"
+        className="py-20 relative text-center md:text-left bg-page"
+      >
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-24 flex flex-col md:flex-row justify-between items-end gap-8">
+            <div>
+              <h2 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tight leading-none uppercase">
+                The{" "}
+                <span className="text-cyan underline decoration-2 underline-offset-4 decoration-cyan/50">
+                  Platform.
+                </span>
+              </h2>
+              <p className="text-gray-400 text-xl max-w-md">
+                Tools for the modern creator.
+              </p>
+            </div>
+            <div className="hidden md:block w-px h-24 bg-white/10" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
+            {features.map((feature, idx) => (
+              <div
+                key={idx}
+                className="group pt-6 border-t border-white/10 hover:border-cyan transition-colors duration-200 ease-out"
+              >
+                <div className="mb-6 text-cyan drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
+                  {feature.icon}
+                </div>
+                <h3 className="text-lg font-black text-white mb-3 tracking-wide uppercase group-hover:text-cyan transition-colors duration-200">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 text-base leading-relaxed font-medium max-w-xs group-hover:text-gray-300">
+                  {feature.desc}
                 </p>
               </div>
-              <Link href="/auth/login">
-                <Button className="px-10 py-5 text-lg rounded-full border-2 border-black bg-black text-white hover:bg-soft-pink hover:text-black shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all uppercase font-black tracking-widest">
-                  Create free account
-                </Button>
-              </Link>
-            </motion.div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* FOOTER */}
-        <SiteFooter />
-      </motion.div>
+      {/* HOW IT WORKS - The Process */}
+      <section
+        id="how"
+        className="py-20 bg-zinc-950 border-t border-white/5 relative overflow-hidden"
+      >
+        <div className="mx-auto max-w-7xl px-6 relative z-10">
+          <div className="flex flex-col lg:flex-row gap-24 items-center">
+            <div className="lg:w-1/2 space-y-16">
+              <div>
+                <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight leading-[0.95]">
+                  From Vision
+                  <br />
+                  <span className="text-cyan underline decoration-2 underline-offset-4 decoration-cyan/30">
+                    To Reality.
+                  </span>
+                </h2>
+                <p className="text-xl text-gray-400 font-medium max-w-md">
+                  We handle the logistics. You own the brand.
+                </p>
+              </div>
+
+              <div className="space-y-12">
+                {steps.map((step) => (
+                  <div
+                    key={step.n}
+                    className="group flex flex-col md:flex-row gap-6 md:gap-12 border-b border-white/5 pb-12 hover:border-cyan/50 transition-colors duration-200 ease-out cursor-default"
+                  >
+                    <div className="text-zinc-800 text-6xl md:text-7xl font-black font-mono leading-none tracking-tighter group-hover:text-cyan group-hover:drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all duration-200 ease-out">
+                      0{step.n}
+                    </div>
+                    <div className="flex-1 pt-2">
+                      <h4 className="text-3xl font-black text-white mb-2 tracking-tight group-hover:translate-x-1 group-hover:text-cyan transition-all duration-200 ease-out uppercase">
+                        {step.title}
+                      </h4>
+                      <p className="text-gray-500 text-lg font-medium max-w-sm group-hover:text-gray-400">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:w-1/2 w-full sticky top-32">
+              <div className="relative aspect-[3/4] w-full max-w-md mx-auto">
+                <div className="relative h-full w-full bg-zinc-900 border border-white/10 overflow-hidden group">
+                  <Image
+                    src="/img-2.png"
+                    alt="App Interface"
+                    fill
+                    className="object-cover opacity-60 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 ease-out"
+                  />
+                  {/* Overlay Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+
+                  <div className="absolute bottom-8 left-8">
+                    <div className="bg-black/50 backdrop-blur-md border border-white/10 p-6 max-w-xs">
+                      <div className="text-cyan text-xs font-bold uppercase tracking-widest mb-2">
+                        Success Story
+                      </div>
+                      <p className="text-white font-bold leading-tight">
+                        &quot;The quality is unmatched. My customers love the
+                        heavyweight tees.&quot;
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING - The Pass */}
+      <section
+        id="pricing"
+        className="py-24 relative bg-page border-t border-white/5"
+      >
+        <div className="mx-auto max-w-5xl px-6 relative z-10">
+          <div className="border border-white/10 bg-zinc-900/50 p-6 md:p-24 text-center relative overflow-hidden group hover:border-cyan/30 transition-colors duration-500">
+
+
+            <h2 className="text-6xl md:text-9xl font-black text-white mb-6 tracking-tighter drop-shadow-lg">
+              10k{" "}
+              <span className="text-3xl md:text-5xl font-bold text-gray-500 align-top">
+                UGX
+              </span>
+            </h2>
+            <p className="text-xl md:text-2xl text-gray-400 mb-8 font-medium max-w-xl mx-auto">
+              Flat platform fee. <br />
+              <span className="text-white">Plus base cost. You set the price & keep the profit.</span>
+            </p>
+
+
+            <Link href="/auth/login">
+              <Button className="w-full md:w-auto rounded-full px-6 md:px-16 py-6 bg-cyan hover:bg-cyan-bold border border-transparent text-black font-bold text-sm md:text-lg tracking-widest uppercase transition-all duration-200 ease-out transform cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:scale-[1.02]">
+                Open Your Studio
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ - Support */}
+      <section className="py-20 bg-page border-t border-white/5">
+        <div className="mx-auto max-w-3xl px-6">
+          <div className="mb-16 text-center">
+            <h2 className="text-3xl font-black text-white tracking-tight uppercase">
+              Help & Support
+            </h2>
+          </div>
+          <div className="space-y-0">
+            {faqs.map((faq, idx) => (
+              <div
+                key={idx}
+                className="border-t border-white/10 overflow-hidden cursor-pointer group"
+                onClick={() =>
+                  setOpenFaqIndex(openFaqIndex === idx ? null : idx)
+                }
+              >
+                <div className="py-8 flex justify-between items-center group-hover:bg-white/5 px-4 transition-colors duration-200">
+                  <h3 className="text-xl font-bold text-white uppercase tracking-wide group-hover:text-cyan transition-colors duration-200">
+                    {faq.q}
+                  </h3>
+                  <div
+                    className={`transform transition-transform duration-300 ${openFaqIndex === idx ? "rotate-45" : "rotate-0"}`}
+                  >
+                    <svg
+                      className="w-6 h-6 text-white group-hover:text-cyan"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="square"
+                        strokeLinejoin="miter"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div
+                  className={`px-4 text-gray-400 text-lg font-medium leading-relaxed overflow-hidden transition-all duration-300 ease-out ${openFaqIndex === idx
+                    ? "max-h-40 pb-8 opacity-100"
+                    : "max-h-0 opacity-0"
+                    }`}
+                >
+                  {faq.a}
+                </div>
+              </div>
+            ))}
+            <div className="border-t border-white/10" />
+          </div>
+        </div>
+      </section>
+
+      <SiteFooter theme="dark" />
     </div>
   );
 }

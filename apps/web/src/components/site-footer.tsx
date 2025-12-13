@@ -1,90 +1,107 @@
-"use client";
-
+// ...existing imports...
 import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
 
-export function SiteFooter() {
+interface SiteFooterProps {
+    theme?: "light" | "dark";
+}
+
+export function SiteFooter({ theme = "dark" }: SiteFooterProps) {
+    // ...existing code...
     return (
-        <footer className="border-t border-black bg-white">
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 py-16 md:grid-cols-4">
-                <div className="col-span-2 md:col-span-1 text-black">
-                    <Logo size="md" color="current" fontClassName="font-jamino" />
-                    <p className="mt-4 text-sm font-bold text-black">
-                        CottonBro handles the heavy lifting so you can focus on the art.
+        <footer className={`border-t pt-20 pb-10 transition-colors duration-300 ${theme === "light"
+            ? "bg-white border-black/5 text-gray-900"
+            : "bg-page border-white/5 text-primary"
+            }`}>
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 md:grid-cols-4 lg:gap-16 relative z-10">
+                <div className="col-span-2 md:col-span-1">
+                    <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
+                        <Logo size="md" color={theme === "light" ? "black" : "white"} fontClassName="font-bold tracking-tight" />
+                    </Link>
+                    <p className={`mt-6 text-sm leading-relaxed max-w-xs font-medium ${theme === "light" ? "text-gray-500" : "text-secondary"}`}>
+                        CottonBro is the engine for the next generation of brands.
+                        <br />
+                        <span className={theme === "light" ? "text-black" : "text-white"}>Design to drop in minutes.</span>
                     </p>
                 </div>
                 <div>
-                    <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">
-                        Product
-                    </div>
-                    <ul className="space-y-2 text-sm font-medium text-black">
+                    <h4 className={`mb-6 text-xs font-bold uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}>
+                        Studio
+                    </h4>
+                    <ul className={`space-y-4 text-sm font-medium ${theme === "light" ? "text-gray-500" : "text-secondary"}`}>
                         <li>
-                            <Link
-                                href="/#features"
-                                className="hover:text-street-red transition-colors"
-                            >
-                                Features
+                            <Link href="/#features" className="hover:underline transition-all">
+                                The Lab
                             </Link>
                         </li>
                         <li>
-                            <Link
-                                href="/#how"
-                                className="hover:text-street-red transition-colors"
-                            >
-                                How it works
+                            <Link href="/#how" className="hover:underline transition-all">
+                                Process
                             </Link>
                         </li>
                         <li>
-                            <Link
-                                href="/#faq"
-                                className="hover:text-street-red transition-colors"
-                            >
-                                FAQ
+                            <Link href="/#pricing" className="hover:underline transition-all">
+                                Pricing
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/#faq" className="hover:text-cyan hover:underline transition-all">
+                                Q&A
                             </Link>
                         </li>
                     </ul>
                 </div>
                 <div>
-                    <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">
+                    <h4 className={`mb-6 text-xs font-bold uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}>
                         Company
-                    </div>
-                    <ul className="space-y-2 text-sm font-medium text-black">
+                    </h4>
+                    <ul className={`space-y-4 text-sm font-medium ${theme === "light" ? "text-gray-500" : "text-secondary"}`}>
                         <li>
-                            <Link href="#" className="hover:text-street-red transition-colors">
+                            <Link href="#" className="hover:underline transition-all">
                                 About
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-street-red transition-colors">
+                            <Link href="#" className="hover:underline transition-all">
                                 Contact
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-street-red transition-colors">
-                                Privacy
+                            <Link href="#" className="hover:text-cyan hover:underline transition-all">
+                                Privacy Policy
                             </Link>
                         </li>
                     </ul>
                 </div>
                 <div>
-                    <div className="mb-4 text-sm font-bold uppercase tracking-widest text-black">
-                        Newsletter
-                    </div>
-                    <form className="flex flex-col gap-2">
+                    <h4 className={`mb-6 text-xs font-bold uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}>
+                        The Drop List
+                    </h4>
+                    <form className="flex flex-col gap-3">
                         <input
                             type="email"
                             placeholder="Email address"
-                            className="w-full border-2 border-black bg-white px-3 py-2 text-sm text-black outline-none placeholder:text-zinc-400 focus:border-street-red transition"
+                            className={`w-full border-b px-4 py-3 text-sm outline-none transition-all placeholder:tracking-wide placeholder:uppercase placeholder:text-xs rounded-t-lg ${theme === "light"
+                                ? "bg-transparent border-gray-200 text-black placeholder:text-gray-400 focus:border-black"
+                                : "bg-transparent border-white/20 text-white placeholder:text-tertiary focus:border-white"
+                                }`}
                         />
-                        <button className="w-full bg-black border-2 border-black px-3 py-2 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition">
-                            Subscribe
+                        <button className={`w-full px-4 py-4 text-xs font-bold transition uppercase tracking-widest border rounded-full ${theme === "light"
+                            ? "border-black bg-black text-white hover:bg-white hover:text-black"
+                            : "border-white bg-white text-black hover:bg-cyan hover:border-cyan hover:text-black"
+                            }`}>
+                            Join Waitlist
                         </button>
                     </form>
                 </div>
             </div>
-            <div className="border-t border-black py-8 text-center text-xs font-bold uppercase tracking-widest text-black">
-                © {new Date().getFullYear()} CottonBro. All rights reserved.
+
+            <div className={`mt-16 border-t pt-8 text-center text-sm font-medium uppercase tracking-wide ${theme === "light"
+                ? "border-black/5 text-gray-400"
+                : "border-white/5 text-tertiary"
+                }`}>
+                © {new Date().getFullYear()} CottonBro. Built for creators.
             </div>
-        </footer>
+        </footer >
     );
 }

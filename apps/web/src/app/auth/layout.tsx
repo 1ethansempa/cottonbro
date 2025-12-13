@@ -22,12 +22,12 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-white">
-      <SiteHeader />
+    <div className="min-h-screen w-full flex flex-col bg-page">
+      <SiteHeader theme="dark" />
       <main className="flex-1 flex items-center justify-center w-full">
         {children}
       </main>
-      <SiteFooter />
+      <SiteFooter theme="dark" />
     </div>
   );
 }
