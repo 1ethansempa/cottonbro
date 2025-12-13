@@ -159,20 +159,15 @@ function LoginView() {
           </Link>
         </div>
 
-        <div className="rounded-3xl border border-white/20 bg-black p-8 shadow-glow-cyan relative overflow-hidden">
-          {/* Decorative Corner lines - Adjusted for rounded corners */}
-          <div className="absolute top-6 left-6 w-4 h-4 border-t border-l border-white/40 rounded-tl-lg" />
-          <div className="absolute top-6 right-6 w-4 h-4 border-t border-r border-white/40 rounded-tr-lg" />
-          <div className="absolute bottom-6 left-6 w-4 h-4 border-b border-l border-white/40 rounded-bl-lg" />
-          <div className="absolute bottom-6 right-6 w-4 h-4 border-b border-r border-white/40 rounded-br-lg" />
+        <div className="rounded-3xl border border-white/10 bg-[#0A0A0A] p-8 relative overflow-hidden shadow-2xl">
 
-          <div className="top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent absolute" />
+          <div className="top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan/50 to-transparent absolute" />
 
-          <h1 className="text-xl font-bold text-white mb-2 text-center uppercase tracking-widest">
-            Sign In
+          <h1 className="text-3xl font-black text-white mb-2 text-center tracking-tighter uppercase">
+            Sign In / Sign Up
           </h1>
-          <p className="text-secondary text-xs text-center mb-8">
-            Access your dashboard
+          <p className="text-gray-400 text-sm text-center mb-8 font-medium">
+            Access your studio dashboard
           </p>
 
           {/* Google Button */}
@@ -180,16 +175,16 @@ function LoginView() {
             <GoogleButton
               onClick={onGoogle}
               disabled={busy}
-              className="w-full justify-center rounded-full border border-white/20 bg-white text-black hover:bg-gray-200 hover:text-black font-bold transition-all"
+              className="w-full justify-center rounded-full border border-white/10 bg-white text-black hover:bg-gray-200 font-bold transition-all py-3 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
             />
           </div>
 
           <div className="relative mb-8">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-white/5"></div>
             </div>
             <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest font-mono">
-              <span className="bg-black px-4 text-tertiary">Or Authenticate Manually</span>
+              <span className="bg-[#0A0A0A] px-4 text-gray-500">Or use email</span>
             </div>
           </div>
 
@@ -201,16 +196,16 @@ function LoginView() {
               <div className="flex flex-col gap-3 mt-6">
                 <Button
                   onClick={handleContinue}
-                  className="w-full bg-white hover:bg-cyan text-black font-bold py-4 rounded-full shadow-glow-cyan hover:shadow-cyan/50 uppercase tracking-widest text-xs cursor-pointer transition-all hover:scale-105"
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] uppercase tracking-widest text-xs cursor-pointer transition-all hover:scale-[1.02]"
                 >
                   Proceed to Dashboard
                 </Button>
                 <button
                   onClick={handleSwitchAccount}
                   disabled={switchingAccount || busy}
-                  className="text-xs text-secondary hover:text-cyan transition-colors uppercase tracking-widest font-mono cursor-pointer"
+                  className="text-xs text-gray-500 hover:text-white transition-colors uppercase tracking-widest font-bold cursor-pointer mt-2"
                 >
-                  {switchingAccount ? "TERMINATING SESSION..." : "TERMINATE SESSION"}
+                  {switchingAccount ? "Signing out..." : "Sign Out"}
                 </button>
               </div>
             </div>
@@ -218,7 +213,7 @@ function LoginView() {
             !sent ? (
               <form onSubmit={onSend} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-secondary mb-2 font-mono ml-1">
+                  <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider ml-1">
                     Email
                   </label>
                   <Input
@@ -226,7 +221,7 @@ function LoginView() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full bg-black border-white/20 text-white placeholder:text-zinc-600 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-6 transition-all font-medium text-base"
+                    className="w-full bg-black/50 border-white/10 text-white placeholder:text-zinc-700 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-6 transition-all font-medium text-base h-14"
                     required
                   />
                 </div>
@@ -247,7 +242,7 @@ function LoginView() {
                 <Button
                   type="submit"
                   disabled={!email || busy}
-                  className="w-full bg-white hover:bg-cyan text-black font-bold py-4 rounded-full shadow-glow-cyan hover:shadow-cyan/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm group cursor-pointer hover:scale-[1.02]"
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest group cursor-pointer hover:scale-[1.02]"
                 >
                   {busy ? "Sending..." : "Send Login Code"}
                 </Button>
@@ -255,15 +250,15 @@ function LoginView() {
             ) : (
               <form onSubmit={onConfirm} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-secondary mb-2 font-mono ml-1">
-                    One-Time Password
+                  <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider ml-1">
+                    Enter Code
                   </label>
                   <Input
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="000000"
                     maxLength={6}
-                    className="w-full bg-black border-white/20 text-white text-center text-2xl font-bold placeholder:text-zinc-700 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-4 tracking-[0.5em] transition-all font-mono"
+                    className="w-full bg-black/50 border-white/10 text-white text-center text-3xl font-black placeholder:text-zinc-800 focus:border-cyan focus:ring-1 focus:ring-cyan rounded-xl py-6 px-4 tracking-[0.5em] transition-all font-mono h-20"
                     required
                   />
                 </div>
@@ -271,17 +266,17 @@ function LoginView() {
                 <Button
                   type="submit"
                   disabled={code.length !== 6 || busy}
-                  className="w-full bg-white hover:bg-cyan text-black font-bold py-4 rounded-full shadow-glow-cyan hover:shadow-cyan/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer hover:scale-[1.02]"
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest cursor-pointer hover:scale-[1.02]"
                 >
-                  {busy ? "Verifying..." : "Sign In"}
+                  {busy ? "Verifying..." : "Open Studio"}
                 </Button>
 
                 <button
                   type="button"
                   onClick={() => { setSent(false); setCode(""); }}
-                  className="w-full text-xs font-bold text-secondary hover:text-cyan transition-colors font-mono cursor-pointer"
+                  className="w-full text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest cursor-pointer"
                 >
-                  Enter a different email
+                  Use different email
                 </button>
               </form>
             )
@@ -292,18 +287,18 @@ function LoginView() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-3 bg-white/5 border border-white/10 text-center rounded-xl"
+              className="mt-6 p-3 bg-cyan/10 border border-cyan/20 text-center rounded-lg"
             >
-              <p className="text-xs text-cyan">{status}</p>
+              <p className="text-xs font-bold text-cyan">{status}</p>
             </motion.div>
           )}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-3 bg-red-500/10 border border-red-500/20 text-center rounded-xl"
+              className="mt-6 p-3 bg-red-500/10 border border-red-500/20 text-center rounded-lg"
             >
-              <p className="text-xs text-neon-red">{error}</p>
+              <p className="text-xs font-bold text-red-400">{error}</p>
             </motion.div>
           )}
         </div>
