@@ -14,6 +14,8 @@
     "start": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next start -p 5173",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "firebase:login": "firebase login",
     "deploy:qa": "pnpm build:qa && firebase deploy --only hosting --project qa",
     "deploy:prod": "pnpm build:prod && firebase deploy --only hosting --project prod"
@@ -34,6 +36,7 @@
     "three": "^0.181.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
