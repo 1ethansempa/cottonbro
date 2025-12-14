@@ -7,12 +7,9 @@
     "build": "nest build",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "deploy": "serverless deploy",
-    "remove": "serverless remove"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-ses": "^3.940.0",
     "@cottonbro/auth-server": "workspace:*",
     "@cottonbro/contracts": "workspace:*",
     "@cottonbro/utils": "workspace:*",
@@ -38,13 +35,11 @@
     "@jest/globals": "^30.2.0",
     "@nestjs/cli": "^11.0.10",
     "@nestjs/testing": "^11.1.9",
-    "@types/aws-lambda": "^8.10.155",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
     "@types/nodemailer": "^7.0.4",
     "jest": "^30.2.0",
-    "serverless": "^4.21.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
