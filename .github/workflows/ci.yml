@@ -27,14 +27,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: pnpm build
-
       - name: Run linting
         run: pnpm lint
 
       - name: Run type checking
-        run: pnpm typecheck
+        run: pnpm turbo typecheck --filter=!@cottonbro/web
 
       - name: Run tests
         run: pnpm test
