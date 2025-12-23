@@ -7,9 +7,6 @@ import {
   Square,
   Image as ImageIcon,
   Download,
-  RotateCcw,
-  ZoomIn,
-  ZoomOut,
   Trash2,
   Layers,
   AlignLeft,
@@ -19,7 +16,6 @@ import {
   Italic,
   ChevronDown,
   Upload,
-  Hand,
   Eye,
   EyeOff,
   Lock,
@@ -94,7 +90,6 @@ const getOriginInArtboardSpace = (c: any, ab: any, obj: any) => {
 
 type Tool =
   | "select"
-  | "hand"
   | "elements"
   | "arrow"
   | "text"
@@ -117,6 +112,7 @@ export default function FabricEditor() {
   const [selectedObjects, setSelectedObjects] = useState<any[]>([]);
   const [layers, setLayers] = useState<any[]>([]); // New Layers State
   const [exportedJson, setExportedJson] = useState<string>("");
+  const [artboardColor, setArtboardColor] = useState<string>("#ffffff"); // Artboard Background Color
   // Removed allowOverflow state per user request
 
   // Selection Properties
@@ -184,7 +180,7 @@ export default function FabricEditor() {
         const artboard = new Rect({
           width: ARTBOARD.w,
           height: ARTBOARD.h,
-          fill: "#ffffff",
+          fill: artboardColor,
           stroke: "transparent",
           selectable: false,
           evented: false,
@@ -291,56 +287,19 @@ export default function FabricEditor() {
       });
       */
 
-      // Panning (Hand Tool)
-      let isDragging = false;
-      let lastPosX = 0;
-      let lastPosY = 0;
-      let lastTap = 0; // Fix: ensure lastTap is defined
-
+      // Mobile / Tap Interaction (existing)
+      let lastTap = 0;
       c.on("mouse:down", (opt: any) => {
-        const evt = opt.e;
-        // If hand tool is active, or user holds Space (common UX)
-        if ((c as any).__activeTool === "hand" || evt.altKey) {
-          isDragging = true;
-          c.selection = false;
-          lastPosX = evt.clientX;
-          lastPosY = evt.clientY;
-          c.defaultCursor = "grabbing";
-        } else {
-          // Mobile / Tap Interaction (existing)
-          const now = Date.now();
-          // ... existing tap logic ...
-          if (
-            opt.target &&
-            (opt.target.type === "textbox" || opt.target.type === "i-text")
-          ) {
-            if (now - lastTap < 400) {
-              opt.target.enterEditing();
-              opt.target.hiddenTextarea?.focus();
-            }
-            lastTap = now;
+        const now = Date.now();
+        if (
+          opt.target &&
+          (opt.target.type === "textbox" || opt.target.type === "i-text")
+        ) {
+          if (now - lastTap < 400) {
+            opt.target.enterEditing();
+            opt.target.hiddenTextarea?.focus();
           }
-        }
-      });
-
-      c.on("mouse:move", (opt: any) => {
-        if (isDragging) {
-          const e = opt.e;
-          const vpt = c.viewportTransform;
-          vpt[4] += e.clientX - lastPosX;
-          vpt[5] += e.clientY - lastPosY;
-          c.requestRenderAll();
-          lastPosX = e.clientX;
-          lastPosY = e.clientY;
-        }
-      });
-
-      c.on("mouse:up", (opt: any) => {
-        if (isDragging) {
-          c.setViewportTransform(c.viewportTransform); // commit
-          isDragging = false;
-          c.selection = true;
-          c.defaultCursor = "default";
+          lastTap = now;
         }
       });
 
@@ -453,13 +412,33 @@ export default function FabricEditor() {
 
   // Sync activeTool state to canvas instance so events can read it
   useEffect(() => {
-    if (fabricCanvasRef.current) {
-      (fabricCanvasRef.current as any).__activeTool = activeTool;
-      fabricCanvasRef.current.defaultCursor =
-        activeTool === "hand" ? "grab" : "default";
-      fabricCanvasRef.current.selection = activeTool !== "hand";
+    if (activeTool === "select" || activeTool === "text" || activeTool === "uploads" || activeTool === "layers") {
+      if (fabricCanvasRef.current) {
+        (fabricCanvasRef.current as any).__activeTool = activeTool;
+      }
     }
   }, [activeTool]);
+
+  // Sync artboard color
+  useEffect(() => {
+    if (artboardRef.current) {
+      if (artboardColor === "transparent" || !artboardColor) {
+        artboardRef.current.set({
+          fill: "", // Fabric uses empty string or null for transparent
+          stroke: "#333333", // Visible border when transparent
+          strokeWidth: 1,
+          strokeDashArray: [5, 5]
+        });
+      } else {
+        artboardRef.current.set({
+          fill: artboardColor,
+          stroke: "transparent",
+          strokeWidth: 0
+        });
+      }
+      fabricCanvasRef.current?.requestRenderAll();
+    }
+  }, [artboardColor]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -1137,8 +1116,40 @@ export default function FabricEditor() {
               </button>
             </div>
           ) : (
-            <div className="text-sm text-gray-500 font-medium tracking-wide uppercase">
-              Select an object to edit
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-500 font-medium tracking-wide uppercase">
+                Artboard
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-gray-400">Color</label>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer rounded-full bg-zinc-900 border border-white/10 px-3 py-1.5 hover:border-cyan/50 transition-colors">
+                    <span
+                      className="h-4 w-4 rounded-full border border-white/20"
+                      style={{ backgroundColor: artboardColor === "transparent" ? "transparent" : artboardColor }}
+                    >
+                      {artboardColor === "transparent" && <div className="w-full h-full border border-red-500 rotate-45 transform scale-125" />}
+                    </span>
+                    <input
+                      type="color"
+                      className="hidden"
+                      value={artboardColor === "transparent" ? "#ffffff" : artboardColor}
+                      onChange={(e) => setArtboardColor(e.target.value)}
+                    />
+                    <ChevronDown className="w-3 h-3 opacity-50" />
+                  </label>
+                  <button
+                    onClick={() => setArtboardColor("transparent")}
+                    className={`p-1.5 rounded-full border transition-all ${artboardColor === "transparent" ? "bg-white/10 border-red-500/50" : "bg-transparent border-white/10 hover:border-white/30"}`}
+                    title="Set Transparent Background"
+                  >
+                    <div className="w-3.5 h-3.5 rounded-full bg-white relative overflow-hidden">
+                      <div className="absolute inset-0 border-t border-red-500 top-1/2 -translate-y-1/2 -rotate-45 scale-125" />
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1166,12 +1177,7 @@ export default function FabricEditor() {
             icon={MousePointer2}
             label="Select"
           />
-          <SidebarTab
-            active={activeTool === "hand"}
-            onClick={() => setActiveTool("hand")}
-            icon={Hand}
-            label="Hand"
-          />
+
           <SidebarTab
             active={activeTool === "text"}
             onClick={() => setActiveTool("text")}
@@ -1402,29 +1408,7 @@ export default function FabricEditor() {
             <canvas ref={canvasElRef} className="block" />
           </div>
 
-          {/* Floating Zoom Controls - Zoom Disabled, only Reset View */}
-          <div className="absolute bottom-8 right-8 flex items-center gap-1 bg-black/60 backdrop-blur-md text-white p-1.5 rounded-full border border-white/10 shadow-2xl">
-            <button
-              onClick={() => {
-                const c = getCanvas();
-                if (c) {
-                  // Reset Zoom/Pan
-                  c.setViewportTransform([1, 0, 0, 1, 0, 0]);
-                  setZoom(1);
 
-                  // Re-center artboard
-                  if ((c as any).__centerArtboard) {
-                    (c as any).__centerArtboard(c);
-                  }
-                  c.requestRenderAll();
-                }
-              }}
-              className="p-2 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition"
-              title="Reset View"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
-          </div>
 
           {exportedJson && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -1467,9 +1451,10 @@ export default function FabricEditor() {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }
+
 
 function SidebarTab({ active, icon: Icon, label, onClick }: any) {
   return (

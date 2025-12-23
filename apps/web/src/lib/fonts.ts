@@ -30,6 +30,11 @@ export const POPULAR_GOOGLE_FONTS = [
   "Inconsolata",
   "Anton",
   "Urbanist",
+  "Shrikhand",
+  "Chicle",
+  "Chewy",
+  "Modak",
+  "Fascinate Inline",
 ];
 
 const loadedFonts = new Set<string>();
