@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MousePointer2,
   Type,
@@ -22,16 +22,13 @@ import {
   Unlock,
   ArrowUp,
   ArrowDown,
-  FlipHorizontal, // New icon for flip
-  Maximize, // New icon for fit
+  FlipHorizontal,
+  Maximize,
+  Undo2,
+  Redo2,
+  Eraser,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
-
-type ExportPayload = {
-  version: 1;
-  artboard: { width: number; height: number };
-  fabricJson: any;
-};
 
 const ARTBOARD = { w: 500, h: 500 }; // “shirt design area” units
 
@@ -48,7 +45,8 @@ const withIdentityViewport = <T,>(c: any, fn: () => T): T => {
 
 // Get artboard rect in canvas space (with identity viewport)
 const getArtboardRect = (c: any, ab: any) => {
-  if (!c || !ab) return { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+  if (!c || !ab)
+    return { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
   return withIdentityViewport(c, () => {
     ab.setCoords();
     return ab.getBoundingRect(true, true);
@@ -63,11 +61,41 @@ const clampToArtboard = (c: any, ab: any, obj: any) => {
     ab.setCoords();
     const r = obj.getBoundingRect(true, true);
     const a = ab.getBoundingRect(true, true);
-    let dx = 0, dy = 0;
-    if (r.left < a.left) dx = a.left - r.left;
-    if (r.top < a.top) dy = a.top - r.top;
-    if (r.left + r.width > a.left + a.width) dx = a.left + a.width - (r.left + r.width);
-    if (r.top + r.height > a.top + a.height) dy = a.top + a.height - (r.top + r.height);
+    let dx = 0,
+      dy = 0;
+
+    // Only clamp if object is smaller than artboard (otherwise allow free movement/bleed)
+    // Advanced Clamping:
+    // - If object < artboard: Strict containment (edges inside)
+    // - If object > artboard: Center containment (center inside)
+
+    // Horizontal
+    if (r.width <= a.width) {
+      // Strict Contain
+      if (r.left < a.left) dx = a.left - r.left;
+      else if (r.left + r.width > a.left + a.width)
+        dx = a.left + a.width - (r.left + r.width);
+    } else {
+      // Center Contain
+      const cx = r.left + r.width / 2;
+      if (cx < a.left)
+        dx = a.left - cx; // Center too far left
+      else if (cx > a.left + a.width) dx = a.left + a.width - cx; // Center too far right
+    }
+
+    // Vertical
+    if (r.height <= a.height) {
+      // Strict Contain
+      if (r.top < a.top) dy = a.top - r.top;
+      else if (r.top + r.height > a.top + a.height)
+        dy = a.top + a.height - (r.top + r.height);
+    } else {
+      // Center Contain
+      const cy = r.top + r.height / 2;
+      if (cy < a.top) dy = a.top - cy;
+      else if (cy > a.top + a.height) dy = a.top + a.height - cy;
+    }
+
     if (dx || dy) {
       obj.left += dx;
       obj.top += dy;
@@ -88,13 +116,7 @@ const getOriginInArtboardSpace = (c: any, ab: any, obj: any) => {
   });
 };
 
-type Tool =
-  | "select"
-  | "elements"
-  | "arrow"
-  | "text"
-  | "uploads"
-  | "layers";
+type Tool = "select" | "text" | "uploads" | "layers" | "erase";
 
 export default function FabricEditor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -103,10 +125,9 @@ export default function FabricEditor() {
 
   const fabricCanvasRef = useRef<any>(null);
   const artboardRef = useRef<any>(null);
-  const titleRef = useRef<any>(null);
 
   // UI State
-  const [activeTool, setActiveTool] = useState<Tool>("elements");
+  const [activeTool, setActiveTool] = useState<Tool>("select");
   // Zoom state kept for internal logic but UI removed
   const [zoom, setZoom] = useState(1);
   const [selectedObjects, setSelectedObjects] = useState<any[]>([]);
@@ -130,6 +151,25 @@ export default function FabricEditor() {
   const [charSpacing, setCharSpacing] = useState(0);
   const [textBackgroundColor, setTextBackgroundColor] = useState<string>("");
   const [opacity, setOpacity] = useState(1);
+  const [blendMode, setBlendMode] = useState<string>("source-over"); // source-over = Normal
+  const [eraserSize, setEraserSize] = useState(20);
+  const eraserPathsRef = useRef<any[]>([]);
+  const originalImageSrcRef = useRef<string | null>(null);
+
+  // Navigation State
+  const isPanningRef = useRef(false);
+
+  // Text Tool State
+  const isAddingTextRef = useRef(false);
+
+  // History State
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  // History Refs (to avoid re-renders)
+  const historyRef = useRef<string[]>([]);
+  const redoStackRef = useRef<string[]>([]);
+  const isHistoryProcessing = useRef(false);
 
   // Font Picker State
   const [isFontOpen, setIsFontOpen] = useState(false);
@@ -191,7 +231,7 @@ export default function FabricEditor() {
             offsetX: 0,
             offsetY: 0,
           },
-          excludeFromExport: true,
+          // excludeFromExport: true, // Removed to ensure it saves to History
           id: "artboard",
           absolutePositioned: true, // Important for clipPath if we used it there, but here it's just visual
         });
@@ -225,53 +265,14 @@ export default function FabricEditor() {
 
       setupArtboard(c);
 
-      // --- Placeholder Text ---
-      // Removed per user request - no initial placeholder
-      /*
-      const center = c.getVpCenter();
-      const title = new Textbox("Design Here", {
-        left: center.x,
-        top: center.y,
-        originX: "center",
-        originY: "center",
-        width: 300,
-        fontSize: 48, // Large
-        fontWeight: "900", // Black
-        fontFamily: "Inter",
-        textAlign: "center",
-        fill: "#18181b",
-        shadow: { color: "rgba(0,0,0,0.5)", blur: 10, offsetX: 0, offsetY: 5 },
-      });
-
-      (title as any).__isPlaceholder = true;
-      // We don't set excludeFromExport to true here because we filter dynamically on export
-      // based on the __isPlaceholder flag.
-      titleRef.current = title;
-      c.add(title);
-      c.setActiveObject(title);
-      */
-
       fabricCanvasRef.current = c;
       // Expose setup for external reset
       (c as any).__setupArtboard = setupArtboard;
 
-      // --- Text Editing & Placeholder Logic ---
-
-      // Placeholder: Clear on first edit
-      c.on("text:editing:entered", (e: any) => {
-        if (e.target && e.target.__isPlaceholder) {
-          e.target.text = "";
-          e.target.hiddenTextarea?.focus();
-          delete e.target.__isPlaceholder;
-          c.requestRenderAll();
-        }
-      });
-
       // --- Zoom & Pan Logic ---
 
       // Zoom on Wheel - DISABLED per user request
-      /*
-      c.on('mouse:wheel', (opt: any) => {
+      c.on("mouse:wheel", (opt: any) => {
         const delta = opt.e.deltaY;
         let zoom = c.getZoom();
         zoom *= 0.999 ** delta;
@@ -285,11 +286,38 @@ export default function FabricEditor() {
         opt.e.stopPropagation();
         setZoom(zoom);
       });
-      */
 
-      // Mobile / Tap Interaction (existing)
+      // Mouse Interaction (Pan & Tap)
       let lastTap = 0;
       c.on("mouse:down", (opt: any) => {
+        const evt = opt.e;
+
+        // Pan Start
+        if (isPanningRef.current || evt.altKey || evt.metaKey) {
+          c.isDragging = true;
+          c.selection = false;
+          c.lastPosX = evt.clientX;
+          c.lastPosY = evt.clientY;
+          c.defaultCursor = "grabbing";
+          return;
+        }
+
+        // Add Text Click
+        if (isAddingTextRef.current) {
+          const pointer = c.getPointer(evt); // Get pointer in canvas coords (handles zoom/pan)
+
+          // We need to trigger the actual add logic now
+          // But we need to switch back to normal mode
+          addTextAtPoint(pointer);
+
+          isAddingTextRef.current = false;
+          c.defaultCursor = "default";
+          // Set active tool back to select or keep text?
+          // Usually select after add.
+          setActiveTool("select");
+          return;
+        }
+
         const now = Date.now();
         if (
           opt.target &&
@@ -303,8 +331,30 @@ export default function FabricEditor() {
         }
       });
 
+      c.on("mouse:move", (opt: any) => {
+        if (c.isDragging) {
+          const e = opt.e;
+          const vpt = c.viewportTransform;
+          vpt[4] += e.clientX - c.lastPosX;
+          vpt[5] += e.clientY - c.lastPosY;
+          c.requestRenderAll();
+          c.lastPosX = e.clientX;
+          c.lastPosY = e.clientY;
+        }
+      });
+
+      c.on("mouse:up", (opt: any) => {
+        // on mouse up we want to recalculate new interaction
+        // for all objects, so we call setViewportTransform
+        c.setViewportTransform(c.viewportTransform);
+        c.isDragging = false;
+        c.selection = !isPanningRef.current; // Restore selection if not in pan mode
+        c.defaultCursor = isPanningRef.current ? "grab" : "default";
+      });
+
       // --- Clamping Logic (now uses unified helper) ---
-      const clampObject = (obj: any) => clampToArtboard(c, artboardRef.current, obj);
+      const clampObject = (obj: any) =>
+        clampToArtboard(c, artboardRef.current, obj);
 
       c.on("object:moving", (e: any) => clampObject(e.target));
       c.on("object:scaling", (e: any) => clampObject(e.target));
@@ -328,6 +378,12 @@ export default function FabricEditor() {
           if (obj.textBackgroundColor)
             setTextBackgroundColor(obj.textBackgroundColor);
           if (typeof obj.opacity !== "undefined") setOpacity(obj.opacity);
+          // Sync Blend Mode
+          if (obj.globalCompositeOperation) {
+            setBlendMode(obj.globalCompositeOperation);
+          } else {
+            setBlendMode("source-over");
+          }
         }
       };
 
@@ -360,6 +416,145 @@ export default function FabricEditor() {
         syncLayers();
       });
 
+      // --- History Logic ---
+
+      const saveHistory = () => {
+        if (isHistoryProcessing.current) return;
+
+        // Push current state to history
+        // uses includeDefaults: false usually, but we want full state?
+        // Let's use the export helpers, or simpler JSON.
+        // We need 'artboard' to be consistent.
+        // But for undo/redo, we just need the canvas state including objects.
+        const json = JSON.stringify(
+          c.toJSON([
+            "objectId",
+            "excludeFromExport",
+            "id",
+            "lockMovementX",
+            "lockMovementY",
+            "lockScalingX",
+            "lockScalingY",
+            "lockRotation",
+          ])
+        );
+
+        historyRef.current.push(json);
+        redoStackRef.current = []; // Clear redo on new action
+
+        // Limit history?
+        if (historyRef.current.length > 50) historyRef.current.shift();
+
+        setCanUndo(historyRef.current.length > 1); // Need at least initial state + 1
+        setCanRedo(false);
+      };
+
+      // Initial State Save
+      if (historyRef.current.length === 0) {
+        saveHistory();
+      }
+
+      // Hook events
+      // We debounce? Or just save on modified.
+      // object:modified is end of drag/scale/rotate.
+      c.on("object:modified", saveHistory);
+      c.on("object:added", (e: any) => {
+        // Prevent saving history when re-loading from undo
+        if (!isHistoryProcessing.current && !e.target?.excludeFromExport) {
+          saveHistory();
+        }
+      });
+      c.on("object:removed", (e: any) => {
+        if (!isHistoryProcessing.current && !e.target?.excludeFromExport) {
+          saveHistory();
+        }
+      });
+
+      const undo = async () => {
+        if (historyRef.current.length <= 1) return;
+
+        isHistoryProcessing.current = true;
+        const current = historyRef.current.pop(); // Pop current state
+        if (current) redoStackRef.current.push(current); // Save to redo
+
+        const previous = historyRef.current[historyRef.current.length - 1]; // Peek previous
+
+        if (previous) {
+          await c.loadFromJSON(JSON.parse(previous));
+
+          // 1. Restore Artboard Reference
+          const objs = c.getObjects();
+          const ab = objs.find((o: any) => o.id === "artboard");
+          if (ab) {
+            artboardRef.current = ab;
+          } else {
+            // Vital Safety: If artboard missing (e.g. init glitch), re-create it
+            // This ensures visual container never disappears
+            setupArtboard(c);
+            centerArtboard(c); // Ensure it is positioned correctly
+          }
+
+          // 2. Restore ClipRect Reference
+          // loadFromJSON restores c.clipPath. We must update our internal ref.
+          if (c.clipPath) {
+            (c as any).__clipRect = c.clipPath;
+          } else if (artboardRef.current) {
+            // Safety: If clipPath missing, re-apply it based on artboard?
+            // Ideally setupArtboard handles this, but if artboard exists but clipPath lost:
+            //Re-create clip rect logic if needed.
+            // For now, assume if artboard exists, we are okay, or setupArtboard ran.
+          }
+
+          c.renderAll();
+          syncLayers();
+          syncSelection();
+        }
+
+        setCanUndo(historyRef.current.length > 1);
+        setCanRedo(redoStackRef.current.length > 0);
+        isHistoryProcessing.current = false;
+      };
+
+      const redo = async () => {
+        if (redoStackRef.current.length === 0) return;
+
+        isHistoryProcessing.current = true;
+        const next = redoStackRef.current.pop();
+
+        if (next) {
+          historyRef.current.push(next);
+          await c.loadFromJSON(JSON.parse(next));
+
+          // 1. Restore Artboard Reference
+          const objs = c.getObjects();
+          const ab = objs.find((o: any) => o.id === "artboard");
+          if (ab) {
+            artboardRef.current = ab;
+          } else {
+            setupArtboard(c);
+            centerArtboard(c);
+          }
+
+          // 2. Restore ClipRect Reference
+          if (c.clipPath) {
+            (c as any).__clipRect = c.clipPath;
+          }
+
+          c.renderAll();
+          syncLayers();
+          syncSelection();
+        }
+
+        setCanUndo(historyRef.current.length > 1);
+        setCanRedo(redoStackRef.current.length > 0);
+        isHistoryProcessing.current = false;
+      };
+
+      // Expose to refs/external
+      (c as any).__undo = undo;
+      (c as any).__redo = redo;
+      (c as any).__saveHistory = saveHistory;
+
       // Initial Center
       const centerArtboard = (canvas: any) => {
         if (!artboardRef.current) return;
@@ -380,18 +575,49 @@ export default function FabricEditor() {
           clipRect.set({ dirty: true });
         }
 
-        const title = titleRef.current;
-        if (title && (title as any).__firstRender !== false) {
-          title.setPositionByOrigin(vCenter, "center", "center");
-          (title as any).__firstRender = false;
-        }
-
         // Recalculate layers after position changes? Not needed usually, but safe.
         canvas.requestRenderAll();
       };
 
       // Expose for external reset
       (c as any).__centerArtboard = centerArtboard;
+
+      const fitToScreen = () => {
+        if (!containerRef.current || !artboardRef.current) return;
+        // Reset viewport to measure artboard
+        const vpt = c.viewportTransform;
+        c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        const abRect = artboardRef.current.getBoundingRect();
+
+        const cw = containerRef.current.clientWidth;
+        const ch = containerRef.current.clientHeight;
+        const padding = 50;
+
+        const scaleX = (cw - padding * 2) / abRect.width;
+        const scaleY = (ch - padding * 2) / abRect.height;
+        const scale = Math.min(scaleX, scaleY, 1); // Max scale 1 (optional) or allow zoom in? Standard is Fit.
+
+        const centerX = cw / 2;
+        const centerY = ch / 2;
+
+        const newVpt = [
+          scale,
+          0,
+          0,
+          scale,
+          centerX - (abRect.left + abRect.width / 2) * scale,
+          centerY - (abRect.top + abRect.height / 2) * scale,
+        ];
+
+        c.setViewportTransform(newVpt);
+        setZoom(scale);
+        c.requestRenderAll();
+      };
+
+      // Initial Fit
+      fitToScreen();
+      // Expose for external
+      (c as any).__fitToScreen = fitToScreen;
 
       updateDimensions();
       window.addEventListener("resize", updateDimensions);
@@ -412,7 +638,12 @@ export default function FabricEditor() {
 
   // Sync activeTool state to canvas instance so events can read it
   useEffect(() => {
-    if (activeTool === "select" || activeTool === "text" || activeTool === "uploads" || activeTool === "layers") {
+    if (
+      activeTool === "select" ||
+      activeTool === "text" ||
+      activeTool === "uploads" ||
+      activeTool === "layers"
+    ) {
       if (fabricCanvasRef.current) {
         (fabricCanvasRef.current as any).__activeTool = activeTool;
       }
@@ -427,13 +658,13 @@ export default function FabricEditor() {
           fill: "", // Fabric uses empty string or null for transparent
           stroke: "#333333", // Visible border when transparent
           strokeWidth: 1,
-          strokeDashArray: [5, 5]
+          strokeDashArray: [5, 5],
         });
       } else {
         artboardRef.current.set({
           fill: artboardColor,
           stroke: "transparent",
-          strokeWidth: 0
+          strokeWidth: 0,
         });
       }
       fabricCanvasRef.current?.requestRenderAll();
@@ -455,6 +686,20 @@ export default function FabricEditor() {
           (activeObj.type === "i-text" && activeObj.isEditing))
       ) {
         return;
+      }
+
+      // Panning Toggle (Space)
+      if (e.code === "Space" && !activeObj?.isEditing) {
+        if (!isPanningRef.current) {
+          isPanningRef.current = true;
+          if (c) {
+            c.defaultCursor = "grab";
+            c.selection = false; // Disable selection while panning
+            c.requestRenderAll();
+          }
+        }
+        // Prevent scrolling page on Space
+        e.preventDefault();
       }
 
       // Delete
@@ -497,27 +742,56 @@ export default function FabricEditor() {
           clampToArtboard(c, artboardRef.current, activeObj);
 
           c.requestRenderAll();
+          // Trigger save history for nudge
+          c.fire("object:modified");
+        }
+      }
+
+      // Undo/Redo Shortcuts
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (c.__redo) c.__redo();
+        } else {
+          if (c.__undo) c.__undo();
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const c = fabricCanvasRef.current;
+      if (e.code === "Space") {
+        isPanningRef.current = false;
+        if (c) {
+          c.defaultCursor = "default";
+          c.selection = true;
+          c.isDragging = false; // Stop drag
+          c.requestRenderAll();
+        }
+      }
+    };
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
   }, []);
 
-  const getCanvas = () => fabricCanvasRef.current;
-
-  // --- Actions ---
-
-  const addText = async (sub: string = "Heading") => {
+  // FIX: Access `addTextAtPoint` from canvas instance in the listener
+  const addTextAtPoint = async (
+    point: { x: number; y: number },
+    sub: string = "Heading"
+  ) => {
     const c = getCanvas();
     if (!c) return;
     const { Textbox } = (await import("fabric")) as any;
-    const center = c.getVpCenter();
 
     const t = new Textbox(sub, {
-      left: center.x,
-      top: center.y,
+      left: point.x,
+      top: point.y,
       originX: "center",
       originY: "center",
       width: 200,
@@ -529,11 +803,349 @@ export default function FabricEditor() {
     });
     (t as any).objectId = crypto.randomUUID();
     c.add(t);
-    // Ensure artboard stays at index 0
+    clampToArtboard(c, artboardRef.current, t);
     if (artboardRef.current) c.moveObjectTo(artboardRef.current, 0);
     c.setActiveObject(t);
     c.requestRenderAll();
   };
+
+  // Attach helper to ref so the listener can find it
+  useEffect(() => {
+    if (fabricCanvasRef.current) {
+      fabricCanvasRef.current.__addTextAtPoint = addTextAtPoint;
+    }
+  }, [fabricCanvasRef.current]);
+
+  const getCanvas = () => fabricCanvasRef.current;
+
+  // --- Actions ---
+
+  // Refactored to ENTER "Add Text Mode"
+  const setAddTextMode = () => {
+    const c = getCanvas();
+    if (!c) return;
+
+    isAddingTextRef.current = true;
+    c.defaultCursor = "text";
+    c.selection = false; // Disable selection box
+  };
+
+  // Immediate add for Drawer Buttons (Canva style)
+  const addTextImmediate = async (sub: string = "Heading") => {
+    const c = getCanvas();
+    if (!c) return;
+    const { Textbox } = (await import("fabric")) as any;
+
+    const vCenter = c.getVpCenter();
+
+    // Use helper logic but at center
+    const t = new Textbox(sub, {
+      left: vCenter.x,
+      top: vCenter.y,
+      originX: "center",
+      originY: "center",
+      width: 200,
+      fontSize: sub === "Heading" || sub === "HEADING" ? 48 : 24, // Case insensitive check
+      fill: "#18181b",
+      fontFamily: "Inter",
+      textAlign: "center",
+      shadow: { color: "rgba(0,0,0,0.5)", blur: 4, offsetX: 2, offsetY: 2 },
+    });
+    (t as any).objectId = crypto.randomUUID();
+    c.add(t);
+    clampToArtboard(c, artboardRef.current, t);
+    if (artboardRef.current) c.moveObjectTo(artboardRef.current, 0);
+    c.setActiveObject(t);
+    c.requestRenderAll();
+
+    // Also reset add mode if it was active?
+    if (isAddingTextRef.current) {
+      isAddingTextRef.current = false;
+      c.defaultCursor = "default";
+      c.selection = true;
+    }
+  };
+
+  // --- Eraser Logic ---
+
+  const canvasPointToImagePoint = (targetImage: any, point: { x: number, y: number }, fabricUtil: any) => {
+    // 1. Invert image matrix to convert global point -> local point
+    // Note: Fabric's calcTransformMatrix() returns global matrix.
+    // We need inverse to go global -> local.
+    const invMatrix = fabricUtil.invertTransform(targetImage.calcTransformMatrix());
+    const localPoint = fabricUtil.transformPoint(point, invMatrix);
+
+    // 2. Local point is centered relative to image center (because origin is center/center).
+    // Convert to top-left relative for HTML Canvas drawing (0,0 is top-left).
+    const width = targetImage.width;
+    const height = targetImage.height;
+
+    return {
+      x: localPoint.x + width / 2,
+      y: localPoint.y + height / 2
+    };
+  };
+
+  const applyEraseToImage = async (image: any, paths: any[]) => {
+    if (!image || paths.length === 0) return;
+
+    // Dynamically import fabric to get util
+    const { util } = (await import("fabric")) as any;
+
+    // 1. Create offscreen canvas sized to ORIGINAL image dimensions (natural size)
+    // We access ._element usually for the HTMLImageElement or internal canvas
+    const originalElem = image.getElement();
+    if (!originalElem) return;
+
+    const w = originalElem.naturalWidth || originalElem.width;
+    const h = originalElem.naturalHeight || originalElem.height;
+
+    const offCanvas = document.createElement("canvas");
+    offCanvas.width = w;
+    offCanvas.height = h;
+    const ctx = offCanvas.getContext("2d");
+    if (!ctx) return;
+
+    // 2. Draw current image state
+    ctx.drawImage(originalElem, 0, 0, w, h);
+
+    // 3. Setup Erasure
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // 4. Draw paths converted to local space
+    paths.forEach(path => {
+      // Path has a list of points or complex commands.
+      // Simplest strategy for FreeDrawingBrush paths (which are usually "M ... Q ... L ...")
+      // is to iterate points if path is complex, OR just look at path object properties.
+
+      // Fabric's PENCIL brush outputs a Path object which has 'path' data (commands).
+      // It's hard to parse "M 10 20 Q 30 40 50 60" manually and transform perfectly.
+      // BETTER STRATEGY: 
+      // Iterate path points? 
+      // Actually, Fabric paths are just objects.
+      // We can transform the path object itself into the local coordinate system!
+      // But context drawing is pixels.
+
+      // Alternative: For every path in global space:
+      // We need to stroke it on the local canvas.
+      // The stroke width must be scaled.
+      // Eraser Size is global pixels. e.g. 20px.
+      // Image ScaleX might be 0.5. So 20px global = 40px local.
+
+      // Let's use points approach for simplicity with PencilBrush (simplest paths).
+      // Fabric.Path.path is array of commands: [['M', x, y], ['Q', c1x, c1y, x, y], ...]
+
+      const scaleX = image.scaleX; // We need to divide by this to get local width
+      // Rough approximation of scale (assuming simple uniform scale for brush)
+      // If image is zoomed out (small), brush needs to be huge in local space.
+      const localBrushSize = eraserSize / scaleX;
+      ctx.lineWidth = localBrushSize;
+
+      const commands = path.path;
+      ctx.beginPath();
+
+      commands.forEach((cmd: any) => {
+        const type = cmd[0];
+        if (type === "M") {
+          const p = canvasPointToImagePoint(image, { x: cmd[1], y: cmd[2] }, util);
+          ctx.moveTo(p.x, p.y);
+        } else if (type === "L") {
+          const p = canvasPointToImagePoint(image, { x: cmd[1], y: cmd[2] }, util);
+          ctx.lineTo(p.x, p.y);
+        } else if (type === "Q") {
+          const c1 = canvasPointToImagePoint(image, { x: cmd[1], y: cmd[2] }, util);
+          const p = canvasPointToImagePoint(image, { x: cmd[3], y: cmd[4] }, util);
+          ctx.quadraticCurveTo(c1.x, c1.y, p.x, p.y);
+        }
+      });
+      ctx.stroke();
+    });
+
+    // 5. Update Image
+    // Set src to new data URL
+    const newData = offCanvas.toDataURL("image/png");
+
+    // We need to update the Source.
+    // image.setSrc is async
+    return new Promise<void>((resolve) => {
+      image.setSrc(newData, () => {
+        // Force re-render?
+        // Reset width/height potentially? usually setSrc handles it.
+        resolve();
+      });
+    });
+  };
+
+  const enterEraseMode = async () => {
+    const c = getCanvas();
+    if (!c) return;
+
+    // Check selection
+    const active = c.getActiveObject();
+    if (!active || active.type !== "image") {
+      // Cannot erase. Show hint?
+      // Handled in UI layer or assume handled before calling.
+      // Here we force drawing mode.
+      return;
+    }
+
+    // Save initial state for Cancel
+    // Store original src on the object if not exists
+    if (!active.__originalSrc) {
+      active.__originalSrc = active.getSrc();
+    }
+    // Store for THIS session (to revert on Cancel)
+    originalImageSrcRef.current = active.getSrc();
+
+    // Import pencil brush dynamically
+    const { PencilBrush } = (await import("fabric")) as any;
+
+    c.isDrawingMode = true;
+    c.freeDrawingBrush = new PencilBrush(c);
+    c.freeDrawingBrush.color = "rgba(255, 255, 255, 0.5)"; // Visual preview
+    c.freeDrawingBrush.width = eraserSize;
+
+    // Disable selection logic while erasing
+    c.selection = false;
+    // Lock the image so we don't drag it
+    active.selectable = false;
+    active.evented = false; // Let clicks pass through? Or catch them for drawing.
+    // Drawing mode handles events.
+  };
+
+  const exitEraseMode = (restoreSelection = true) => {
+    const c = getCanvas();
+    if (!c) return;
+
+    c.isDrawingMode = false;
+    c.selection = true;
+
+    // Clear path refs
+    eraserPathsRef.current = [];
+    originalImageSrcRef.current = null;
+
+    // Unlock objects
+    // We need to re-find the image we were editing? 
+    // Or just unlock all images? 
+    // Optimization: we could track the target image in a ref.
+    const imgs = c.getObjects("image");
+    imgs.forEach((img: any) => {
+      img.selectable = true;
+      img.evented = true;
+    });
+
+    if (restoreSelection) {
+      // Maybe restore selection?
+    }
+  };
+
+  const handleApplyErase = async () => {
+    const c = getCanvas();
+    if (!c) return;
+
+    // Find the image (it should be the only non-selectable one, or we track it)
+    // Actually we are in a state where we just finished drawing. Use selection?
+    // When isDrawingMode=true, getActiveObject might be null.
+    // Let's assume the user hasn't changed selection because interaction was locked.
+    // But we made it unselectable.
+    // Let's find the image that has __originalSrc or just use the last known.
+    // Better: find drawn paths.
+    // Actually, we must know WHICH image to apply to.
+    // Use getObjects("image").find...
+    // OR: we track `editingImageRef`.
+    // Let's find the image that has `selectable: false`.
+    const targetImage = c.getObjects().find((o: any) => o.type === "image" && !o.selectable);
+
+    if (targetImage && eraserPathsRef.current.length > 0) {
+      await applyEraseToImage(targetImage, eraserPathsRef.current);
+
+      // Remove temp paths
+      eraserPathsRef.current.forEach(p => c.remove(p));
+      eraserPathsRef.current = [];
+
+      // Save History NOW
+      const saveHist = (c as any).__saveHistory;
+      if (saveHist) saveHist();
+
+      c.requestRenderAll();
+    }
+
+    // Exit and re-select image
+    exitEraseMode(false);
+    if (targetImage) {
+      targetImage.selectable = true;
+      targetImage.evented = true;
+      c.setActiveObject(targetImage);
+    }
+    setActiveTool("select");
+  };
+
+  const handleCancelErase = () => {
+    const c = getCanvas();
+    if (!c) return;
+
+    // Revert image src
+    const targetImage = c.getObjects().find((o: any) => o.type === "image" && !o.selectable);
+    if (targetImage && originalImageSrcRef.current) {
+      targetImage.setSrc(originalImageSrcRef.current, () => {
+        c.requestRenderAll();
+      });
+    }
+
+    // Remove temp paths
+    eraserPathsRef.current.forEach(p => c.remove(p));
+    eraserPathsRef.current = [];
+
+    exitEraseMode();
+    setActiveTool("select");
+  };
+
+  // Effect to handle paths created during Erase Mode
+  useEffect(() => {
+    const c = getCanvas();
+    if (!c) return;
+
+    const onPathCreated = (e: any) => {
+      if (activeTool === "erase") {
+        // Store path
+        eraserPathsRef.current.push(e.path);
+        // Make visual path clearer?
+        // e.path.set({ stroke: 'rgba(255,255,255,0.8)', strokeWidth: eraserSize });
+        // e.path.selectable = false;
+      }
+    };
+
+    c.on("path:created", onPathCreated);
+    return () => {
+      c.off("path:created", onPathCreated);
+    }
+  }, [activeTool, eraserSize]);
+
+
+  // Auto-enter Text Add Mode
+  useEffect(() => {
+    if (activeTool === "text") {
+      setAddTextMode();
+    } else if (activeTool === "erase") {
+      enterEraseMode();
+    } else {
+      // Reset if switching away from Text
+      if (isAddingTextRef.current) {
+        isAddingTextRef.current = false;
+        const c = getCanvas();
+        if (c) {
+          c.defaultCursor = "default";
+          c.selection = true;
+        }
+      }
+      // Reset if switching away from Erase
+      // (Handled by checking if we were erasing?)
+      // Safe to call exitEraseMode just in case
+      exitEraseMode();
+    }
+  }, [activeTool]);
 
   const uploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -547,10 +1159,29 @@ export default function FabricEditor() {
       const { FabricImage } = (await import("fabric")) as any;
       const img = await FabricImage.fromURL(data);
 
-      const center = c.getVpCenter();
+      // TARGET: Center of Artboard (not viewport)
+      const ab = artboardRef.current;
+      let targetLeft = 0;
+      let targetTop = 0;
+
+      if (ab) {
+        // Get artboard center
+        const abRect = ab.getBoundingRect(); // This is in canvas coords (affected by zoom/pan if not carefully handled, but getBoundingRect usually returns current coords)
+        // Wait, getBoundingRect is canvas coords.
+
+        targetLeft = ab.left + (ab.width * ab.scaleX) / 2;
+        targetTop = ab.top + (ab.height * ab.scaleY) / 2;
+
+        // Fabric objects usually store center in left/top if origin is center
+      } else {
+        const center = c.getVpCenter();
+        targetLeft = center.x;
+        targetTop = center.y;
+      }
+
       img.set({
-        left: center.x,
-        top: center.y,
+        left: targetLeft,
+        top: targetTop,
         originX: "center",
         originY: "center",
       });
@@ -579,6 +1210,7 @@ export default function FabricEditor() {
 
     // ... existing logic ...
     const active = c.getActiveObjects();
+    if (!active.length) return;
     active.forEach((obj: any) => {
       obj.set(prop, value);
     });
@@ -595,6 +1227,14 @@ export default function FabricEditor() {
     if (prop === "charSpacing") setCharSpacing(value);
     if (prop === "textBackgroundColor") setTextBackgroundColor(value);
     if (prop === "opacity") setOpacity(value);
+    if (prop === "globalCompositeOperation") setBlendMode(value);
+
+    const saveHistory = (c as any).__saveHistory;
+    if (typeof saveHistory === "function") {
+      saveHistory();
+    } else {
+      c.fire("object:modified", { target: active[0] });
+    }
   };
 
   const deleteSelected = () => {
@@ -651,17 +1291,23 @@ export default function FabricEditor() {
       "lockScalingX",
       "lockScalingY",
       "lockRotation",
+      "visible",
     ]);
 
     // Filter objects
     designIntent.objects = designIntent.objects.filter(
       (obj: any) =>
-        !obj.excludeFromExport && obj.id !== "artboard" && !obj.__isPlaceholder
+        obj.visible !== false &&
+        !obj.excludeFromExport &&
+        obj.id !== "artboard" &&
+        !obj.__isPlaceholder
     ); // Filter out placeholder
 
     // 2. Normalized Contract (Spec V2) - using unified helpers
     const ab = artboardRef.current;
-    const artboardTopLeft = ab ? getArtboardRect(c, ab) : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+    const artboardTopLeft = ab
+      ? getArtboardRect(c, ab)
+      : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
 
     const toArtboardSpace = (obj: any) => {
       obj.setCoords();
@@ -678,6 +1324,7 @@ export default function FabricEditor() {
       .getObjects()
       .filter(
         (obj: any) =>
+          obj.visible !== false &&
           !obj.excludeFromExport &&
           obj.id !== "artboard" &&
           !obj.__isPlaceholder
@@ -707,6 +1354,12 @@ export default function FabricEditor() {
             flipY: obj.flipY,
             originX: obj.originX,
             originY: obj.originY,
+            ...(obj.type === "image"
+              ? {
+                src: obj.getSrc ? obj.getSrc() : "",
+                blendMode: obj.globalCompositeOperation, // Export blend mode
+              }
+              : {}),
           },
           style: {
             opacity: obj.opacity,
@@ -851,6 +1504,8 @@ export default function FabricEditor() {
                     />
                   </div>
 
+
+
                   <div className="w-px h-6 bg-white/10 mx-1" />
 
                   {/* Flip */}
@@ -898,7 +1553,9 @@ export default function FabricEditor() {
                         );
                         // Preload all fonts when dropdown opens for preview
                         if (!isFontOpen) {
-                          POPULAR_GOOGLE_FONTS.forEach(font => loadGoogleFont(font));
+                          POPULAR_GOOGLE_FONTS.forEach((font) =>
+                            loadGoogleFont(font)
+                          );
                         }
                       }}
                       className="flex items-center gap-2 bg-zinc-900 border border-white/10 px-3 py-1.5 rounded-full hover:border-cyan/50 transition-colors min-w-[140px] justify-between"
@@ -1127,14 +1784,25 @@ export default function FabricEditor() {
                   <label className="flex items-center gap-2 cursor-pointer rounded-full bg-zinc-900 border border-white/10 px-3 py-1.5 hover:border-cyan/50 transition-colors">
                     <span
                       className="h-4 w-4 rounded-full border border-white/20"
-                      style={{ backgroundColor: artboardColor === "transparent" ? "transparent" : artboardColor }}
+                      style={{
+                        backgroundColor:
+                          artboardColor === "transparent"
+                            ? "transparent"
+                            : artboardColor,
+                      }}
                     >
-                      {artboardColor === "transparent" && <div className="w-full h-full border border-red-500 rotate-45 transform scale-125" />}
+                      {artboardColor === "transparent" && (
+                        <div className="w-full h-full border border-red-500 rotate-45 transform scale-125" />
+                      )}
                     </span>
                     <input
                       type="color"
                       className="hidden"
-                      value={artboardColor === "transparent" ? "#ffffff" : artboardColor}
+                      value={
+                        artboardColor === "transparent"
+                          ? "#ffffff"
+                          : artboardColor
+                      }
                       onChange={(e) => setArtboardColor(e.target.value)}
                     />
                     <ChevronDown className="w-3 h-3 opacity-50" />
@@ -1158,6 +1826,54 @@ export default function FabricEditor() {
           <div className="hidden md:flex items-center gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
             {/* Removed Confined toggle */}
           </div>
+
+          {/* Undo/Redo */}
+          <div className="flex items-center gap-1 mr-4 border-r border-white/10 pr-4">
+            <button
+              onClick={() => {
+                if (fabricCanvasRef.current?.__undo)
+                  fabricCanvasRef.current.__undo();
+              }}
+              disabled={!canUndo}
+              className={`p-2 rounded-full transition ${!canUndo ? "text-gray-700 cursor-not-allowed" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (fabricCanvasRef.current?.__redo)
+                  fabricCanvasRef.current.__redo();
+              }}
+              disabled={!canRedo}
+              className={`p-2 rounded-full transition ${!canRedo ? "text-gray-700 cursor-not-allowed" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              <Redo2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-2 mr-4 border-r border-white/10 pr-4">
+            <button
+              onClick={() => {
+                if (
+                  fabricCanvasRef.current &&
+                  fabricCanvasRef.current.__fitToScreen
+                ) {
+                  fabricCanvasRef.current.__fitToScreen();
+                }
+              }}
+              className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition"
+              title="Fit to Screen"
+            >
+              <Maximize className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-mono text-gray-500 w-12 text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+          </div>
+
           <button
             onClick={exportJson}
             className="group flex items-center gap-2 bg-white hover:bg-cyan text-black px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 hover:scale-105"
@@ -1195,6 +1911,12 @@ export default function FabricEditor() {
             onClick={() => setActiveTool("layers")}
             icon={Layers}
             label="Layers"
+          />
+          <SidebarTab
+            active={activeTool === "erase"}
+            onClick={() => setActiveTool("erase")}
+            icon={Eraser}
+            label="Erase"
           />
         </div>
 
@@ -1351,26 +2073,85 @@ export default function FabricEditor() {
               </div>
             )}
 
+            {activeTool === "erase" && (
+              <div className="space-y-6">
+                {/* Eraser Controls */}
+                <div className="bg-zinc-900/50 rounded-xl p-4 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between pointer-events-none">
+                    <span className="text-sm font-bold text-gray-400">Brush Size</span>
+                    <span className="text-xs font-mono text-cyan">{eraserSize}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5"
+                    max="100"
+                    value={eraserSize}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      setEraserSize(val);
+                      const c = getCanvas();
+                      if (c && c.freeDrawingBrush) {
+                        c.freeDrawingBrush.width = val;
+                      }
+                    }}
+                    className="w-full h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan cursor-pointer"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleApplyErase}
+                    className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-black uppercase text-sm tracking-widest rounded-xl transition shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    <Eraser className="w-4 h-4" />
+                    Apply Eraser
+                  </button>
+                  <button
+                    onClick={handleCancelErase}
+                    className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-gray-300 font-bold uppercase text-xs tracking-widest rounded-xl transition border border-white/5 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <div className="flex gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-full h-fit text-blue-400">
+                      <Eraser className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-blue-200">How to use</h4>
+                      <p className="text-xs text-blue-300/80 leading-relaxed">
+                        Select an image first. Paint over areas you want to remove. Click Apply to finish.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTool === "text" && (
               <div className="space-y-4">
                 <button
-                  onClick={() => addText("HEADING")}
-                  className="w-full bg-zinc-900/50 hover:bg-zinc-800 border border-white/10 hover:border-cyan/50 text-white p-6 rounded-xl text-center font-black text-2xl tracking-tighter transition-all duration-200"
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase text-xl py-4 rounded-xl transition shadow-lg border border-white/5 active:scale-[0.98]"
+                  onClick={() => addTextImmediate("HEADING")}
                 >
                   HEADING
                 </button>
-                <button
-                  onClick={() => addText("Subheading")}
-                  className="w-full bg-zinc-900/50 hover:bg-zinc-800 border border-white/10 hover:border-cyan/50 text-gray-200 p-4 rounded-xl text-center font-bold text-lg tracking-wide transition-all duration-200"
-                >
-                  Subheading
-                </button>
-                <button
-                  onClick={() => addText("Body text")}
-                  className="w-full bg-zinc-900/50 hover:bg-zinc-800 border border-white/10 hover:border-cyan/50 text-gray-400 p-3 rounded-xl text-center text-sm font-medium transition-all duration-200"
-                >
-                  Body text paragraph
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold uppercase text-sm py-3 rounded-xl transition shadow-lg border border-white/5 active:scale-[0.98]"
+                    onClick={() => addTextImmediate("Subheading")}
+                  >
+                    Subheading
+                  </button>
+                  <button
+                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-xs py-3 rounded-xl transition shadow-lg border border-white/5 active:scale-[0.98]"
+                    onClick={() => addTextImmediate("Body Text")}
+                  >
+                    Body Text
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1407,8 +2188,6 @@ export default function FabricEditor() {
           <div ref={containerRef} className="absolute inset-0">
             <canvas ref={canvasElRef} className="block" />
           </div>
-
-
 
           {exportedJson && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -1451,10 +2230,9 @@ export default function FabricEditor() {
           )}
         </div>
       </div>
-    </div >
+    </div>
   );
 }
-
 
 function SidebarTab({ active, icon: Icon, label, onClick }: any) {
   return (
@@ -1477,23 +2255,6 @@ function SidebarTab({ active, icon: Icon, label, onClick }: any) {
       {active && (
         <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan rounded-l-full" />
       )}
-    </button>
-  );
-}
-
-function ElementButton({ onClick, icon: Icon, label }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center justify-center aspect-square bg-zinc-900/50 rounded-2xl hover:bg-zinc-800 border border-white/5 hover:border-cyan/30 transition-all duration-300 group"
-    >
-      <Icon
-        className="w-10 h-10 text-gray-600 group-hover:text-cyan transition-colors duration-300 mb-3"
-        strokeWidth={1}
-      />
-      <span className="text-xs font-bold text-gray-500 group-hover:text-white uppercase tracking-wider">
-        {label}
-      </span>
     </button>
   );
 }
