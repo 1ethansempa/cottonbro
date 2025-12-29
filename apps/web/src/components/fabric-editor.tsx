@@ -4,33 +4,93 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   MousePointer2,
   Type,
-  Square,
-  Image as ImageIcon,
   Download,
   Trash2,
-  Layers,
   AlignLeft,
   AlignCenter,
   AlignRight,
   Bold,
   Italic,
-  ChevronDown,
   Upload,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  ArrowUp,
-  ArrowDown,
-  FlipHorizontal,
-  Maximize,
   Undo2,
   Redo2,
-  Eraser,
+  Shirt,
+  Check,
+  ChevronLeft,
+  ArrowRight,
+  X,
+  Minus,
+  Plus,
+  CloudUpload,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
+import { PRODUCTS, ProductType, ProductDefinition, ViewSide } from "../config/products";
 
 const ARTBOARD = { w: 500, h: 500 }; // “shirt design area” units
+
+// --- Text Style Presets ---
+const TEXT_PRESETS = [
+  {
+    id: "street-bold",
+    name: "Street Bold",
+    description: "Loud & proud for tees",
+    fontFamily: "Anton",
+    charSpacing: 40,
+    lineHeight: 1.05,
+    fill: "#18181B", // Dark zinc for white artboards
+    shadow: null,
+  },
+  {
+    id: "blobby-vintage",
+    name: "Blobby Vintage",
+    description: "Cooper-ish warm vibe",
+    fontFamily: "Baloo 2",
+    charSpacing: 5,
+    lineHeight: 1.1,
+    fill: "#7C2D12", // Warm brown/orange
+    shadow: { color: "rgba(0,0,0,0.2)", blur: 6, offsetX: 2, offsetY: 2 },
+  },
+  {
+    id: "pop-cartoon",
+    name: "Pop Cartoon",
+    description: "Fun & punchy",
+    fontFamily: "Luckiest Guy",
+    charSpacing: 0,
+    lineHeight: 1.1,
+    fill: "#DC2626", // Bright red
+    shadow: { color: "rgba(0,0,0,0.4)", blur: 0, offsetX: 3, offsetY: 3 },
+  },
+  {
+    id: "luxury-minimal",
+    name: "Luxury Minimal",
+    description: "Elegant & spaced",
+    fontFamily: "Playfair Display",
+    charSpacing: 80,
+    lineHeight: 1.3,
+    fill: "#1F2937", // Dark gray
+    shadow: null,
+  },
+  {
+    id: "tech-clean",
+    name: "Tech Clean",
+    description: "Modern brand text",
+    fontFamily: "Inter",
+    charSpacing: 10,
+    lineHeight: 1.2,
+    fill: "#0F172A", // Slate dark
+    shadow: null,
+  },
+  {
+    id: "poster-outline",
+    name: "Poster Outline",
+    description: "Bold with shadow outline",
+    fontFamily: "Archivo Black",
+    charSpacing: 20,
+    lineHeight: 1.0,
+    fill: "#000000", // Black
+    shadow: { color: "#A3A3A3", blur: 0, offsetX: 3, offsetY: 3 }, // Gray shadow for outline effect
+  },
+];
 
 // --- Geometry Helpers (Consistent Coordinate Space) ---
 
@@ -116,7 +176,12 @@ const getOriginInArtboardSpace = (c: any, ab: any, obj: any) => {
   });
 };
 
-type Tool = "select" | "text" | "uploads" | "layers" | "erase";
+type Tool = "select" | "text" | "uploads" | "products";
+
+// Selected colors per product type
+type ProductColorSelection = {
+  [key in ProductType]?: string[];
+};
 
 export default function FabricEditor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -126,15 +191,26 @@ export default function FabricEditor() {
   const fabricCanvasRef = useRef<any>(null);
   const artboardRef = useRef<any>(null);
 
+  // --- Multi-Product Selection State ---
+  const [selectedProducts, setSelectedProducts] = useState<ProductType[]>(["t-shirt"]);
+  const [productColors, setProductColors] = useState<ProductColorSelection>({
+    "t-shirt": ["#ffffff", "#000000"],
+    "hoodie": [],
+    "crop-top": [],
+  });
+  const [previewProduct, setPreviewProduct] = useState<ProductType>("t-shirt");
+  const [previewColor, setPreviewColor] = useState<string>("#ffffff");
+
   // UI State
   const [activeTool, setActiveTool] = useState<Tool>("select");
-  // Zoom state kept for internal logic but UI removed
   const [zoom, setZoom] = useState(1);
   const [selectedObjects, setSelectedObjects] = useState<any[]>([]);
-  const [layers, setLayers] = useState<any[]>([]); // New Layers State
   const [exportedJson, setExportedJson] = useState<string>("");
-  const [artboardColor, setArtboardColor] = useState<string>("#ffffff"); // Artboard Background Color
-  // Removed allowOverflow state per user request
+  const [showMockupPreview, setShowMockupPreview] = useState(false);
+
+  const [viewSide, setViewSide] = useState<ViewSide>("front");
+  const [canvasReady, setCanvasReady] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<{ id: string, src: string, name: string }[]>([]);
 
   // Selection Properties
   const [fill, setFill] = useState("#e2e8f0");
@@ -142,50 +218,95 @@ export default function FabricEditor() {
   const [fontSize, setFontSize] = useState(42);
   const [bold, setBold] = useState(false);
   const [italic, setItalic] = useState(false);
-  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">(
-    "left"
-  );
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("left");
 
   // New Props (Spec V2)
   const [lineHeight, setLineHeight] = useState(1.16);
   const [charSpacing, setCharSpacing] = useState(0);
   const [textBackgroundColor, setTextBackgroundColor] = useState<string>("");
   const [opacity, setOpacity] = useState(1);
-  const [blendMode, setBlendMode] = useState<string>("source-over"); // source-over = Normal
-  const [eraserSize, setEraserSize] = useState(20);
-  const eraserPathsRef = useRef<any[]>([]);
-  const originalImageSrcRef = useRef<string | null>(null);
+  const [blendMode, setBlendMode] = useState<string>("source-over");
 
   // Navigation State
   const isPanningRef = useRef(false);
 
   // Text Tool State
   const isAddingTextRef = useRef(false);
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [editingTextObj, setEditingTextObj] = useState<any>(null);
+  const [floatingToolbarPos, setFloatingToolbarPos] = useState({ x: 0, y: 0 });
 
   // History State
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-
-  // History Refs (to avoid re-renders)
   const historyRef = useRef<string[]>([]);
   const redoStackRef = useRef<string[]>([]);
   const isHistoryProcessing = useRef(false);
 
-  // Font Picker State
-  const [isFontOpen, setIsFontOpen] = useState(false);
-  const [fontSearch, setFontSearch] = useState("");
-  const fontSearchInputRef = useRef<HTMLInputElement>(null);
+  // --- Preload Fonts on Mount ---
+  useEffect(() => {
+    TEXT_PRESETS.forEach(p => loadGoogleFont(p.fontFamily));
+  }, []);
+
+  // --- Helper: Toggle product selection ---
+  const toggleProduct = (productId: ProductType) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        // Don't allow deselecting if it's the only one
+        if (prev.length === 1) return prev;
+        return prev.filter(p => p !== productId);
+      }
+      // Add product with default colors
+      const product = PRODUCTS[productId];
+      const defaultColors = product.colors.slice(0, 2).map(c => c.value);
+      setProductColors(pc => ({ ...pc, [productId]: defaultColors }));
+      return [...prev, productId];
+    });
+  };
+
+  // --- Helper: Toggle color for a product ---
+  const toggleColorForProduct = (productId: ProductType, colorValue: string) => {
+    setProductColors(prev => {
+      const current = prev[productId] || [];
+      if (current.includes(colorValue)) {
+        // Don't allow deselecting if it's the only one
+        if (current.length === 1) return prev;
+        return { ...prev, [productId]: current.filter(c => c !== colorValue) };
+      }
+      return { ...prev, [productId]: [...current, colorValue] };
+    });
+  };
+
+  // --- Compute all product variants ---
+  const getAllVariants = () => {
+    const variants: { product: ProductType; color: string; colorName: string }[] = [];
+    selectedProducts.forEach(productId => {
+      const product = PRODUCTS[productId];
+      const colors = productColors[productId] || [];
+      colors.forEach(colorValue => {
+        const colorDef = product.colors.find(c => c.value === colorValue);
+        variants.push({
+          product: productId,
+          color: colorValue,
+          colorName: colorDef?.name || "Unknown",
+        });
+      });
+    });
+    return variants;
+  };
+
+
+  // --- Editor Logic (now runs immediately) ---
 
   useEffect(() => {
+
     let disposed = false;
     let cleanup: undefined | (() => void);
-    // Cache fabric module to reduce HMR churn
     let fabricModule: any = null;
 
     async function init() {
       if (!canvasElRef.current || !containerRef.current) return;
 
-      // Lazy load and cache fabric module
       if (!fabricModule) {
         fabricModule = await import(/* webpackChunkName: "fabric" */ "fabric");
       }
@@ -193,9 +314,9 @@ export default function FabricEditor() {
       if (disposed) return;
 
       const c = new Canvas(canvasElRef.current, {
-        width: containerRef.current.clientWidth, // Fix: Use full container width (was -300)
+        width: containerRef.current.clientWidth,
         height: containerRef.current.clientHeight,
-        backgroundColor: "#030303", // bg-page
+        backgroundColor: "#030303",
         selection: true,
         preserveObjectStacking: true,
       });
@@ -210,17 +331,11 @@ export default function FabricEditor() {
         centerArtboard(c);
       };
 
-      // --- Artboard Visuals Helper ---
       const setupArtboard = (canvas: any) => {
-        // 1. Main Artboard (White)
-        // We don't necessarily need a visual Rect if we use backgroundColor or clipPath,
-        // but a visual Rect at the bottom is good for clicking/selection behavior if we wanted it.
-        // User wants "White" artboard.
-
         const artboard = new Rect({
           width: ARTBOARD.w,
           height: ARTBOARD.h,
-          fill: artboardColor,
+          fill: "transparent",
           stroke: "transparent",
           selectable: false,
           evented: false,
@@ -231,68 +346,40 @@ export default function FabricEditor() {
             offsetX: 0,
             offsetY: 0,
           },
-          // excludeFromExport: true, // Removed to ensure it saves to History
           id: "artboard",
-          absolutePositioned: true, // Important for clipPath if we used it there, but here it's just visual
+          absolutePositioned: false,
         });
         artboardRef.current = artboard;
 
         canvas.add(artboard);
 
-        // Implement Cropping (Clipping)
-        // We clip the entire canvas area to this path.
-        // Note: clipPath coordinates are relative to the center of the canvas if using a simple Rect?
-        // Fabric `clipPath` defines the visible area.
-
-        // We need a stable clipPath object that moves with the artboard logic?
-        // Actually, we can reuse the `artboard` rect as the clipPath,
-        // BUT if we add `artboard` to canvas AND use it as clipPath, standard fabric behavior might be weird.
-        // Standard way: Create a separate clone for clipPath.
-
-        // Let's create a specific clipRect.
         const clipRect = new Rect({
           width: ARTBOARD.w,
           height: ARTBOARD.h,
           originX: "center",
           originY: "center",
-          absolutePositioned: true, // Defines coords in absolute canvas space
+          absolutePositioned: false,
         });
 
         canvas.clipPath = clipRect;
-        // Store ref to update its position on resize/center
         (canvas as any).__clipRect = clipRect;
       };
 
       setupArtboard(c);
-
       fabricCanvasRef.current = c;
-      // Expose setup for external reset
+      setCanvasReady(true);
       (c as any).__setupArtboard = setupArtboard;
 
-      // --- Zoom & Pan Logic ---
-
-      // Zoom on Wheel - DISABLED per user request
+      // --- Interaction Logic ---
       c.on("mouse:wheel", (opt: any) => {
-        const delta = opt.e.deltaY;
-        let zoom = c.getZoom();
-        zoom *= 0.999 ** delta;
-        if (zoom > 5) zoom = 5;
-        if (zoom < 0.1) zoom = 0.1;
-
-        // Zoom to point (mouse pointer)
-        c.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-
+        // Disabled per request, but keeping structure if needed
         opt.e.preventDefault();
         opt.e.stopPropagation();
-        setZoom(zoom);
       });
 
-      // Mouse Interaction (Pan & Tap)
       let lastTap = 0;
       c.on("mouse:down", (opt: any) => {
         const evt = opt.e;
-
-        // Pan Start
         if (isPanningRef.current || evt.altKey || evt.metaKey) {
           c.isDragging = true;
           c.selection = false;
@@ -302,18 +389,11 @@ export default function FabricEditor() {
           return;
         }
 
-        // Add Text Click
         if (isAddingTextRef.current) {
-          const pointer = c.getPointer(evt); // Get pointer in canvas coords (handles zoom/pan)
-
-          // We need to trigger the actual add logic now
-          // But we need to switch back to normal mode
+          const pointer = c.getPointer(evt);
           addTextAtPoint(pointer);
-
           isAddingTextRef.current = false;
           c.defaultCursor = "default";
-          // Set active tool back to select or keep text?
-          // Usually select after add.
           setActiveTool("select");
           return;
         }
@@ -329,6 +409,7 @@ export default function FabricEditor() {
           }
           lastTap = now;
         }
+        lastTap = now;
       });
 
       c.on("mouse:move", (opt: any) => {
@@ -344,22 +425,18 @@ export default function FabricEditor() {
       });
 
       c.on("mouse:up", (opt: any) => {
-        // on mouse up we want to recalculate new interaction
-        // for all objects, so we call setViewportTransform
         c.setViewportTransform(c.viewportTransform);
         c.isDragging = false;
-        c.selection = !isPanningRef.current; // Restore selection if not in pan mode
+        c.selection = !isPanningRef.current;
         c.defaultCursor = isPanningRef.current ? "grab" : "default";
       });
 
-      // --- Clamping Logic (now uses unified helper) ---
       const clampObject = (obj: any) =>
         clampToArtboard(c, artboardRef.current, obj);
 
       c.on("object:moving", (e: any) => clampObject(e.target));
       c.on("object:scaling", (e: any) => clampObject(e.target));
 
-      // Sync Selection
       const syncSelection = () => {
         const active = c.getActiveObjects();
         setSelectedObjects(active);
@@ -378,7 +455,6 @@ export default function FabricEditor() {
           if (obj.textBackgroundColor)
             setTextBackgroundColor(obj.textBackgroundColor);
           if (typeof obj.opacity !== "undefined") setOpacity(obj.opacity);
-          // Sync Blend Mode
           if (obj.globalCompositeOperation) {
             setBlendMode(obj.globalCompositeOperation);
           } else {
@@ -387,45 +463,42 @@ export default function FabricEditor() {
         }
       };
 
-      // Sync Layers
-      const syncLayers = () => {
-        const objs = c
-          .getObjects()
-          .filter((o: any) => o.id !== "artboard" && !o.excludeFromExport)
-          .slice()
-          .reverse();
-        setLayers(objs);
-      };
-
-      c.on("object:added", syncLayers);
-      c.on("object:removed", syncLayers);
-      c.on("object:modified", syncLayers);
-      c.on("object:skewing", syncLayers);
-      c.on("object:scaling", syncLayers);
-
       c.on("selection:created", () => {
         syncSelection();
-        syncLayers();
       });
       c.on("selection:updated", () => {
         syncSelection();
-        syncLayers();
       });
       c.on("selection:cleared", () => {
         syncSelection();
-        syncLayers();
       });
 
-      // --- History Logic ---
+      // --- Text Editing Events ---
+      c.on("text:editing:entered", (e: any) => {
+        setIsEditingText(true);
+        setEditingTextObj(e.target);
+        // Position floating toolbar above the text object
+        if (e.target) {
+          const bound = e.target.getBoundingRect();
+          const canvasEl = containerRef.current?.querySelector("canvas");
+          if (canvasEl) {
+            const rect = canvasEl.getBoundingClientRect();
+            setFloatingToolbarPos({
+              x: rect.left + bound.left + bound.width / 2,
+              y: rect.top + bound.top - 50,
+            });
+          }
+        }
+      });
 
+      c.on("text:editing:exited", () => {
+        setIsEditingText(false);
+        setEditingTextObj(null);
+      });
+
+      // --- History ---
       const saveHistory = () => {
         if (isHistoryProcessing.current) return;
-
-        // Push current state to history
-        // uses includeDefaults: false usually, but we want full state?
-        // Let's use the export helpers, or simpler JSON.
-        // We need 'artboard' to be consistent.
-        // But for undo/redo, we just need the canvas state including objects.
         const json = JSON.stringify(
           c.toJSON([
             "objectId",
@@ -440,26 +513,19 @@ export default function FabricEditor() {
         );
 
         historyRef.current.push(json);
-        redoStackRef.current = []; // Clear redo on new action
-
-        // Limit history?
+        redoStackRef.current = [];
         if (historyRef.current.length > 50) historyRef.current.shift();
 
-        setCanUndo(historyRef.current.length > 1); // Need at least initial state + 1
+        setCanUndo(historyRef.current.length > 1);
         setCanRedo(false);
       };
 
-      // Initial State Save
       if (historyRef.current.length === 0) {
         saveHistory();
       }
 
-      // Hook events
-      // We debounce? Or just save on modified.
-      // object:modified is end of drag/scale/rotate.
       c.on("object:modified", saveHistory);
       c.on("object:added", (e: any) => {
-        // Prevent saving history when re-loading from undo
         if (!isHistoryProcessing.current && !e.target?.excludeFromExport) {
           saveHistory();
         }
@@ -472,41 +538,25 @@ export default function FabricEditor() {
 
       const undo = async () => {
         if (historyRef.current.length <= 1) return;
-
         isHistoryProcessing.current = true;
-        const current = historyRef.current.pop(); // Pop current state
-        if (current) redoStackRef.current.push(current); // Save to redo
-
-        const previous = historyRef.current[historyRef.current.length - 1]; // Peek previous
+        const current = historyRef.current.pop();
+        if (current) redoStackRef.current.push(current);
+        const previous = historyRef.current[historyRef.current.length - 1];
 
         if (previous) {
           await c.loadFromJSON(JSON.parse(previous));
-
-          // 1. Restore Artboard Reference
           const objs = c.getObjects();
           const ab = objs.find((o: any) => o.id === "artboard");
           if (ab) {
             artboardRef.current = ab;
           } else {
-            // Vital Safety: If artboard missing (e.g. init glitch), re-create it
-            // This ensures visual container never disappears
             setupArtboard(c);
-            centerArtboard(c); // Ensure it is positioned correctly
+            centerArtboard(c);
           }
-
-          // 2. Restore ClipRect Reference
-          // loadFromJSON restores c.clipPath. We must update our internal ref.
           if (c.clipPath) {
             (c as any).__clipRect = c.clipPath;
-          } else if (artboardRef.current) {
-            // Safety: If clipPath missing, re-apply it based on artboard?
-            // Ideally setupArtboard handles this, but if artboard exists but clipPath lost:
-            //Re-create clip rect logic if needed.
-            // For now, assume if artboard exists, we are okay, or setupArtboard ran.
           }
-
           c.renderAll();
-          syncLayers();
           syncSelection();
         }
 
@@ -517,15 +567,12 @@ export default function FabricEditor() {
 
       const redo = async () => {
         if (redoStackRef.current.length === 0) return;
-
         isHistoryProcessing.current = true;
         const next = redoStackRef.current.pop();
 
         if (next) {
           historyRef.current.push(next);
           await c.loadFromJSON(JSON.parse(next));
-
-          // 1. Restore Artboard Reference
           const objs = c.getObjects();
           const ab = objs.find((o: any) => o.id === "artboard");
           if (ab) {
@@ -534,57 +581,38 @@ export default function FabricEditor() {
             setupArtboard(c);
             centerArtboard(c);
           }
-
-          // 2. Restore ClipRect Reference
           if (c.clipPath) {
             (c as any).__clipRect = c.clipPath;
           }
-
           c.renderAll();
-          syncLayers();
           syncSelection();
         }
-
         setCanUndo(historyRef.current.length > 1);
         setCanRedo(redoStackRef.current.length > 0);
         isHistoryProcessing.current = false;
       };
 
-      // Expose to refs/external
       (c as any).__undo = undo;
       (c as any).__redo = redo;
       (c as any).__saveHistory = saveHistory;
 
-      // Initial Center
       const centerArtboard = (canvas: any) => {
         if (!artboardRef.current) return;
+        // Used Fabric's native centering to be sure
+        canvas.centerObject(artboardRef.current);
+        artboardRef.current.setCoords();
 
-        // Custom centering logic
-        const vCenter = canvas.getVpCenter();
-
-        // Move Artboard
-        artboardRef.current.setPositionByOrigin(vCenter, "center", "center");
-
-        // Move ClipRect if exists
         const clipRect = (canvas as any).__clipRect;
         if (clipRect) {
-          // Important: clipPath coordinates usually need to be adjusted or are absolute.
-          // With visible rect, we just move center.
-          clipRect.setPositionByOrigin(vCenter, "center", "center");
-          // Force recalculation for Fabric version quirks
+          canvas.centerObject(clipRect);
           clipRect.set({ dirty: true });
         }
-
-        // Recalculate layers after position changes? Not needed usually, but safe.
         canvas.requestRenderAll();
       };
-
-      // Expose for external reset
       (c as any).__centerArtboard = centerArtboard;
 
       const fitToScreen = () => {
         if (!containerRef.current || !artboardRef.current) return;
-        // Reset viewport to measure artboard
         const vpt = c.viewportTransform;
         c.setViewportTransform([1, 0, 0, 1, 0, 0]);
         const abRect = artboardRef.current.getBoundingRect();
@@ -595,7 +623,7 @@ export default function FabricEditor() {
 
         const scaleX = (cw - padding * 2) / abRect.width;
         const scaleY = (ch - padding * 2) / abRect.height;
-        const scale = Math.min(scaleX, scaleY, 1); // Max scale 1 (optional) or allow zoom in? Standard is Fit.
+        const scale = Math.min(scaleX, scaleY, 1);
 
         const centerX = cw / 2;
         const centerY = ch / 2;
@@ -614,17 +642,42 @@ export default function FabricEditor() {
         c.requestRenderAll();
       };
 
-      // Initial Fit
       fitToScreen();
-      // Expose for external
       (c as any).__fitToScreen = fitToScreen;
 
       updateDimensions();
       window.addEventListener("resize", updateDimensions);
 
+      // Keyboard shortcuts
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Don't handle if typing in text
+        const activeObject = c.getActiveObject();
+        if (activeObject && activeObject.isEditing) return;
+
+        // Delete/Backspace to delete selected objects
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          const active = c.getActiveObjects();
+          if (active.length > 0) {
+            active.forEach((obj: any) => {
+              if (obj.id !== 'artboard' && obj.id !== 'product-bg') {
+                c.remove(obj);
+              }
+            });
+            c.discardActiveObject();
+            c.requestRenderAll();
+            c.__saveHistory && c.__saveHistory();
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
       cleanup = () => {
+        document.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener("resize", updateDimensions);
         c.dispose();
+        setCanvasReady(false);
+        fabricCanvasRef.current = null;
       };
     }
 
@@ -634,658 +687,143 @@ export default function FabricEditor() {
       disposed = true;
       cleanup?.();
     };
-  }, []);
+  }, []); // Run once on mount
 
-  // Sync activeTool state to canvas instance so events can read it
+
+  // --- Product & Color Update Effect (Step 3) ---
   useEffect(() => {
-    if (
-      activeTool === "select" ||
-      activeTool === "text" ||
-      activeTool === "uploads" ||
-      activeTool === "layers"
-    ) {
-      if (fabricCanvasRef.current) {
-        (fabricCanvasRef.current as any).__activeTool = activeTool;
-      }
-    }
-  }, [activeTool]);
-
-  // Sync artboard color
-  useEffect(() => {
-    if (artboardRef.current) {
-      if (artboardColor === "transparent" || !artboardColor) {
-        artboardRef.current.set({
-          fill: "", // Fabric uses empty string or null for transparent
-          stroke: "#333333", // Visible border when transparent
-          strokeWidth: 1,
-          strokeDashArray: [5, 5],
-        });
-      } else {
-        artboardRef.current.set({
-          fill: artboardColor,
-          stroke: "transparent",
-          strokeWidth: 0,
-        });
-      }
-      fabricCanvasRef.current?.requestRenderAll();
-    }
-  }, [artboardColor]);
-
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const c = fabricCanvasRef.current;
-      if (!c) return;
-
-      const active = c.getActiveObjects();
-      const activeObj = c.getActiveObject();
-
-      if (
-        activeObj &&
-        (activeObj.isEditing ||
-          (activeObj.type === "i-text" && activeObj.isEditing))
-      ) {
-        return;
-      }
-
-      // Panning Toggle (Space)
-      if (e.code === "Space" && !activeObj?.isEditing) {
-        if (!isPanningRef.current) {
-          isPanningRef.current = true;
-          if (c) {
-            c.defaultCursor = "grab";
-            c.selection = false; // Disable selection while panning
-            c.requestRenderAll();
-          }
-        }
-        // Prevent scrolling page on Space
-        e.preventDefault();
-      }
-
-      // Delete
-      if (e.key === "Delete" || e.key === "Backspace") {
-        if (active.length > 0) {
-          active.forEach((obj: any) => c.remove(obj));
-          c.discardActiveObject();
-          c.requestRenderAll();
-          setSelectedObjects([]);
-        }
-      }
-
-      // Nudge (Arrow keys)
-      if (activeObj) {
-        const STEP = e.shiftKey ? 10 : 1;
-        let handled = false;
-
-        if (e.key === "ArrowUp") {
-          activeObj.top -= STEP;
-          handled = true;
-        }
-        if (e.key === "ArrowDown") {
-          activeObj.top += STEP;
-          handled = true;
-        }
-        if (e.key === "ArrowLeft") {
-          activeObj.left -= STEP;
-          handled = true;
-        }
-        if (e.key === "ArrowRight") {
-          activeObj.left += STEP;
-          handled = true;
-        }
-
-        if (handled) {
-          e.preventDefault();
-          activeObj.setCoords();
-
-          // clamp after nudges (using unified helper)
-          clampToArtboard(c, artboardRef.current, activeObj);
-
-          c.requestRenderAll();
-          // Trigger save history for nudge
-          c.fire("object:modified");
-        }
-      }
-
-      // Undo/Redo Shortcuts
-      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          if (c.__redo) c.__redo();
-        } else {
-          if (c.__undo) c.__undo();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const c = fabricCanvasRef.current;
-      if (e.code === "Space") {
-        isPanningRef.current = false;
-        if (c) {
-          c.defaultCursor = "default";
-          c.selection = true;
-          c.isDragging = false; // Stop drag
-          c.requestRenderAll();
-        }
-      }
-    };
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
-  // FIX: Access `addTextAtPoint` from canvas instance in the listener
-  const addTextAtPoint = async (
-    point: { x: number; y: number },
-    sub: string = "Heading"
-  ) => {
-    const c = getCanvas();
-    if (!c) return;
-    const { Textbox } = (await import("fabric")) as any;
-
-    const t = new Textbox(sub, {
-      left: point.x,
-      top: point.y,
-      originX: "center",
-      originY: "center",
-      width: 200,
-      fontSize: sub === "Heading" ? 48 : 24,
-      fill: "#18181b",
-      fontFamily: "Inter",
-      textAlign: "center",
-      shadow: { color: "rgba(0,0,0,0.5)", blur: 4, offsetX: 2, offsetY: 2 },
-    });
-    (t as any).objectId = crypto.randomUUID();
-    c.add(t);
-    clampToArtboard(c, artboardRef.current, t);
-    if (artboardRef.current) c.moveObjectTo(artboardRef.current, 0);
-    c.setActiveObject(t);
-    c.requestRenderAll();
-  };
-
-  // Attach helper to ref so the listener can find it
-  useEffect(() => {
-    if (fabricCanvasRef.current) {
-      fabricCanvasRef.current.__addTextAtPoint = addTextAtPoint;
-    }
-  }, [fabricCanvasRef.current]);
-
-  const getCanvas = () => fabricCanvasRef.current;
-
-  // --- Actions ---
-
-  // Refactored to ENTER "Add Text Mode"
-  const setAddTextMode = () => {
-    const c = getCanvas();
+    if (!canvasReady) return;
+    const c = fabricCanvasRef.current;
     if (!c) return;
 
-    isAddingTextRef.current = true;
-    c.defaultCursor = "text";
-    c.selection = false; // Disable selection box
-  };
-
-  // Immediate add for Drawer Buttons (Canva style)
-  const addTextImmediate = async (sub: string = "Heading") => {
-    const c = getCanvas();
-    if (!c) return;
-    const { Textbox } = (await import("fabric")) as any;
-
-    const vCenter = c.getVpCenter();
-
-    // Use helper logic but at center
-    const t = new Textbox(sub, {
-      left: vCenter.x,
-      top: vCenter.y,
-      originX: "center",
-      originY: "center",
-      width: 200,
-      fontSize: sub === "Heading" || sub === "HEADING" ? 48 : 24, // Case insensitive check
-      fill: "#18181b",
-      fontFamily: "Inter",
-      textAlign: "center",
-      shadow: { color: "rgba(0,0,0,0.5)", blur: 4, offsetX: 2, offsetY: 2 },
-    });
-    (t as any).objectId = crypto.randomUUID();
-    c.add(t);
-    clampToArtboard(c, artboardRef.current, t);
-    if (artboardRef.current) c.moveObjectTo(artboardRef.current, 0);
-    c.setActiveObject(t);
-    c.requestRenderAll();
-
-    // Also reset add mode if it was active?
-    if (isAddingTextRef.current) {
-      isAddingTextRef.current = false;
-      c.defaultCursor = "default";
-      c.selection = true;
-    }
-  };
-
-  // --- Eraser Logic ---
-
-  const canvasPointToImagePoint = (targetImage: any, point: { x: number, y: number }, fabricUtil: any) => {
-    // 1. Invert image matrix to convert global point -> local point
-    // Note: Fabric's calcTransformMatrix() returns global matrix.
-    // We need inverse to go global -> local.
-    const invMatrix = fabricUtil.invertTransform(targetImage.calcTransformMatrix());
-    const localPoint = fabricUtil.transformPoint(point, invMatrix);
-
-    // 2. Local point is centered relative to image center (because origin is center/center).
-    // Convert to top-left relative for HTML Canvas drawing (0,0 is top-left).
-    const width = targetImage.width;
-    const height = targetImage.height;
-
-    return {
-      x: localPoint.x + width / 2,
-      y: localPoint.y + height / 2
-    };
-  };
-
-  const applyEraseToImage = async (image: any, paths: any[]) => {
-    if (!image || paths.length === 0) return;
-
-    // Dynamically import fabric to get util
-    const { util } = (await import("fabric")) as any;
-
-    // 1. Create offscreen canvas sized to ORIGINAL image dimensions (natural size)
-    // We access ._element usually for the HTMLImageElement or internal canvas
-    const originalElem = image.getElement();
-    if (!originalElem) return;
-
-    const w = originalElem.naturalWidth || originalElem.width;
-    const h = originalElem.naturalHeight || originalElem.height;
-
-    const offCanvas = document.createElement("canvas");
-    offCanvas.width = w;
-    offCanvas.height = h;
-    const ctx = offCanvas.getContext("2d");
-    if (!ctx) return;
-
-    // 2. Draw current image state
-    ctx.drawImage(originalElem, 0, 0, w, h);
-
-    // 3. Setup Erasure
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    // 4. Draw paths converted to local space
-    paths.forEach(path => {
-      // Path has a list of points or complex commands.
-      // Simplest strategy for FreeDrawingBrush paths (which are usually "M ... Q ... L ...")
-      // is to iterate points if path is complex, OR just look at path object properties.
-
-      // Fabric's PENCIL brush outputs a Path object which has 'path' data (commands).
-      // It's hard to parse "M 10 20 Q 30 40 50 60" manually and transform perfectly.
-      // BETTER STRATEGY: 
-      // Iterate path points? 
-      // Actually, Fabric paths are just objects.
-      // We can transform the path object itself into the local coordinate system!
-      // But context drawing is pixels.
-
-      // Alternative: For every path in global space:
-      // We need to stroke it on the local canvas.
-      // The stroke width must be scaled.
-      // Eraser Size is global pixels. e.g. 20px.
-      // Image ScaleX might be 0.5. So 20px global = 40px local.
-
-      // Let's use points approach for simplicity with PencilBrush (simplest paths).
-      // Fabric.Path.path is array of commands: [['M', x, y], ['Q', c1x, c1y, x, y], ...]
-
-      const scaleX = image.scaleX; // We need to divide by this to get local width
-      // Rough approximation of scale (assuming simple uniform scale for brush)
-      // If image is zoomed out (small), brush needs to be huge in local space.
-      const localBrushSize = eraserSize / scaleX;
-      ctx.lineWidth = localBrushSize;
-
-      const commands = path.path;
-      ctx.beginPath();
-
-      commands.forEach((cmd: any) => {
-        const type = cmd[0];
-        if (type === "M") {
-          const p = canvasPointToImagePoint(image, { x: cmd[1], y: cmd[2] }, util);
-          ctx.moveTo(p.x, p.y);
-        } else if (type === "L") {
-          const p = canvasPointToImagePoint(image, { x: cmd[1], y: cmd[2] }, util);
-          ctx.lineTo(p.x, p.y);
-        } else if (type === "Q") {
-          const c1 = canvasPointToImagePoint(image, { x: cmd[1], y: cmd[2] }, util);
-          const p = canvasPointToImagePoint(image, { x: cmd[3], y: cmd[4] }, util);
-          ctx.quadraticCurveTo(c1.x, c1.y, p.x, p.y);
-        }
-      });
-      ctx.stroke();
-    });
-
-    // 5. Update Image
-    // Set src to new data URL
-    const newData = offCanvas.toDataURL("image/png");
-
-    // We need to update the Source.
-    // image.setSrc is async
-    return new Promise<void>((resolve) => {
-      image.setSrc(newData, () => {
-        // Force re-render?
-        // Reset width/height potentially? usually setSrc handles it.
-        resolve();
-      });
-    });
-  };
-
-  const enterEraseMode = async () => {
-    const c = getCanvas();
-    if (!c) return;
-
-    // Check selection
-    const active = c.getActiveObject();
-    if (!active || active.type !== "image") {
-      // Cannot erase. Show hint?
-      // Handled in UI layer or assume handled before calling.
-      // Here we force drawing mode.
-      return;
-    }
-
-    // Save initial state for Cancel
-    // Store original src on the object if not exists
-    if (!active.__originalSrc) {
-      active.__originalSrc = active.getSrc();
-    }
-    // Store for THIS session (to revert on Cancel)
-    originalImageSrcRef.current = active.getSrc();
-
-    // Import pencil brush dynamically
-    const { PencilBrush } = (await import("fabric")) as any;
-
-    c.isDrawingMode = true;
-    c.freeDrawingBrush = new PencilBrush(c);
-    c.freeDrawingBrush.color = "rgba(255, 255, 255, 0.5)"; // Visual preview
-    c.freeDrawingBrush.width = eraserSize;
-
-    // Disable selection logic while erasing
-    c.selection = false;
-    // Lock the image so we don't drag it
-    active.selectable = false;
-    active.evented = false; // Let clicks pass through? Or catch them for drawing.
-    // Drawing mode handles events.
-  };
-
-  const exitEraseMode = (restoreSelection = true) => {
-    const c = getCanvas();
-    if (!c) return;
-
-    c.isDrawingMode = false;
-    c.selection = true;
-
-    // Clear path refs
-    eraserPathsRef.current = [];
-    originalImageSrcRef.current = null;
-
-    // Unlock objects
-    // We need to re-find the image we were editing? 
-    // Or just unlock all images? 
-    // Optimization: we could track the target image in a ref.
-    const imgs = c.getObjects("image");
-    imgs.forEach((img: any) => {
-      img.selectable = true;
-      img.evented = true;
-    });
-
-    if (restoreSelection) {
-      // Maybe restore selection?
-    }
-  };
-
-  const handleApplyErase = async () => {
-    const c = getCanvas();
-    if (!c) return;
-
-    // Find the image (it should be the only non-selectable one, or we track it)
-    // Actually we are in a state where we just finished drawing. Use selection?
-    // When isDrawingMode=true, getActiveObject might be null.
-    // Let's assume the user hasn't changed selection because interaction was locked.
-    // But we made it unselectable.
-    // Let's find the image that has __originalSrc or just use the last known.
-    // Better: find drawn paths.
-    // Actually, we must know WHICH image to apply to.
-    // Use getObjects("image").find...
-    // OR: we track `editingImageRef`.
-    // Let's find the image that has `selectable: false`.
-    const targetImage = c.getObjects().find((o: any) => o.type === "image" && !o.selectable);
-
-    if (targetImage && eraserPathsRef.current.length > 0) {
-      await applyEraseToImage(targetImage, eraserPathsRef.current);
-
-      // Remove temp paths
-      eraserPathsRef.current.forEach(p => c.remove(p));
-      eraserPathsRef.current = [];
-
-      // Save History NOW
-      const saveHist = (c as any).__saveHistory;
-      if (saveHist) saveHist();
-
-      c.requestRenderAll();
-    }
-
-    // Exit and re-select image
-    exitEraseMode(false);
-    if (targetImage) {
-      targetImage.selectable = true;
-      targetImage.evented = true;
-      c.setActiveObject(targetImage);
-    }
-    setActiveTool("select");
-  };
-
-  const handleCancelErase = () => {
-    const c = getCanvas();
-    if (!c) return;
-
-    // Revert image src
-    const targetImage = c.getObjects().find((o: any) => o.type === "image" && !o.selectable);
-    if (targetImage && originalImageSrcRef.current) {
-      targetImage.setSrc(originalImageSrcRef.current, () => {
-        c.requestRenderAll();
-      });
-    }
-
-    // Remove temp paths
-    eraserPathsRef.current.forEach(p => c.remove(p));
-    eraserPathsRef.current = [];
-
-    exitEraseMode();
-    setActiveTool("select");
-  };
-
-  // Effect to handle paths created during Erase Mode
-  useEffect(() => {
-    const c = getCanvas();
-    if (!c) return;
-
-    const onPathCreated = (e: any) => {
-      if (activeTool === "erase") {
-        // Store path
-        eraserPathsRef.current.push(e.path);
-        // Make visual path clearer?
-        // e.path.set({ stroke: 'rgba(255,255,255,0.8)', strokeWidth: eraserSize });
-        // e.path.selectable = false;
-      }
-    };
-
-    c.on("path:created", onPathCreated);
-    return () => {
-      c.off("path:created", onPathCreated);
-    }
-  }, [activeTool, eraserSize]);
-
-
-  // Auto-enter Text Add Mode
-  useEffect(() => {
-    if (activeTool === "text") {
-      setAddTextMode();
-    } else if (activeTool === "erase") {
-      enterEraseMode();
-    } else {
-      // Reset if switching away from Text
-      if (isAddingTextRef.current) {
-        isAddingTextRef.current = false;
-        const c = getCanvas();
-        if (c) {
-          c.defaultCursor = "default";
-          c.selection = true;
-        }
-      }
-      // Reset if switching away from Erase
-      // (Handled by checking if we were erasing?)
-      // Safe to call exitEraseMode just in case
-      exitEraseMode();
-    }
-  }, [activeTool]);
-
-  const uploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (f) => {
-      const data = f.target?.result as string;
-      const c = getCanvas();
-      if (!c) return;
-      const { FabricImage } = (await import("fabric")) as any;
-      const img = await FabricImage.fromURL(data);
-
-      // TARGET: Center of Artboard (not viewport)
-      const ab = artboardRef.current;
-      let targetLeft = 0;
-      let targetTop = 0;
+    const updateProduct = () => {
+      // Update Artboard to match selected color and center it
+      let ab = artboardRef.current || c.getObjects().find((o: any) => o.id === "artboard");
 
       if (ab) {
-        // Get artboard center
-        const abRect = ab.getBoundingRect(); // This is in canvas coords (affected by zoom/pan if not carefully handled, but getBoundingRect usually returns current coords)
-        // Wait, getBoundingRect is canvas coords.
+        // Get viewport center for correct positioning
+        const vpCenter = c.getVpCenter();
 
-        targetLeft = ab.left + (ab.width * ab.scaleX) / 2;
-        targetTop = ab.top + (ab.height * ab.scaleY) / 2;
+        ab.set({
+          width: ARTBOARD.w,
+          height: ARTBOARD.h,
+          fill: previewColor,
+          stroke: "rgba(255, 255, 255, 0.3)",
+          strokeWidth: 2,
+          strokeDashArray: null,
+          visible: true,
+          originX: "center",
+          originY: "center",
+          left: vpCenter.x,
+          top: vpCenter.y
+        });
 
-        // Fabric objects usually store center in left/top if origin is center
-      } else {
-        const center = c.getVpCenter();
-        targetLeft = center.x;
-        targetTop = center.y;
+        ab.setCoords();
+        artboardRef.current = ab;
+
+        // Also update clipPath to match
+        const clipRect = (c as any).__clipRect;
+        if (clipRect) {
+          clipRect.set({ left: vpCenter.x, top: vpCenter.y });
+          clipRect.setCoords();
+        }
       }
 
-      img.set({
-        left: targetLeft,
-        top: targetTop,
-        originX: "center",
-        originY: "center",
-      });
-
-      if (img.width > 500) img.scaleToWidth(400);
-
-      (img as any).objectId = crypto.randomUUID();
-      c.add(img);
-      // Ensure artboard stays at index 0
-      if (artboardRef.current) c.moveObjectTo(artboardRef.current, 0);
-      c.setActiveObject(img);
       c.requestRenderAll();
     };
-    reader.readAsDataURL(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
 
-  const adjustProp = async (prop: string, value: any) => {
-    const c = getCanvas();
+    updateProduct();
+  }, [previewProduct, viewSide, previewColor, canvasReady]);
+
+
+  // --- Helper Functions (Same as before) ---
+  const addTextAtPoint = async (point: { x: number; y: number }, sub: string = "Heading") => {
+    const c = fabricCanvasRef.current;
     if (!c) return;
 
-    if (prop === "fontFamily") {
-      // Load font first
-      await loadGoogleFont(value);
-    }
+    const { Textbox } = (await import("fabric")) as any;
 
-    // ... existing logic ...
-    const active = c.getActiveObjects();
-    if (!active.length) return;
-    active.forEach((obj: any) => {
-      obj.set(prop, value);
+    const text = new Textbox(sub, {
+      left: point.x,
+      top: point.y,
+      fontSize: fontSize,
+      fontFamily: fontFamily,
+      fill: fill,
+      textAlign: textAlign,
+      fontWeight: bold ? "bold" : "normal",
+      fontStyle: italic ? "italic" : "normal",
+      width: 300,
+      splitByGrapheme: true,
+      originX: "center",
+      originY: "center",
     });
+
+    c.add(text);
+    c.setActiveObject(text);
+    text.enterEditing();
+    text.selectAll();
+    c.defaultCursor = "default";
+    c.selection = true;
+
+    c.__saveHistory && c.__saveHistory();
+  };
+
+  const applyTextPreset = async (preset: typeof TEXT_PRESETS[number]) => {
+    const c = fabricCanvasRef.current;
+    if (!c) return;
+
+    // Add center of screen
+    const center = c.getVpCenter();
+    const { Textbox } = (await import("fabric")) as any;
+
+    const text = new Textbox("YOUR TEXT", {
+      left: center.x,
+      top: center.y,
+      fontSize: 60,
+      fontFamily: preset.fontFamily,
+      fill: preset.fill,
+      textAlign: "center",
+      charSpacing: preset.charSpacing,
+      lineHeight: preset.lineHeight,
+      shadow: preset.shadow,
+      originX: "center",
+      originY: "center",
+      // ... preset props
+    });
+
+    // Load font if needed
+    loadGoogleFont(preset.fontFamily);
+
+    c.add(text);
+    c.setActiveObject(text);
     c.requestRenderAll();
-
-    if (prop === "fill") setFill(value);
-    if (prop === "fontFamily") setFontFamily(value);
-    if (prop === "fontSize") setFontSize(value);
-    if (prop === "fontWeight") setBold(value === "bold");
-    if (prop === "fontStyle") setItalic(value === "italic");
-    if (prop === "textAlign") setTextAlign(value);
-
-    if (prop === "lineHeight") setLineHeight(value);
-    if (prop === "charSpacing") setCharSpacing(value);
-    if (prop === "textBackgroundColor") setTextBackgroundColor(value);
-    if (prop === "opacity") setOpacity(value);
-    if (prop === "globalCompositeOperation") setBlendMode(value);
-
-    const saveHistory = (c as any).__saveHistory;
-    if (typeof saveHistory === "function") {
-      saveHistory();
-    } else {
-      c.fire("object:modified", { target: active[0] });
-    }
+    c.__saveHistory && c.__saveHistory();
   };
 
-  const deleteSelected = () => {
-    const c = getCanvas();
+  const handleZoomChange = (nextZoom: number) => {
+    const c = fabricCanvasRef.current;
     if (!c) return;
-    const active = c.getActiveObjects();
-    if (active.length) {
-      active.forEach((obj: any) => c.remove(obj));
-      c.discardActiveObject();
-      c.requestRenderAll();
-      setSelectedObjects([]);
-    }
+    const clamped = Math.min(2, Math.max(0.2, nextZoom));
+    const point = { x: c.getWidth() / 2, y: c.getHeight() / 2 };
+    c.zoomToPoint(point, clamped);
+    setZoom(clamped);
+    c.requestRenderAll();
   };
 
-  const bringToFront = () => {
-    const c = getCanvas();
-    if (!c) return;
-    const active = c.getActiveObject();
-    if (active) {
-      c.bringObjectToFront(active);
-      c.requestRenderAll();
-    }
-  };
-
-  const sendToBack = () => {
-    const c = getCanvas();
-    if (!c) return;
-    const active = c.getActiveObject();
-    if (active) {
-      // Fix: Explicitly insert just above artboard to avoid hiding behind it
-      const objects = c.getObjects();
-      const abIndex = objects.indexOf(artboardRef.current);
-      c.moveObjectTo(active, Math.max(abIndex + 1, 0));
-      c.requestRenderAll();
-    }
-  };
 
   const exportJson = () => {
-    const c = getCanvas();
+    const c = fabricCanvasRef.current;
     if (!c) return;
 
-    // 0. Stabilize Viewport (Fix V2: Ensure export is independent of pan/zoom)
+    // 0. Stabilize Viewport
     const vpt = c.viewportTransform;
     c.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
-    // 1. Fabric Design Intent (Full Rehydration)
+    // 1. Fabric Design Intent (Canvas)
     const designIntent = c.toJSON([
       "objectId",
       "excludeFromExport",
       "id",
-      "__isPlaceholder",
       "lockMovementX",
       "lockMovementY",
       "lockScalingX",
@@ -1294,967 +832,865 @@ export default function FabricEditor() {
       "visible",
     ]);
 
-    // Filter objects
+    // Filter for JSON export 
     designIntent.objects = designIntent.objects.filter(
       (obj: any) =>
         obj.visible !== false &&
         !obj.excludeFromExport &&
-        obj.id !== "artboard" &&
-        !obj.__isPlaceholder
-    ); // Filter out placeholder
+        obj.id !== "artboard"
+    );
 
-    // 2. Normalized Contract (Spec V2) - using unified helpers
+    // 2. Normalized for Print (Artboard Relative)
     const ab = artboardRef.current;
-    const artboardTopLeft = ab
+    const artboardRect = ab
       ? getArtboardRect(c, ab)
       : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
 
-    const toArtboardSpace = (obj: any) => {
-      obj.setCoords();
-      const r = obj.getBoundingRect(true, true);
-      return {
-        x: r.left - artboardTopLeft.left,
-        y: r.top - artboardTopLeft.top,
-        w: r.width,
-        h: r.height,
-      };
-    };
-
-    const normalizedObjects = c
+    const filteredObjects = c
       .getObjects()
       .filter(
         (obj: any) =>
           obj.visible !== false &&
           !obj.excludeFromExport &&
-          obj.id !== "artboard" &&
-          !obj.__isPlaceholder
-      )
-      .map((obj: any) => {
-        const relative = toArtboardSpace(obj);
-        const origin = getOriginInArtboardSpace(c, ab, obj);
+          obj.id !== "artboard"
+      );
 
-        return {
-          id: obj.objectId,
-          type: obj.type,
-          // Bounding box for easy layout/preview (top-left of axis-aligned rect)
-          boundingBox: {
-            left: relative.x,
-            top: relative.y,
-            width: relative.w,
-            height: relative.h,
-          },
-          // True transform for accurate reproduction (origin point, artboard-relative)
-          transform: {
-            originLeft: origin.x,
-            originTop: origin.y,
-            scaleX: obj.scaleX,
-            scaleY: obj.scaleY,
-            angle: obj.angle,
-            flipX: obj.flipX,
-            flipY: obj.flipY,
-            originX: obj.originX,
-            originY: obj.originY,
-            ...(obj.type === "image"
-              ? {
-                src: obj.getSrc ? obj.getSrc() : "",
-                blendMode: obj.globalCompositeOperation, // Export blend mode
-              }
-              : {}),
-          },
-          style: {
-            opacity: obj.opacity,
-            fill: obj.fill,
-            // Text specific
-            ...(obj.type === "textbox" || obj.type === "i-text"
-              ? {
-                text: obj.text,
-                fontFamily: obj.fontFamily,
-                fontSize: obj.fontSize,
-                fontWeight: obj.fontWeight,
-                fontStyle: obj.fontStyle,
-                textAlign: obj.textAlign,
-                lineHeight: obj.lineHeight,
-                charSpacing: obj.charSpacing,
-                textBackgroundColor: obj.textBackgroundColor,
-              }
-              : {}),
-            // Image specific
-            ...(obj.type === "image"
-              ? {
-                src: obj.getSrc ? obj.getSrc() : "",
-              }
-              : {}),
-          },
-        };
-      });
+    const normalizedObjects = filteredObjects.map((obj: any) => {
+      const origin = getOriginInArtboardSpace(c, ab, obj);
+      const bounds = obj.getBoundingRect(true, true);
+      const boundingBox = {
+        left: bounds.left - artboardRect.left,
+        top: bounds.top - artboardRect.top,
+        width: bounds.width,
+        height: bounds.height,
+      };
 
-    const payload = {
-      version: 2,
-      artboard: { width: ARTBOARD.w, height: ARTBOARD.h },
-      design: designIntent,
-      normalized: normalizedObjects,
-    };
+      const style: Record<string, any> = {
+        fill: obj.fill,
+        opacity: obj.opacity,
+        blendMode: obj.globalCompositeOperation,
+      };
+
+      if (obj.type === "textbox" || obj.type === "i-text" || obj.type === "text") {
+        Object.assign(style, {
+          text: obj.text,
+          fontFamily: obj.fontFamily,
+          fontSize: obj.fontSize,
+          fontWeight: obj.fontWeight,
+          fontStyle: obj.fontStyle,
+          textAlign: obj.textAlign,
+          lineHeight: obj.lineHeight,
+          charSpacing: obj.charSpacing,
+          textBackgroundColor: obj.textBackgroundColor,
+        });
+      }
+
+      if (obj.type === "image") {
+        style.src = obj.getSrc ? obj.getSrc() : undefined;
+      }
+
+      return {
+        id: obj.objectId,
+        type: obj.type,
+        boundingBox,
+        transform: {
+          originLeft: origin.x,
+          originTop: origin.y,
+          scaleX: obj.scaleX,
+          scaleY: obj.scaleY,
+          angle: obj.angle,
+          flipX: obj.flipX,
+          flipY: obj.flipY,
+        },
+        style,
+      };
+    });
+
 
     // Restore viewport
     c.setViewportTransform(vpt);
-    c.requestRenderAll();
 
+    const payload = {
+      // Include all selected product/color variants
+      variants: getAllVariants(),
+      // Current preview product/color (primary)
+      primaryProduct: previewProduct,
+      primaryColor: previewColor,
+      design: designIntent,
+      printData: normalizedObjects
+    };
+
+    console.log("Export Payload:", payload);
     setExportedJson(JSON.stringify(payload, null, 2));
   };
 
-  const fitImageToArtboard = (mode: "contain" | "cover" = "contain") => {
-    const c = getCanvas();
-    const ab = artboardRef.current;
-    const img = c?.getActiveObject();
+  const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    if (!c || !ab || !img || img.type !== "image") return;
+    const reader = new FileReader();
+    reader.onload = async (f) => {
+      const data = f.target?.result;
+      if (typeof data === "string" && fabricCanvasRef.current) {
+        const c = fabricCanvasRef.current;
+        const { FabricImage } = await import("fabric");
 
-    const iw = img.width;
-    const ih = img.height;
-    if (!iw || !ih) return;
+        try {
+          const img = await FabricImage.fromURL(data);
+          if (!img) return;
 
-    // Wrap entire operation in identity viewport for correct positioning
-    withIdentityViewport(c, () => {
-      const a = ab.getBoundingRect(true, true);
+          // Get viewport center for proper positioning
+          const vpCenter = c.getVpCenter();
 
-      const scaleX = a.width / iw;
-      const scaleY = a.height / ih;
-      const scale =
-        mode === "cover" ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
+          // Generate unique ID
+          const imageId = `upload-${Date.now()}`;
 
-      img.set({
-        scaleX: scale,
-        scaleY: scale,
-        left: a.left + a.width / 2,
-        top: a.top + a.height / 2,
-        originX: "center",
-        originY: "center",
-      });
+          img.set({
+            left: vpCenter.x,
+            top: vpCenter.y,
+            originX: 'center',
+            originY: 'center',
+            scaleX: 0.3,
+            scaleY: 0.3,
+            id: imageId
+          } as any);
 
-      img.setCoords();
-    });
+          c.add(img);
+          c.setActiveObject(img);
+          c.requestRenderAll();
+          c.__saveHistory && c.__saveHistory();
 
-    c.requestRenderAll();
+          // Track the upload
+          setUploadedImages(prev => [...prev, {
+            id: imageId,
+            src: data,
+            name: file.name
+          }]);
+        } catch (err) {
+          console.error("Failed to load image:", err);
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ""; // reset
   };
+
+  const handleUploadClick = () => {
+    setActiveTool("uploads");
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const addUploadedImageToCanvas = async (src: string) => {
+    if (!fabricCanvasRef.current) return;
+    const c = fabricCanvasRef.current;
+    const { FabricImage } = await import("fabric");
+
+    try {
+      const img = await FabricImage.fromURL(src);
+      if (!img) return;
+
+      const vpCenter = c.getVpCenter();
+      img.set({
+        left: vpCenter.x,
+        top: vpCenter.y,
+        originX: 'center',
+        originY: 'center',
+        scaleX: 0.3,
+        scaleY: 0.3
+      } as any);
+
+      c.add(img);
+      c.setActiveObject(img);
+      c.requestRenderAll();
+      c.__saveHistory && c.__saveHistory();
+    } catch (err) {
+      console.error("Failed to add image:", err);
+    }
+  };
+
+  const activeObj = selectedObjects[0];
 
   // --- Render ---
 
-  const activeObj = selectedObjects[0];
-  const isText =
-    activeObj?.type === "textbox" ||
-    activeObj?.type === "i-text" ||
-    activeObj?.type === "text";
-  const isImage = activeObj?.type === "image";
-  const showColor = activeObj && !isImage;
-
   return (
-    <div className="font-urbanist flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl bg-page text-primary shadow-2xl ring-1 ring-white/10 selection:bg-cyan selection:text-black">
-      {/* Top Header */}
-      <div className="flex h-16 items-center justify-between border-b border-white/5 bg-zinc-950 px-6">
-        <div className="flex items-center gap-2">
-          <span className="font-black text-xl text-white tracking-widest uppercase">
-            Editor
-          </span>
-          <span className="text-cyan text-xl">.</span>
+    <div className="flex h-screen w-full bg-[#09090b] text-white font-sans overflow-hidden">
+      {/* Left Sidebar - Tools */}
+      <aside className="w-20 border-r border-white/10 flex flex-col items-center py-6 gap-6 bg-[#0c0c0e] z-30 shadow-xl">
+        <div className="mb-2 p-2 bg-white text-black rounded-lg">
+          <Shirt className="w-8 h-8" />
         </div>
 
-        {/* Contextual Toolbar */}
-        <div className="flex flex-1 items-center justify-center gap-2 px-8">
-          {selectedObjects.length > 0 ? (
-            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
-              {showColor && (
-                <div className="flex items-center gap-1 group">
-                  <div className="relative">
-                    <label className="flex items-center gap-2 cursor-pointer rounded-full bg-zinc-900 border border-white/10 px-3 py-1.5 hover:border-cyan/50 transition-colors">
-                      <span
-                        className="h-4 w-4 rounded-full border border-white/20"
-                        style={{ backgroundColor: fill }}
-                      ></span>
-                      <input
-                        type="color"
-                        className="hidden"
-                        value={fill}
-                        onChange={(e) => adjustProp("fill", e.target.value)}
-                      />
-                      <ChevronDown className="w-3 h-3 opacity-50" />
-                    </label>
-                  </div>
-                </div>
-              )}
-              <div className="w-px h-6 bg-white/10 mx-1" />
+        <ToolButton
+          active={activeTool === "select"}
+          onClick={() => setActiveTool("select")}
+          icon={<MousePointer2 className="w-6 h-6" />}
+          label="Select"
+        />
+        <ToolButton
+          active={activeTool === "text"}
+          onClick={() => setActiveTool("text")}
+          icon={<Type className="w-6 h-6" />}
+          label="Text"
+        />
+        <ToolButton
+          active={activeTool === "uploads"}
+          onClick={handleUploadClick}
+          icon={<Upload className="w-6 h-6" />}
+          label="Uploads"
+        />
+        <ToolButton
+          active={activeTool === "products"}
+          onClick={() => setActiveTool("products")}
+          icon={<Shirt className="w-6 h-6" />}
+          label="Products"
+        />
+      </aside>
 
-              {isImage && (
-                <div className="flex items-center gap-3">
-                  {/* Opacity */}
-                  <div className="flex flex-col gap-1 w-24">
-                    <div className="flex justify-between text-[9px] uppercase font-bold text-gray-500">
-                      <span>Opacity</span>
-                      <span>{Math.round(opacity * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={opacity}
-                      onChange={(e) =>
-                        adjustProp("opacity", parseFloat(e.target.value))
-                      }
-                      className="h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan"
-                    />
-                  </div>
+      {/* Sub-Sidebar (Drawer) */}
+      <div className="w-80 border-r border-white/10 bg-[#0c0c0e] flex flex-col z-20 shadow-2xl">
+        <div className="h-16 px-6 font-bold text-sm tracking-wider uppercase text-zinc-400 flex items-center border-b border-white/5">
+          {activeTool === "text" ? "Add Text" : activeTool === "uploads" ? "Your Uploads" : activeTool === "products" ? "Configure Products" : "Properties"}
+        </div>
 
-
-
-                  <div className="w-px h-6 bg-white/10 mx-1" />
-
-                  {/* Flip */}
-                  <button
-                    onClick={() => {
-                      const c = getCanvas();
-                      const obj = c?.getActiveObject();
-                      if (obj) {
-                        adjustProp("flipX", !obj.flipX);
-                      }
-                    }}
-                    className="p-1.5 hover:bg-white/10 rounded-md text-gray-400 hover:text-white"
-                    title="Flip Horizontal"
-                  >
-                    <FlipHorizontal className="w-4 h-4" />
-                  </button>
-
-                  {/* Fit to Artboard */}
-                  <button
-                    onClick={() => fitImageToArtboard("contain")}
-                    className="p-1.5 hover:bg-white/10 rounded-md text-gray-400 hover:text-white"
-                    title="Fit to Artboard"
-                  >
-                    <Maximize className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-              {isText && (
-                <>
-                  {/* Backdrop for click-outside - Rendered FIRST for safety */}
-                  {isFontOpen && (
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setIsFontOpen(false)}
-                    />
-                  )}
-
-                  <div className="relative">
-                    <button
-                      onClick={() => {
-                        setIsFontOpen(!isFontOpen);
-                        setTimeout(
-                          () => fontSearchInputRef.current?.focus(),
-                          100
-                        );
-                        // Preload all fonts when dropdown opens for preview
-                        if (!isFontOpen) {
-                          POPULAR_GOOGLE_FONTS.forEach((font) =>
-                            loadGoogleFont(font)
-                          );
-                        }
-                      }}
-                      className="flex items-center gap-2 bg-zinc-900 border border-white/10 px-3 py-1.5 rounded-full hover:border-cyan/50 transition-colors min-w-[140px] justify-between"
-                    >
-                      <span className="text-sm font-bold text-white truncate max-w-[100px]">
-                        {fontFamily}
-                      </span>
-                      <ChevronDown className="w-3 h-3 opacity-50" />
-                    </button>
-
-                    {isFontOpen && (
-                      <div className="absolute top-full left-0 mt-2 w-64 max-h-80 bg-zinc-950 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-2 border-b border-white/5 sticky top-0 bg-zinc-950 z-10">
-                          <input
-                            ref={fontSearchInputRef}
-                            type="text"
-                            placeholder="Search fonts..."
-                            value={fontSearch}
-                            onChange={(e) => setFontSearch(e.target.value)}
-                            className="w-full bg-zinc-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan/50 placeholder:text-gray-600"
-                          />
-                        </div>
-                        <div className="overflow-y-auto p-1 flex-1 custom-scrollbar">
-                          {POPULAR_GOOGLE_FONTS.filter((f) =>
-                            f.toLowerCase().includes(fontSearch.toLowerCase())
-                          ).map((font) => (
-                            <button
-                              key={font}
-                              onClick={() => {
-                                adjustProp("fontFamily", font);
-                                setIsFontOpen(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between group ${font === fontFamily ? "bg-cyan/10 text-cyan" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
-                            >
-                              <span style={{ fontFamily: font }}>{font}</span>
-                              {font === fontFamily && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-cyan" />
-                              )}
-                            </button>
-                          ))}
-                          {POPULAR_GOOGLE_FONTS.filter((f) =>
-                            f.toLowerCase().includes(fontSearch.toLowerCase())
-                          ).length === 0 && (
-                              <div className="p-4 text-center text-xs text-gray-600 uppercase tracking-wider">
-                                No fonts found
-                              </div>
-                            )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center rounded-full border border-white/10 bg-zinc-900 overflow-hidden">
-                    <button
-                      onClick={() => adjustProp("fontSize", fontSize - 2)}
-                      className="px-3 py-1.5 hover:bg-white/5 text-gray-400 hover:text-white transition"
-                    >
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      value={fontSize}
-                      onChange={(e) =>
-                        adjustProp("fontSize", Number(e.target.value))
-                      }
-                      className="w-10 bg-transparent text-center text-sm font-mono focus:outline-none appearance-none m-0 text-white"
-                    />
-                    <button
-                      onClick={() => adjustProp("fontSize", fontSize + 2)}
-                      className="px-3 py-1.5 hover:bg-white/5 text-gray-400 hover:text-white transition"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <div className="w-px h-6 bg-white/10 mx-1" />
-
-                  <button
-                    onClick={() =>
-                      adjustProp("fontWeight", bold ? "normal" : "bold")
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+          {activeTool === "text" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    isAddingTextRef.current = true;
+                    fabricCanvasRef.current.defaultCursor = "text";
+                  }}
+                  className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
+                >
+                  <Type className="w-6 h-6 text-zinc-400 group-hover:text-white" />
+                  <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Click Canvas</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const ab = artboardRef.current;
+                    if (ab) {
+                      const center = ab.getCenterPoint();
+                      addTextAtPoint({ x: center.x, y: center.y });
+                    } else {
+                      addTextAtPoint({ x: ARTBOARD.w / 2, y: ARTBOARD.h / 2 });
                     }
-                    className={`p-2 rounded-full transition-colors ${bold ? "bg-cyan text-black" : "hover:bg-white/10 text-gray-400 hover:text-white"}`}
-                  >
-                    <Bold className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      adjustProp("fontStyle", italic ? "normal" : "italic")
-                    }
-                    className={`p-2 rounded-full transition-colors ${italic ? "bg-cyan text-black" : "hover:bg-white/10 text-gray-400 hover:text-white"}`}
-                  >
-                    <Italic className="w-4 h-4" />
-                  </button>
-
-                  <div className="w-px h-6 bg-white/10 mx-1" />
-
-                  <div className="flex items-center bg-zinc-900 rounded-full border border-white/10 p-0.5">
-                    <button
-                      onClick={() => adjustProp("textAlign", "left")}
-                      className={`p-1.5 rounded-full transition-all ${textAlign === "left" ? "bg-white/10 text-cyan" : "text-gray-500 hover:text-white"}`}
-                    >
-                      <AlignLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => adjustProp("textAlign", "center")}
-                      className={`p-1.5 rounded-full transition-all ${textAlign === "center" ? "bg-white/10 text-cyan" : "text-gray-500 hover:text-white"}`}
-                    >
-                      <AlignCenter className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => adjustProp("textAlign", "right")}
-                      className={`p-1.5 rounded-full transition-all ${textAlign === "right" ? "bg-white/10 text-cyan" : "text-gray-500 hover:text-white"}`}
-                    >
-                      <AlignRight className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="w-px h-6 bg-white/10 mx-1" />
-
-                  {/* Spacing & Leading */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <label className="text-[9px] text-gray-500 uppercase font-bold">
-                        L.H.
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.5"
-                        max="3"
-                        value={lineHeight || 1.2}
-                        onChange={(e) =>
-                          adjustProp("lineHeight", parseFloat(e.target.value))
-                        }
-                        className="w-10 bg-transparent text-xs text-center border-b border-white/20 focus:border-cyan outline-none text-white py-0.5"
-                      />
-                    </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <label className="text-[9px] text-gray-500 uppercase font-bold">
-                        Char
-                      </label>
-                      <input
-                        type="number"
-                        step="10"
-                        value={charSpacing || 0}
-                        onChange={(e) =>
-                          adjustProp("charSpacing", parseInt(e.target.value))
-                        }
-                        className="w-10 bg-transparent text-xs text-center border-b border-white/20 focus:border-cyan outline-none text-white py-0.5"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Text Background (Toggle Background Color) */}
-                  <div className="relative group">
-                    <label className="cursor-pointer block">
-                      <div
-                        className={`w-6 h-6 rounded border ${textBackgroundColor ? "bg-current border-white/50" : "bg-transparent border-white/20"}`}
-                        style={{ color: textBackgroundColor || "transparent" }}
-                      >
-                        {!textBackgroundColor && (
-                          <div className="w-full h-full relative overflow-hidden">
-                            <div className="absolute inset-0 border-t border-red-500 rotate-45 top-1/2 "></div>
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="color"
-                        className="hidden"
-                        value={textBackgroundColor || "#000000"}
-                        onChange={(e) =>
-                          adjustProp("textBackgroundColor", e.target.value)
-                        }
-                      />
-                    </label>
-                    {/* Clear Button */}
-                    {textBackgroundColor && (
-                      <button
-                        onClick={() => adjustProp("textBackgroundColor", "")}
-                        className="absolute -top-1 -right-1 bg-zinc-950 text-white rounded-full p-0.5 hover:text-red-400"
-                      >
-                        <Trash2 className="w-2 h-2" />
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-
-              <div className="w-px h-6 bg-white/10 mx-1" />
-
-              <button
-                onClick={bringToFront}
-                title="Bring to Front"
-                className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition"
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-              {/* Send to back logic is subtle with artboard */}
-              <button
-                onClick={sendToBack}
-                title="Send to Back"
-                className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition opacity-70 hover:opacity-100"
-              >
-                <Layers className="w-4 h-4 rotate-180" />
-              </button>
-
-              <div className="w-px h-6 bg-white/10 mx-1" />
-
-              <button
-                onClick={deleteSelected}
-                title="Delete (Del/Backspace)"
-                className="p-2 rounded-full hover:bg-red-500/20 text-gray-400 hover:text-red-500 transition"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-500 font-medium tracking-wide uppercase">
-                Artboard
+                  }}
+                  className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
+                >
+                  <Plus className="w-6 h-6 text-zinc-400 group-hover:text-white" />
+                  <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Quick Add</span>
+                </button>
               </div>
-              <div className="w-px h-6 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-gray-400">Color</label>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer rounded-full bg-zinc-900 border border-white/10 px-3 py-1.5 hover:border-cyan/50 transition-colors">
-                    <span
-                      className="h-4 w-4 rounded-full border border-white/20"
-                      style={{
-                        backgroundColor:
-                          artboardColor === "transparent"
-                            ? "transparent"
-                            : artboardColor,
-                      }}
+
+              <div>
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Presets</h3>
+                <div className="space-y-3">
+                  {TEXT_PRESETS.map(preset => (
+                    <button
+                      key={preset.id}
+                      onClick={() => applyTextPreset(preset)}
+                      className="w-full text-left p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
                     >
-                      {artboardColor === "transparent" && (
-                        <div className="w-full h-full border border-red-500 rotate-45 transform scale-125" />
-                      )}
-                    </span>
-                    <input
-                      type="color"
-                      className="hidden"
-                      value={
-                        artboardColor === "transparent"
-                          ? "#ffffff"
-                          : artboardColor
-                      }
-                      onChange={(e) => setArtboardColor(e.target.value)}
-                    />
-                    <ChevronDown className="w-3 h-3 opacity-50" />
-                  </label>
-                  <button
-                    onClick={() => setArtboardColor("transparent")}
-                    className={`p-1.5 rounded-full border transition-all ${artboardColor === "transparent" ? "bg-white/10 border-red-500/50" : "bg-transparent border-white/10 hover:border-white/30"}`}
-                    title="Set Transparent Background"
-                  >
-                    <div className="w-3.5 h-3.5 rounded-full bg-white relative overflow-hidden">
-                      <div className="absolute inset-0 border-t border-red-500 top-1/2 -translate-y-1/2 -rotate-45 scale-125" />
-                    </div>
-                  </button>
+                      <span
+                        style={{ fontFamily: preset.fontFamily }}
+                        className="text-xl text-white block mb-1 group-hover:scale-105 transition-transform origin-left"
+                      >
+                        {preset.name}
+                      </span>
+                      <span className="text-xs text-zinc-500">{preset.description}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
           )}
-        </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
-            {/* Removed Confined toggle */}
-          </div>
+          {activeTool === "uploads" && (
+            <div className="space-y-6">
+              <button
+                onClick={triggerFileUpload}
+                className="w-full p-4 bg-white text-black rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform active:scale-95"
+              >
+                <Plus className="w-5 h-5" />
+                Upload Image
+              </button>
 
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-1 mr-4 border-r border-white/10 pr-4">
-            <button
-              onClick={() => {
-                if (fabricCanvasRef.current?.__undo)
-                  fabricCanvasRef.current.__undo();
-              }}
-              disabled={!canUndo}
-              className={`p-2 rounded-full transition ${!canUndo ? "text-gray-700 cursor-not-allowed" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                if (fabricCanvasRef.current?.__redo)
-                  fabricCanvasRef.current.__redo();
-              }}
-              disabled={!canRedo}
-              className={`p-2 rounded-full transition ${!canRedo ? "text-gray-700 cursor-not-allowed" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-              title="Redo (Ctrl+Shift+Z)"
-            >
-              <Redo2 className="w-4 h-4" />
-            </button>
-          </div>
+              <div>
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Your Gallery</h3>
+                {uploadedImages.length === 0 ? (
+                  <div className="text-center py-10 border-2 border-dashed border-zinc-800 rounded-xl px-4">
+                    <CloudUpload className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                    <p className="text-zinc-500 text-sm italic">No uploads yet. Your uploaded images will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {uploadedImages.map((img) => (
+                      <button
+                        key={img.id}
+                        onClick={() => addUploadedImageToCanvas(img.src)}
+                        className="group relative aspect-square bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
+                      >
+                        <img src={img.src} alt={img.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Plus className="w-6 h-6 text-white" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-2 mr-4 border-r border-white/10 pr-4">
-            <button
-              onClick={() => {
-                if (
-                  fabricCanvasRef.current &&
-                  fabricCanvasRef.current.__fitToScreen
-                ) {
-                  fabricCanvasRef.current.__fitToScreen();
-                }
-              }}
-              className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition"
-              title="Fit to Screen"
-            >
-              <Maximize className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-mono text-gray-500 w-12 text-center">
-              {Math.round(zoom * 100)}%
-            </span>
-          </div>
+          {/* Products Multi-Select Panel */}
+          {activeTool === "products" && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Select Products</h3>
+                <div className="space-y-2">
+                  {(Object.values(PRODUCTS) as ProductDefinition[]).map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => toggleProduct(product.id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedProducts.includes(product.id)
+                        ? "border-white bg-zinc-800"
+                        : "border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800"
+                        }`}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedProducts.includes(product.id) ? "border-white bg-white" : "border-zinc-600"
+                        }`}>
+                        {selectedProducts.includes(product.id) && (
+                          <Check className="w-3 h-3 text-black" />
+                        )}
+                      </div>
+                      <span className="font-medium text-white">{product.name}</span>
+                      <span className="ml-auto text-xs text-zinc-500">
+                        {(productColors[product.id] || []).length} colors
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <button
-            onClick={exportJson}
-            className="group flex items-center gap-2 bg-white hover:bg-cyan text-black px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 hover:scale-105"
-          >
-            <Download className="w-4 h-4" />
-            Export Intent
-          </button>
+              {/* Color Selection per Product */}
+              {selectedProducts.map((productId) => {
+                const product = PRODUCTS[productId];
+                const colors = productColors[productId] || [];
+                return (
+                  <div key={productId} className="border-t border-zinc-800 pt-4">
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">
+                      {product.name} Colors
+                    </h3>
+                    <div className="grid grid-cols-4 gap-2">
+                      {product.colors.map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => toggleColorForProduct(productId, color.value)}
+                          className={`relative aspect-square rounded-lg border-2 transition-all ${colors.includes(color.value)
+                            ? "border-white scale-105"
+                            : "border-transparent hover:border-zinc-600"
+                            }`}
+                          style={{ backgroundColor: color.value }}
+                          title={color.name}
+                        >
+                          {colors.includes(color.value) && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Check className={`w-4 h-4 ${color.value === "#ffffff" ? "text-black" : "text-white"}`} />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Mockup Preview Button */}
+              <div className="border-t border-zinc-800 pt-4">
+                <button
+                  onClick={() => setShowMockupPreview(true)}
+                  className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all"
+                >
+                  Preview Mockups ({getAllVariants().length})
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTool === "select" && !activeObj && (
+            <div className="text-center text-zinc-500 py-10 opacity-60">
+              <MousePointer2 className="w-12 h-12 mx-auto mb-4 stroke-[1.5]" />
+              <p>Select an object on the canvas <br /> to edit its properties.</p>
+            </div>
+          )}
+
+          {activeTool === "select" && activeObj && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    const c = fabricCanvasRef.current;
+                    if (c) {
+                      activeObj.bringToFront();
+                      c.requestRenderAll();
+                      c.__saveHistory();
+                    }
+                  }}
+                  className="p-2 bg-zinc-900 rounded hover:bg-zinc-800 text-xs font-medium text-zinc-400"
+                >
+                  Bring to Front
+                </button>
+                <button
+                  onClick={() => {
+                    const c = fabricCanvasRef.current;
+                    if (c) {
+                      activeObj.sendToBack();
+                      // don't go behind BG
+                      const bg = c.getObjects().find((o: any) => o.id === "product-bg");
+                      if (bg) bg.sendToBack();
+                      // don't go behind Artboard
+                      const ab = c.getObjects().find((o: any) => o.id === "artboard");
+                      if (ab) ab.sendToBack();
+
+                      c.requestRenderAll();
+                      c.__saveHistory();
+                    }
+                  }}
+                  className="p-2 bg-zinc-900 rounded hover:bg-zinc-800 text-xs font-medium text-zinc-400"
+                >
+                  Send to Back
+                </button>
+              </div>
+
+              {/* Text Properties */}
+              {(activeObj.type === "textbox" || activeObj.type === "i-text" || activeObj.type === "text") && (
+                <>
+                  <div>
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">Text Content</label>
+                    <textarea
+                      value={activeObj.text || ""}
+                      onChange={(e) => {
+                        activeObj.set("text", e.target.value);
+                        fabricCanvasRef.current?.requestRenderAll();
+                        fabricCanvasRef.current?.__saveHistory();
+                      }}
+                      placeholder="Enter your text..."
+                      rows={3}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm text-white placeholder-zinc-600 focus:border-white focus:outline-none resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">
+                      Color {isEditingText && "(Selection)"}
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={fill}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFill(val);
+
+                          // If we're editing text and have a selection, apply to selection only
+                          if (editingTextObj && editingTextObj.isEditing) {
+                            const start = editingTextObj.selectionStart;
+                            const end = editingTextObj.selectionEnd;
+                            if (start !== end) {
+                              // Apply color to selected text only
+                              editingTextObj.setSelectionStyles({ fill: val }, start, end);
+                            } else {
+                              // No selection - apply to entire object
+                              activeObj.set("fill", val);
+                            }
+                          } else {
+                            activeObj.set("fill", val);
+                          }
+
+                          fabricCanvasRef.current?.requestRenderAll();
+                          fabricCanvasRef.current?.__saveHistory();
+                        }}
+                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-none p-0"
+                      />
+                      <div className="flex-1">
+                        <div className="h-2 rounded-full w-full bg-linear-to-r from-red-500 via-green-500 to-blue-500 opacity-20" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">Typography</label>
+                    <select
+                      value={fontFamily}
+                      onChange={async (e) => {
+                        const val = e.target.value;
+                        setFontFamily(val);
+                        // Await font load before applying
+                        await loadGoogleFont(val);
+                        activeObj.set("fontFamily", val);
+                        fabricCanvasRef.current?.requestRenderAll();
+                        fabricCanvasRef.current?.__saveHistory();
+                      }}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-white focus:outline-none mb-3"
+                    >
+                      {POPULAR_GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <button
+                        onClick={() => {
+                          const val = !bold;
+                          setBold(val);
+                          activeObj.set("fontWeight", val ? 'bold' : 'normal');
+                          fabricCanvasRef.current?.requestRenderAll();
+                        }}
+                        className={`p-2 rounded flex-1 flex justify-center ${bold ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-400'}`}
+                      >
+                        <Bold className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const val = !italic;
+                          setItalic(val);
+                          activeObj.set("fontStyle", val ? 'italic' : 'normal');
+                          fabricCanvasRef.current?.requestRenderAll();
+                        }}
+                        className={`p-2 rounded flex-1 flex justify-center ${italic ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-400'}`}
+                      >
+                        <Italic className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">Alignment</label>
+                    <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+                      {['left', 'center', 'right'].map((align) => (
+                        <button
+                          key={align}
+                          onClick={() => {
+                            setTextAlign(align as any);
+                            activeObj.set("textAlign", align);
+                            fabricCanvasRef.current?.requestRenderAll();
+                          }}
+                          className={`flex-1 p-1.5 rounded flex justify-center transition-all ${textAlign === align ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                          {align === 'left' && <AlignLeft className="w-4 h-4" />}
+                          {align === 'center' && <AlignCenter className="w-4 h-4" />}
+                          {align === 'right' && <AlignRight className="w-4 h-4" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Delete */}
+              <button
+                onClick={() => {
+                  const c = fabricCanvasRef.current;
+                  c.remove(activeObj);
+                  c.discardActiveObject();
+                  c.requestRenderAll();
+                  setSelectedObjects([]);
+                  c.__saveHistory();
+                }}
+                className="w-full py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg font-bold text-sm transition-all mt-4 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" /> Delete Object
+              </button>
+
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden bg-page">
-        {/* Left Sidebar */}
-        <div className="flex w-[90px] flex-col border-r border-white/5 bg-zinc-950 py-4 gap-2 z-10">
-          <SidebarTab
-            active={activeTool === "select"}
-            onClick={() => setActiveTool("select")}
-            icon={MousePointer2}
-            label="Select"
+      {/* --- Main Area --- */}
+      <div className="flex-1 relative bg-[#09090b] flex flex-col">
+        {/* Top Header */}
+        <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#09090b] z-20">
+          <h1 className="font-bold text-xl tracking-tight text-white flex items-center gap-2">
+            FABRIC <span className="bg-zinc-800 text-zinc-400 text-[10px] px-1.5 py-0.5 rounded font-mono font-normal">DESIGNER</span>
+          </h1>
+
+          <div className="flex items-center gap-4">
+            {/* History */}
+            <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1">
+              <button onClick={() => fabricCanvasRef.current?.__undo()} disabled={!canUndo} className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30">
+                <Undo2 className="w-4 h-4" />
+              </button>
+              <button onClick={() => fabricCanvasRef.current?.__redo()} disabled={!canRedo} className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30">
+                <Redo2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Zoom Controls */}
+            <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+              <button
+                onClick={() => handleZoomChange(zoom * 0.9)}
+                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white"
+                aria-label="Zoom out"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="w-12 text-center text-xs font-mono text-zinc-400">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                onClick={() => handleZoomChange(zoom * 1.1)}
+                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white"
+                aria-label="Zoom in"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={exportJson}
+              className="bg-white text-black px-4 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-transform flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Export Design
+            </button>
+          </div>
+        </header>
+
+        {/* Canvas Wrapper */}
+        <div
+          ref={containerRef}
+          className="flex-1 relative overflow-hidden bg-[#09090b]"
+          style={{
+            backgroundImage: "radial-gradient(#1a1a1a 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        >
+          <canvas
+            ref={canvasElRef}
+            className="absolute inset-0"
           />
 
-          <SidebarTab
-            active={activeTool === "text"}
-            onClick={() => setActiveTool("text")}
-            icon={Type}
-            label="Text"
-          />
-          <SidebarTab
-            active={activeTool === "uploads"}
-            onClick={() => setActiveTool("uploads")}
-            icon={Upload}
-            label="Uploads"
-          />
-          <SidebarTab
-            active={activeTool === "layers"}
-            onClick={() => setActiveTool("layers")}
-            icon={Layers}
-            label="Layers"
-          />
-          <SidebarTab
-            active={activeTool === "erase"}
-            onClick={() => setActiveTool("erase")}
-            icon={Eraser}
-            label="Erase"
-          />
+          {/* Floating Text Editing Toolbar */}
+          {isEditingText && editingTextObj && (
+            <div
+              className="fixed bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg shadow-2xl px-3 py-2 flex items-center gap-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+              style={{
+                left: `${floatingToolbarPos.x}px`,
+                top: `${floatingToolbarPos.y}px`,
+                transform: 'translateX(-50%)',
+              }}
+            >
+              <input
+                type="color"
+                value={fill}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFill(val);
+                  const start = editingTextObj.selectionStart;
+                  const end = editingTextObj.selectionEnd;
+                  if (start !== end) {
+                    editingTextObj.setSelectionStyles({ fill: val }, start, end);
+                  } else {
+                    editingTextObj.set("fill", val);
+                  }
+                  fabricCanvasRef.current?.requestRenderAll();
+                }}
+                className="w-7 h-7 rounded cursor-pointer bg-transparent border border-zinc-600 p-0"
+                title="Text Color"
+              />
+              <div className="w-px h-5 bg-zinc-700" />
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  const start = editingTextObj.selectionStart;
+                  const end = editingTextObj.selectionEnd;
+                  const currentWeight = editingTextObj.getSelectionStyles(start, end, true)?.[0]?.fontWeight || editingTextObj.fontWeight;
+                  const newWeight = currentWeight === 'bold' ? 'normal' : 'bold';
+                  if (start !== end) {
+                    editingTextObj.setSelectionStyles({ fontWeight: newWeight }, start, end);
+                  } else {
+                    editingTextObj.set("fontWeight", newWeight);
+                    setBold(newWeight === 'bold');
+                  }
+                  fabricCanvasRef.current?.requestRenderAll();
+                }}
+                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm"
+                title="Bold"
+              >
+                B
+              </button>
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  const start = editingTextObj.selectionStart;
+                  const end = editingTextObj.selectionEnd;
+                  const currentStyle = editingTextObj.getSelectionStyles(start, end, true)?.[0]?.fontStyle || editingTextObj.fontStyle;
+                  const newStyle = currentStyle === 'italic' ? 'normal' : 'italic';
+                  if (start !== end) {
+                    editingTextObj.setSelectionStyles({ fontStyle: newStyle }, start, end);
+                  } else {
+                    editingTextObj.set("fontStyle", newStyle);
+                    setItalic(newStyle === 'italic');
+                  }
+                  fabricCanvasRef.current?.requestRenderAll();
+                }}
+                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-white italic text-sm"
+                title="Italic"
+              >
+                I
+              </button>
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  const start = editingTextObj.selectionStart;
+                  const end = editingTextObj.selectionEnd;
+                  const currentUnderline = editingTextObj.getSelectionStyles(start, end, true)?.[0]?.underline || editingTextObj.underline;
+                  const newUnderline = !currentUnderline;
+                  if (start !== end) {
+                    editingTextObj.setSelectionStyles({ underline: newUnderline }, start, end);
+                  } else {
+                    editingTextObj.set("underline", newUnderline);
+                  }
+                  fabricCanvasRef.current?.requestRenderAll();
+                }}
+                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-white underline text-sm"
+                title="Underline"
+              >
+                U
+              </button>
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Drawer */}
-        {activeTool !== "select" && (
-          <div className="w-[320px] flex px-6 py-8 border-r border-white/5 bg-[#050505] flex-col gap-6 overflow-y-auto z-10 animate-in slide-in-from-left-5 duration-300">
-            <h2 className="text-2xl font-black text-white uppercase tracking-tight">
-              {activeTool}
-            </h2>
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={uploadImage}
+      />
 
-            {/* ... other tools ... */}
-
-            {activeTool === "layers" && (
-              <div className="space-y-2">
-                {layers.length === 0 && (
-                  <div className="text-gray-500 text-sm">No layers yet.</div>
-                )}
-                {layers.map((obj, i) => {
-                  const isSelected = selectedObjects.includes(obj);
-                  const isLocked = obj.lockMovementX; // Simple check
-
-                  // Icon based on type
-                  let LayerIcon = Square;
-                  if (obj.type === "i-text" || obj.type === "textbox")
-                    LayerIcon = Type;
-                  if (obj.type === "image") LayerIcon = ImageIcon;
-
+      {/* Mockup Preview Modal */}
+      {showMockupPreview && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">
+                Product Mockups ({getAllVariants().length} variants)
+              </h3>
+              <button onClick={() => setShowMockupPreview(false)} className="text-zinc-400 hover:text-white transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6 custom-scrollbar bg-[#0c0c0e]">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {getAllVariants().map((variant, idx) => {
+                  const product = PRODUCTS[variant.product];
                   return (
                     <div
-                      key={(obj as any).objectId || i}
-                      className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected ? "bg-cyan/10 border-cyan/50" : "bg-zinc-900 border-white/5 hover:border-white/20"}`}
+                      key={`${variant.product}-${variant.color}-${idx}`}
+                      onClick={() => {
+                        setPreviewProduct(variant.product);
+                        setPreviewColor(variant.color);
+                        setShowMockupPreview(false);
+                      }}
+                      className="group cursor-pointer bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
                     >
                       <div
-                        onClick={() => {
-                          const c = getCanvas();
-                          if (c) {
-                            c.discardActiveObject();
-                            c.setActiveObject(obj);
-                            c.requestRenderAll();
-                          }
-                        }}
-                        className="flex-1 flex items-center gap-3 cursor-pointer"
+                        className="aspect-square relative flex items-center justify-center"
+                        style={{ backgroundColor: variant.color }}
                       >
-                        <div
-                          className={`p-2 rounded-lg ${isSelected ? "bg-cyan/20 text-cyan" : "bg-black text-gray-500"}`}
-                        >
-                          <LayerIcon className="w-4 h-4" />
+                        <img
+                          src={product.assets.front}
+                          alt={product.name}
+                          className="w-4/5 h-4/5 object-contain mix-blend-multiply opacity-80"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                          <span className="text-white text-sm font-medium">Preview</span>
                         </div>
-                        <span
-                          className={`text-sm font-bold truncate max-w-[120px] ${isSelected ? "text-white" : "text-gray-400"}`}
-                        >
-                          {obj.text
-                            ? obj.text.length > 15
-                              ? obj.text.slice(0, 15) + "..."
-                              : obj.text
-                            : obj.type}
-                        </span>
                       </div>
-
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            obj.set("visible", !obj.visible);
-                            obj.canvas?.requestRenderAll();
-                            // Force update layers to reflect state (or just force render)
-                            // Updating layers state isn't strictly needed for visibility unless we show different icon
-                            setLayers([...layers]);
-                          }}
-                          className="p-1 hover:text-white text-gray-500"
-                        >
-                          {obj.visible ? (
-                            <Eye className="w-3.5 h-3.5" />
-                          ) : (
-                            <EyeOff className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const locked = !obj.lockMovementX;
-                            obj.set({
-                              lockMovementX: locked,
-                              lockMovementY: locked,
-                              lockRotation: locked,
-                              lockScalingX: locked,
-                              lockScalingY: locked,
-                              selectable: true, // Keep selectable so we can unlock it
-                            });
-                            obj.canvas?.requestRenderAll();
-                            // Force update to reflect lock icon state
-                            setLayers([...layers]);
-                          }}
-                          className="p-1 hover:text-white text-gray-500"
-                        >
-                          {isLocked ? (
-                            <Lock className="w-3.5 h-3.5 text-red-400" />
-                          ) : (
-                            <Unlock className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                        <div className="flex flex-col ml-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              obj.bringForward();
-                              // obj.canvas?.requestRenderAll(); // usually implicit
-                              // We need to re-fetch layers because order changed
-                              const c = getCanvas();
-                              // wait for fabric to sort?
-                              // bringForward is sync.
-                              if (c) {
-                                const objs = c
-                                  .getObjects()
-                                  .filter(
-                                    (o: any) =>
-                                      o.id !== "artboard" &&
-                                      !o.excludeFromExport
-                                  )
-                                  .reverse();
-                                setLayers([...objs]);
-                              }
-                            }}
-                            className="p-0.5 hover:text-cyan text-gray-600"
-                          >
-                            <ArrowUp className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              obj.sendBackwards();
-                              const c = getCanvas();
-                              if (c) {
-                                const objs = c
-                                  .getObjects()
-                                  .filter(
-                                    (o: any) =>
-                                      o.id !== "artboard" &&
-                                      !o.excludeFromExport
-                                  )
-                                  .reverse();
-                                setLayers([...objs]);
-                              }
-                            }}
-                            className="p-0.5 hover:text-cyan text-gray-600"
-                          >
-                            <ArrowDown className="w-3 h-3" />
-                          </button>
-                        </div>
+                      <div className="p-3 bg-zinc-950">
+                        <p className="text-white font-medium text-sm">{product.name}</p>
+                        <p className="text-zinc-500 text-xs">{variant.colorName}</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </div>
+            <div className="p-4 border-t border-zinc-800 flex justify-between items-center bg-zinc-900">
+              <p className="text-zinc-500 text-sm">Click a variant to preview on canvas</p>
+              <button
+                onClick={exportJson}
+                className="px-6 py-2 bg-white text-black rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export All Variants
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {activeTool === "erase" && (
-              <div className="space-y-6">
-                {/* Eraser Controls */}
-                <div className="bg-zinc-900/50 rounded-xl p-4 border border-white/5 space-y-4">
-                  <div className="flex items-center justify-between pointer-events-none">
-                    <span className="text-sm font-bold text-gray-400">Brush Size</span>
-                    <span className="text-xs font-mono text-cyan">{eraserSize}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5"
-                    max="100"
-                    value={eraserSize}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      setEraserSize(val);
-                      const c = getCanvas();
-                      if (c && c.freeDrawingBrush) {
-                        c.freeDrawingBrush.width = val;
-                      }
-                    }}
-                    className="w-full h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handleApplyErase}
-                    className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-black uppercase text-sm tracking-widest rounded-xl transition shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
-                  >
-                    <Eraser className="w-4 h-4" />
-                    Apply Eraser
-                  </button>
-                  <button
-                    onClick={handleCancelErase}
-                    className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-gray-300 font-bold uppercase text-xs tracking-widest rounded-xl transition border border-white/5 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                </div>
-
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                  <div className="flex gap-3">
-                    <div className="p-2 bg-blue-500/20 rounded-full h-fit text-blue-400">
-                      <Eraser className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-blue-200">How to use</h4>
-                      <p className="text-xs text-blue-300/80 leading-relaxed">
-                        Select an image first. Paint over areas you want to remove. Click Apply to finish.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTool === "text" && (
-              <div className="space-y-4">
-                <button
-                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase text-xl py-4 rounded-xl transition shadow-lg border border-white/5 active:scale-[0.98]"
-                  onClick={() => addTextImmediate("HEADING")}
-                >
-                  HEADING
+      {/* Export JSON Modal */}
+      {
+        exportedJson && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                <h3 className="text-white font-bold text-lg">Export Result</h3>
+                <button onClick={() => setExportedJson("")} className="text-zinc-400 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
                 </button>
-                <div className="flex gap-2">
-                  <button
-                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold uppercase text-sm py-3 rounded-xl transition shadow-lg border border-white/5 active:scale-[0.98]"
-                    onClick={() => addTextImmediate("Subheading")}
-                  >
-                    Subheading
-                  </button>
-                  <button
-                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-xs py-3 rounded-xl transition shadow-lg border border-white/5 active:scale-[0.98]"
-                    onClick={() => addTextImmediate("Body Text")}
-                  >
-                    Body Text
-                  </button>
-                </div>
               </div>
-            )}
-
-            {activeTool === "uploads" && (
-              <div className="space-y-6">
-                <div
-                  className="border border-dashed border-white/10 bg-white/5 rounded-2xl p-8 text-center hover:border-cyan/50 hover:bg-cyan/5 transition-all duration-300 cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
+              <div className="flex-1 overflow-auto p-4 custom-scrollbar bg-[#0c0c0e]">
+                <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap break-all">
+                  {exportedJson}
+                </pre>
+              </div>
+              <div className="p-4 border-t border-zinc-800 flex justify-end gap-2 bg-zinc-900">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(exportedJson);
+                  }}
+                  className="px-4 py-2 bg-white text-black rounded-lg font-bold hover:bg-zinc-200 transition-colors"
                 >
-                  <div className="mx-auto w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center mb-4 text-cyan">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                  <p className="text-sm font-bold text-white uppercase tracking-wide mb-1">
-                    Upload Image
-                  </p>
-                  <p className="text-xs text-gray-500">JPG, PNG, WEBP</p>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={uploadImage}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Canvas Area */}
-        <div className="flex-1 relative bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900 to-page overflow-hidden flex items-center justify-center">
-          <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-[0.03] pointer-events-none" />
-          <div ref={containerRef} className="absolute inset-0">
-            <canvas ref={canvasElRef} className="block" />
-          </div>
-
-          {exportedJson && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-              <div className="bg-zinc-950 border border-white/10 p-8 rounded-3xl w-full max-w-2xl shadow-[0_0_50px_rgba(34,211,238,0.1)] space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tight">
-                    Export Ready
-                  </h3>
-                  <button
-                    onClick={() => setExportedJson("")}
-                    className="text-gray-500 hover:text-white transition"
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="bg-black p-6 rounded-2xl border border-white/5 overflow-auto max-h-[400px]">
-                  <pre className="text-xs font-mono text-cyan/90 leading-relaxed whitespace-pre-wrap break-all">
-                    {exportedJson}
-                  </pre>
-                </div>
-                <div className="flex justify-end gap-4">
-                  <button
-                    onClick={() => setExportedJson("")}
-                    className="px-6 py-3 text-gray-400 font-bold text-sm tracking-widest hover:text-white uppercase"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(exportedJson);
-                      alert("Copied!");
-                    }}
-                    className="px-8 py-3 bg-cyan hover:bg-cyan-bold text-black font-black text-sm uppercase tracking-widest rounded-full transition hover:scale-105"
-                  >
-                    Copy to Clipboard
-                  </button>
-                </div>
+                  Copy to Clipboard
+                </button>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </div>
+        )
+      }
+
+    </div >
   );
 }
 
-function SidebarTab({ active, icon: Icon, label, onClick }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full aspect-square flex flex-col items-center justify-center gap-2 transition-all duration-200 relative group
-                ${active ? "text-cyan" : "text-gray-500 hover:text-white"}
-            `}
-    >
-      <div
-        className={`p-3 rounded-2xl transition-all duration-300 ${active ? "bg-cyan/10 ring-1 ring-cyan/50" : "group-hover:bg-white/5"}`}
-      >
-        <Icon className="w-6 h-6" strokeWidth={active ? 2 : 1.5} />
-      </div>
-      <span
-        className={`text-[10px] font-bold uppercase tracking-widest ${active ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}
-      >
-        {label}
-      </span>
-      {active && (
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan rounded-l-full" />
-      )}
-    </button>
-  );
-}
+const ToolButton = ({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) => (
+  <button
+    onClick={onClick}
+    className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${active
+      ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-110"
+      : "text-zinc-500 hover:text-white hover:bg-white/10"
+      }`}
+  >
+    {icon}
+    <span className="absolute left-14 bg-zinc-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+      {label}
+    </span>
+  </button>
+);

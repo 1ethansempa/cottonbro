@@ -1,4 +1,5 @@
 export const POPULAR_GOOGLE_FONTS = [
+  // Core UI / body
   "Roboto",
   "Open Sans",
   "Montserrat",
@@ -28,9 +29,23 @@ export const POPULAR_GOOGLE_FONTS = [
   "Libre Franklin",
   "Josefin Sans",
   "Inconsolata",
-  "Anton",
   "Urbanist",
+
+  // Condensed / statement
+  "Anton",
+  "Archivo Black",
+  "Paytone One",
+
+  // Merch / display / blobby (IMPORTANT)
+  "Baloo 2",
+  "Luckiest Guy",
   "Shrikhand",
+  "Rubik Moonrocks",
+  "Fredoka",
+  "Bungee",
+  "Concert One",
+
+  // Playful / experimental (optional, but safe)
   "Chicle",
   "Chewy",
   "Modak",
@@ -39,6 +54,23 @@ export const POPULAR_GOOGLE_FONTS = [
 
 const loadedFonts = new Set<string>();
 const pendingFonts = new Map<string, Promise<void>>();
+
+// Fonts that only expose a single weight via Google Fonts. Requesting multiple
+// weight axes for these families 404s, so we fall back to the default 400 cut.
+const SINGLE_WEIGHT_FONTS = new Set<string>([
+  "Anton",
+  "Archivo Black",
+  "Paytone One",
+  "Luckiest Guy",
+  "Shrikhand",
+  "Rubik Moonrocks",
+  "Bungee",
+  "Concert One",
+  "Chicle",
+  "Chewy",
+  "Modak",
+  "Fascinate Inline",
+]);
 
 /**
  * Dynamically loads a Google Font via stylesheet injection.
@@ -65,7 +97,10 @@ export async function loadGoogleFont(fontName: string): Promise<void> {
       link.rel = "stylesheet";
       link.crossOrigin = "anonymous";
       link.dataset.googleFont = encodedName;
-      link.href = `https://fonts.googleapis.com/css2?family=${encodedName}:wght@400;500;600;700&display=swap`;
+      const weights = SINGLE_WEIGHT_FONTS.has(fontName)
+        ? "400"
+        : "400;500;600;700";
+      link.href = `https://fonts.googleapis.com/css2?family=${encodedName}:wght@${weights}&display=swap`;
       document.head.appendChild(link);
     }
 
