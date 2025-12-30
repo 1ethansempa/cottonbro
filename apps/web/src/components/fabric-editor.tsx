@@ -22,6 +22,12 @@ import {
   Minus,
   Plus,
   CloudUpload,
+  Copy,
+  Layers,
+  ArrowUp,
+  ArrowDown,
+  Image as ImageIcon,
+  Circle,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { PRODUCTS, ProductType, ProductDefinition, ViewSide } from "../config/products";
@@ -219,6 +225,11 @@ export default function FabricEditor() {
   const [bold, setBold] = useState(false);
   const [italic, setItalic] = useState(false);
   const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("left");
+  const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
+  const [showFontPicker, setShowFontPicker] = useState(false);
+  const [fontSearch, setFontSearch] = useState("");
+  const [fontLoadCount, setFontLoadCount] = useState(15);
+  const fontListRef = useRef<HTMLDivElement>(null);
 
   // New Props (Spec V2)
   const [lineHeight, setLineHeight] = useState(1.16);
@@ -465,30 +476,51 @@ export default function FabricEditor() {
 
       c.on("selection:created", () => {
         syncSelection();
+        updateToolbar();
       });
       c.on("selection:updated", () => {
         syncSelection();
+        updateToolbar();
       });
       c.on("selection:cleared", () => {
         syncSelection();
       });
 
+      const updateToolbar = () => {
+        const active = c.getActiveObject();
+        if (!active) return;
+
+        // Get the bounding rect - includes viewport transform
+        active.setCoords();
+        const br = active.getBoundingRect(true, true);
+
+        // For absolute positioning within container, we just need to scale
+        // from internal canvas pixels to CSS pixels
+        const canvasEl = canvasElRef.current;
+        if (!canvasEl) return;
+
+        const scale = canvasEl.getBoundingClientRect().width / canvasEl.width;
+
+        // Position relative to container (not screen)
+        const x = (br.left + br.width / 2) * scale;
+        const y = br.top * scale - 12;
+
+        setFloatingToolbarPos({ x, y });
+      };
+
+      c.on("object:moving", updateToolbar);
+      c.on("object:scaling", updateToolbar);
+      c.on("object:rotating", updateToolbar);
+      c.on("object:resizing", updateToolbar);
+      c.on("object:modified", updateToolbar);
+
       // --- Text Editing Events ---
       c.on("text:editing:entered", (e: any) => {
         setIsEditingText(true);
         setEditingTextObj(e.target);
-        // Position floating toolbar above the text object
-        if (e.target) {
-          const bound = e.target.getBoundingRect();
-          const canvasEl = containerRef.current?.querySelector("canvas");
-          if (canvasEl) {
-            const rect = canvasEl.getBoundingClientRect();
-            setFloatingToolbarPos({
-              x: rect.left + bound.left + bound.width / 2,
-              y: rect.top + bound.top - 50,
-            });
-          }
-        }
+        setIsEditingText(true);
+        setEditingTextObj(e.target);
+        updateToolbar();
       });
 
       c.on("text:editing:exited", () => {
@@ -646,8 +678,6 @@ export default function FabricEditor() {
       (c as any).__fitToScreen = fitToScreen;
 
       updateDimensions();
-      window.addEventListener("resize", updateDimensions);
-
       // Keyboard shortcuts
       const handleKeyDown = (e: KeyboardEvent) => {
         // Don't handle if typing in text
@@ -672,9 +702,23 @@ export default function FabricEditor() {
 
       document.addEventListener('keydown', handleKeyDown);
 
+      // Use ResizeObserver for robust responsiveness
+      const resizeObserver = new ResizeObserver(() => {
+        if (!containerRef.current) return;
+        c.setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+        fitToScreen();
+      });
+
+      if (containerRef.current) {
+        resizeObserver.observe(containerRef.current);
+      }
+
       cleanup = () => {
+        resizeObserver.disconnect();
         document.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener("resize", updateDimensions);
         c.dispose();
         setCanvasReady(false);
         fabricCanvasRef.current = null;
@@ -688,6 +732,17 @@ export default function FabricEditor() {
       cleanup?.();
     };
   }, []); // Run once on mount
+
+  // Preload popular fonts on mount
+  useEffect(() => {
+    const preloadFonts = async () => {
+      // Preload first 15 popular fonts for quick access
+      const fontsToPreload = POPULAR_GOOGLE_FONTS.slice(0, 15);
+      await Promise.all(fontsToPreload.map(f => loadGoogleFont(f)));
+    };
+    preloadFonts();
+  }, []);
+
 
 
   // --- Product & Color Update Effect (Step 3) ---
@@ -1023,12 +1078,7 @@ export default function FabricEditor() {
           <Shirt className="w-8 h-8" />
         </div>
 
-        <ToolButton
-          active={activeTool === "select"}
-          onClick={() => setActiveTool("select")}
-          icon={<MousePointer2 className="w-6 h-6" />}
-          label="Select"
-        />
+
         <ToolButton
           active={activeTool === "text"}
           onClick={() => setActiveTool("text")}
@@ -1049,375 +1099,188 @@ export default function FabricEditor() {
         />
       </aside>
 
-      {/* Sub-Sidebar (Drawer) */}
-      <div className="w-80 border-r border-white/10 bg-[#0c0c0e] flex flex-col z-20 shadow-2xl">
-        <div className="h-16 px-6 font-bold text-sm tracking-wider uppercase text-zinc-400 flex items-center border-b border-white/5">
-          {activeTool === "text" ? "Add Text" : activeTool === "uploads" ? "Your Uploads" : activeTool === "products" ? "Configure Products" : "Properties"}
-        </div>
+      {/* Sub-Sidebar (Drawer) - Hidden when in Select mode */}
+      {activeTool !== "select" && (
+        <div className="w-80 border-r border-white/10 bg-[#0c0c0e] flex flex-col z-20 shadow-2xl">
+          <div className="h-16 px-6 font-bold text-sm tracking-wider uppercase text-zinc-400 flex items-center border-b border-white/5">
+            {activeTool === "text" ? "Add Text" : activeTool === "uploads" ? "Your Uploads" : activeTool === "products" ? "Configure Products" : "Properties"}
+          </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-          {activeTool === "text" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    isAddingTextRef.current = true;
-                    fabricCanvasRef.current.defaultCursor = "text";
-                  }}
-                  className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
-                >
-                  <Type className="w-6 h-6 text-zinc-400 group-hover:text-white" />
-                  <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Click Canvas</span>
-                </button>
-                <button
-                  onClick={() => {
-                    const ab = artboardRef.current;
-                    if (ab) {
-                      const center = ab.getCenterPoint();
-                      addTextAtPoint({ x: center.x, y: center.y });
-                    } else {
-                      addTextAtPoint({ x: ARTBOARD.w / 2, y: ARTBOARD.h / 2 });
-                    }
-                  }}
-                  className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
-                >
-                  <Plus className="w-6 h-6 text-zinc-400 group-hover:text-white" />
-                  <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Quick Add</span>
-                </button>
-              </div>
-
-              <div>
-                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Presets</h3>
-                <div className="space-y-3">
-                  {TEXT_PRESETS.map(preset => (
-                    <button
-                      key={preset.id}
-                      onClick={() => applyTextPreset(preset)}
-                      className="w-full text-left p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
-                    >
-                      <span
-                        style={{ fontFamily: preset.fontFamily }}
-                        className="text-xl text-white block mb-1 group-hover:scale-105 transition-transform origin-left"
-                      >
-                        {preset.name}
-                      </span>
-                      <span className="text-xs text-zinc-500">{preset.description}</span>
-                    </button>
-                  ))}
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+            {activeTool === "text" && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      isAddingTextRef.current = true;
+                      fabricCanvasRef.current.defaultCursor = "text";
+                    }}
+                    className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
+                  >
+                    <Type className="w-6 h-6 text-zinc-400 group-hover:text-white" />
+                    <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Click Canvas</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const ab = artboardRef.current;
+                      if (ab) {
+                        const center = ab.getCenterPoint();
+                        addTextAtPoint({ x: center.x, y: center.y });
+                      } else {
+                        addTextAtPoint({ x: ARTBOARD.w / 2, y: ARTBOARD.h / 2 });
+                      }
+                    }}
+                    className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
+                  >
+                    <Plus className="w-6 h-6 text-zinc-400 group-hover:text-white" />
+                    <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Quick Add</span>
+                  </button>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {activeTool === "uploads" && (
-            <div className="space-y-6">
-              <button
-                onClick={triggerFileUpload}
-                className="w-full p-4 bg-white text-black rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform active:scale-95"
-              >
-                <Plus className="w-5 h-5" />
-                Upload Image
-              </button>
-
-              <div>
-                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Your Gallery</h3>
-                {uploadedImages.length === 0 ? (
-                  <div className="text-center py-10 border-2 border-dashed border-zinc-800 rounded-xl px-4">
-                    <CloudUpload className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                    <p className="text-zinc-500 text-sm italic">No uploads yet. Your uploaded images will appear here.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {uploadedImages.map((img) => (
+                <div>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Presets</h3>
+                  <div className="space-y-3">
+                    {TEXT_PRESETS.map(preset => (
                       <button
-                        key={img.id}
-                        onClick={() => addUploadedImageToCanvas(img.src)}
-                        className="group relative aspect-square bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
+                        key={preset.id}
+                        onClick={() => applyTextPreset(preset)}
+                        className="w-full text-left p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
                       >
-                        <img src={img.src} alt={img.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Plus className="w-6 h-6 text-white" />
-                        </div>
+                        <span
+                          style={{ fontFamily: preset.fontFamily }}
+                          className="text-xl text-white block mb-1 group-hover:scale-105 transition-transform origin-left"
+                        >
+                          {preset.name}
+                        </span>
+                        <span className="text-xs text-zinc-500">{preset.description}</span>
                       </button>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Products Multi-Select Panel */}
-          {activeTool === "products" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Select Products</h3>
-                <div className="space-y-2">
-                  {(Object.values(PRODUCTS) as ProductDefinition[]).map((product) => (
-                    <button
-                      key={product.id}
-                      onClick={() => toggleProduct(product.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedProducts.includes(product.id)
-                        ? "border-white bg-zinc-800"
-                        : "border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800"
-                        }`}
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedProducts.includes(product.id) ? "border-white bg-white" : "border-zinc-600"
-                        }`}>
-                        {selectedProducts.includes(product.id) && (
-                          <Check className="w-3 h-3 text-black" />
-                        )}
-                      </div>
-                      <span className="font-medium text-white">{product.name}</span>
-                      <span className="ml-auto text-xs text-zinc-500">
-                        {(productColors[product.id] || []).length} colors
-                      </span>
-                    </button>
-                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Color Selection per Product */}
-              {selectedProducts.map((productId) => {
-                const product = PRODUCTS[productId];
-                const colors = productColors[productId] || [];
-                return (
-                  <div key={productId} className="border-t border-zinc-800 pt-4">
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">
-                      {product.name} Colors
-                    </h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      {product.colors.map((color) => (
+            {activeTool === "uploads" && (
+              <div className="space-y-6">
+                <button
+                  onClick={triggerFileUpload}
+                  className="w-full p-4 bg-white text-black rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform active:scale-95"
+                >
+                  <Plus className="w-5 h-5" />
+                  Upload Image
+                </button>
+
+                <div>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Your Gallery</h3>
+                  {uploadedImages.length === 0 ? (
+                    <div className="text-center py-10 border-2 border-dashed border-zinc-800 rounded-xl px-4">
+                      <CloudUpload className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                      <p className="text-zinc-500 text-sm italic">No uploads yet. Your uploaded images will appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {uploadedImages.map((img) => (
                         <button
-                          key={color.value}
-                          onClick={() => toggleColorForProduct(productId, color.value)}
-                          className={`relative aspect-square rounded-lg border-2 transition-all ${colors.includes(color.value)
-                            ? "border-white scale-105"
-                            : "border-transparent hover:border-zinc-600"
-                            }`}
-                          style={{ backgroundColor: color.value }}
-                          title={color.name}
+                          key={img.id}
+                          onClick={() => addUploadedImageToCanvas(img.src)}
+                          className="group relative aspect-square bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
                         >
-                          {colors.includes(color.value) && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Check className={`w-4 h-4 ${color.value === "#ffffff" ? "text-black" : "text-white"}`} />
-                            </div>
-                          )}
+                          <img src={img.src} alt={img.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Plus className="w-6 h-6 text-white" />
+                          </div>
                         </button>
                       ))}
                     </div>
-                  </div>
-                );
-              })}
-
-              {/* Mockup Preview Button */}
-              <div className="border-t border-zinc-800 pt-4">
-                <button
-                  onClick={() => setShowMockupPreview(true)}
-                  className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all"
-                >
-                  Preview Mockups ({getAllVariants().length})
-                </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTool === "select" && !activeObj && (
-            <div className="text-center text-zinc-500 py-10 opacity-60">
-              <MousePointer2 className="w-12 h-12 mx-auto mb-4 stroke-[1.5]" />
-              <p>Select an object on the canvas <br /> to edit its properties.</p>
-            </div>
-          )}
-
-          {activeTool === "select" && activeObj && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-              {/* Actions */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    const c = fabricCanvasRef.current;
-                    if (c) {
-                      activeObj.bringToFront();
-                      c.requestRenderAll();
-                      c.__saveHistory();
-                    }
-                  }}
-                  className="p-2 bg-zinc-900 rounded hover:bg-zinc-800 text-xs font-medium text-zinc-400"
-                >
-                  Bring to Front
-                </button>
-                <button
-                  onClick={() => {
-                    const c = fabricCanvasRef.current;
-                    if (c) {
-                      activeObj.sendToBack();
-                      // don't go behind BG
-                      const bg = c.getObjects().find((o: any) => o.id === "product-bg");
-                      if (bg) bg.sendToBack();
-                      // don't go behind Artboard
-                      const ab = c.getObjects().find((o: any) => o.id === "artboard");
-                      if (ab) ab.sendToBack();
-
-                      c.requestRenderAll();
-                      c.__saveHistory();
-                    }
-                  }}
-                  className="p-2 bg-zinc-900 rounded hover:bg-zinc-800 text-xs font-medium text-zinc-400"
-                >
-                  Send to Back
-                </button>
-              </div>
-
-              {/* Text Properties */}
-              {(activeObj.type === "textbox" || activeObj.type === "i-text" || activeObj.type === "text") && (
-                <>
-                  <div>
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">Text Content</label>
-                    <textarea
-                      value={activeObj.text || ""}
-                      onChange={(e) => {
-                        activeObj.set("text", e.target.value);
-                        fabricCanvasRef.current?.requestRenderAll();
-                        fabricCanvasRef.current?.__saveHistory();
-                      }}
-                      placeholder="Enter your text..."
-                      rows={3}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm text-white placeholder-zinc-600 focus:border-white focus:outline-none resize-none"
-                    />
+            {/* Products Multi-Select Panel */}
+            {activeTool === "products" && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Select Products</h3>
+                  <div className="space-y-2">
+                    {(Object.values(PRODUCTS) as ProductDefinition[]).map((product) => (
+                      <button
+                        key={product.id}
+                        onClick={() => toggleProduct(product.id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedProducts.includes(product.id)
+                          ? "border-white bg-zinc-800"
+                          : "border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800"
+                          }`}
+                      >
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedProducts.includes(product.id) ? "border-white bg-white" : "border-zinc-600"
+                          }`}>
+                          {selectedProducts.includes(product.id) && (
+                            <Check className="w-3 h-3 text-black" />
+                          )}
+                        </div>
+                        <span className="font-medium text-white">{product.name}</span>
+                        <span className="ml-auto text-xs text-zinc-500">
+                          {(productColors[product.id] || []).length} colors
+                        </span>
+                      </button>
+                    ))}
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">
-                      Color {isEditingText && "(Selection)"}
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={fill}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFill(val);
+                </div>
 
-                          // If we're editing text and have a selection, apply to selection only
-                          if (editingTextObj && editingTextObj.isEditing) {
-                            const start = editingTextObj.selectionStart;
-                            const end = editingTextObj.selectionEnd;
-                            if (start !== end) {
-                              // Apply color to selected text only
-                              editingTextObj.setSelectionStyles({ fill: val }, start, end);
-                            } else {
-                              // No selection - apply to entire object
-                              activeObj.set("fill", val);
-                            }
-                          } else {
-                            activeObj.set("fill", val);
-                          }
-
-                          fabricCanvasRef.current?.requestRenderAll();
-                          fabricCanvasRef.current?.__saveHistory();
-                        }}
-                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-none p-0"
-                      />
-                      <div className="flex-1">
-                        <div className="h-2 rounded-full w-full bg-linear-to-r from-red-500 via-green-500 to-blue-500 opacity-20" />
+                {/* Color Selection per Product */}
+                {selectedProducts.map((productId) => {
+                  const product = PRODUCTS[productId];
+                  const colors = productColors[productId] || [];
+                  return (
+                    <div key={productId} className="border-t border-zinc-800 pt-4">
+                      <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">
+                        {product.name} Colors
+                      </h3>
+                      <div className="grid grid-cols-4 gap-2">
+                        {product.colors.map((color) => (
+                          <button
+                            key={color.value}
+                            onClick={() => toggleColorForProduct(productId, color.value)}
+                            className={`relative aspect-square rounded-lg border-2 transition-all ${colors.includes(color.value)
+                              ? "border-white scale-105"
+                              : "border-transparent hover:border-zinc-600"
+                              }`}
+                            style={{ backgroundColor: color.value }}
+                            title={color.name}
+                          >
+                            {colors.includes(color.value) && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Check className={`w-4 h-4 ${color.value === "#ffffff" ? "text-black" : "text-white"}`} />
+                              </div>
+                            )}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  </div>
+                  );
+                })}
 
-                  <div>
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">Typography</label>
-                    <select
-                      value={fontFamily}
-                      onChange={async (e) => {
-                        const val = e.target.value;
-                        setFontFamily(val);
-                        // Await font load before applying
-                        await loadGoogleFont(val);
-                        activeObj.set("fontFamily", val);
-                        fabricCanvasRef.current?.requestRenderAll();
-                        fabricCanvasRef.current?.__saveHistory();
-                      }}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-white focus:outline-none mb-3"
-                    >
-                      {POPULAR_GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
+                {/* Mockup Preview Button */}
+                <div className="border-t border-zinc-800 pt-4">
+                  <button
+                    onClick={() => setShowMockupPreview(true)}
+                    className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all"
+                  >
+                    Preview Mockups ({getAllVariants().length})
+                  </button>
+                </div>
+              </div>
+            )}
 
-                    <div className="flex items-center gap-2 mb-3">
-                      <button
-                        onClick={() => {
-                          const val = !bold;
-                          setBold(val);
-                          activeObj.set("fontWeight", val ? 'bold' : 'normal');
-                          fabricCanvasRef.current?.requestRenderAll();
-                        }}
-                        className={`p-2 rounded flex-1 flex justify-center ${bold ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-400'}`}
-                      >
-                        <Bold className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          const val = !italic;
-                          setItalic(val);
-                          activeObj.set("fontStyle", val ? 'italic' : 'normal');
-                          fabricCanvasRef.current?.requestRenderAll();
-                        }}
-                        className={`p-2 rounded flex-1 flex justify-center ${italic ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-400'}`}
-                      >
-                        <Italic className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">Alignment</label>
-                    <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-                      {['left', 'center', 'right'].map((align) => (
-                        <button
-                          key={align}
-                          onClick={() => {
-                            setTextAlign(align as any);
-                            activeObj.set("textAlign", align);
-                            fabricCanvasRef.current?.requestRenderAll();
-                          }}
-                          className={`flex-1 p-1.5 rounded flex justify-center transition-all ${textAlign === align ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                          {align === 'left' && <AlignLeft className="w-4 h-4" />}
-                          {align === 'center' && <AlignCenter className="w-4 h-4" />}
-                          {align === 'right' && <AlignRight className="w-4 h-4" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Delete */}
-              <button
-                onClick={() => {
-                  const c = fabricCanvasRef.current;
-                  c.remove(activeObj);
-                  c.discardActiveObject();
-                  c.requestRenderAll();
-                  setSelectedObjects([]);
-                  c.__saveHistory();
-                }}
-                className="w-full py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg font-bold text-sm transition-all mt-4 flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" /> Delete Object
-              </button>
-
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* --- Main Area --- */}
-      <div className="flex-1 relative bg-[#09090b] flex flex-col">
+      <div className="flex-1 min-w-0 relative bg-[#09090b] flex flex-col">
         {/* Top Header */}
-        <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#09090b] z-20">
-          <h1 className="font-bold text-xl tracking-tight text-white flex items-center gap-2">
-            FABRIC <span className="bg-zinc-800 text-zinc-400 text-[10px] px-1.5 py-0.5 rounded font-mono font-normal">DESIGNER</span>
-          </h1>
-
-          <div className="flex items-center gap-4">
+        <header className="h-14 shrink-0 border-b border-white/5 flex items-center justify-between px-4 bg-[#09090b] z-20 gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* History */}
             <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1">
               <button onClick={() => fabricCanvasRef.current?.__undo()} disabled={!canUndo} className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30">
@@ -1448,14 +1311,14 @@ export default function FabricEditor() {
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-
-            <button
-              onClick={exportJson}
-              className="bg-white text-black px-4 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-transform flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" /> Export Design
-            </button>
           </div>
+
+          <button
+            onClick={exportJson}
+            className="bg-white text-black px-3 py-1.5 rounded-lg font-bold text-sm hover:bg-zinc-200 transition-colors flex items-center gap-1.5 shrink-0"
+          >
+            <Download className="w-4 h-4" /> Export
+          </button>
         </header>
 
         {/* Canvas Wrapper */}
@@ -1472,98 +1335,300 @@ export default function FabricEditor() {
             className="absolute inset-0"
           />
 
-          {/* Floating Text Editing Toolbar */}
-          {isEditingText && editingTextObj && (
+          {/* Floating Context Toolbar - Fixed at top center of canvas */}
+          {activeObj && (
             <div
-              className="fixed bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg shadow-2xl px-3 py-2 flex items-center gap-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
-              style={{
-                left: `${floatingToolbarPos.x}px`,
-                top: `${floatingToolbarPos.y}px`,
-                transform: 'translateX(-50%)',
-              }}
+              className="absolute left-1/2 top-4 -translate-x-1/2 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-xl shadow-2xl flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
             >
-              <input
-                type="color"
-                value={fill}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFill(val);
-                  const start = editingTextObj.selectionStart;
-                  const end = editingTextObj.selectionEnd;
-                  if (start !== end) {
-                    editingTextObj.setSelectionStyles({ fill: val }, start, end);
-                  } else {
-                    editingTextObj.set("fill", val);
-                  }
-                  fabricCanvasRef.current?.requestRenderAll();
-                }}
-                className="w-7 h-7 rounded cursor-pointer bg-transparent border border-zinc-600 p-0"
-                title="Text Color"
-              />
-              <div className="w-px h-5 bg-zinc-700" />
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  const start = editingTextObj.selectionStart;
-                  const end = editingTextObj.selectionEnd;
-                  const currentWeight = editingTextObj.getSelectionStyles(start, end, true)?.[0]?.fontWeight || editingTextObj.fontWeight;
-                  const newWeight = currentWeight === 'bold' ? 'normal' : 'bold';
-                  if (start !== end) {
-                    editingTextObj.setSelectionStyles({ fontWeight: newWeight }, start, end);
-                  } else {
-                    editingTextObj.set("fontWeight", newWeight);
-                    setBold(newWeight === 'bold');
-                  }
-                  fabricCanvasRef.current?.requestRenderAll();
-                }}
-                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm"
-                title="Bold"
-              >
-                B
-              </button>
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  const start = editingTextObj.selectionStart;
-                  const end = editingTextObj.selectionEnd;
-                  const currentStyle = editingTextObj.getSelectionStyles(start, end, true)?.[0]?.fontStyle || editingTextObj.fontStyle;
-                  const newStyle = currentStyle === 'italic' ? 'normal' : 'italic';
-                  if (start !== end) {
-                    editingTextObj.setSelectionStyles({ fontStyle: newStyle }, start, end);
-                  } else {
-                    editingTextObj.set("fontStyle", newStyle);
-                    setItalic(newStyle === 'italic');
-                  }
-                  fabricCanvasRef.current?.requestRenderAll();
-                }}
-                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-white italic text-sm"
-                title="Italic"
-              >
-                I
-              </button>
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  const start = editingTextObj.selectionStart;
-                  const end = editingTextObj.selectionEnd;
-                  const currentUnderline = editingTextObj.getSelectionStyles(start, end, true)?.[0]?.underline || editingTextObj.underline;
-                  const newUnderline = !currentUnderline;
-                  if (start !== end) {
-                    editingTextObj.setSelectionStyles({ underline: newUnderline }, start, end);
-                  } else {
-                    editingTextObj.set("underline", newUnderline);
-                  }
-                  fabricCanvasRef.current?.requestRenderAll();
-                }}
-                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-white underline text-sm"
-                title="Underline"
-              >
-                U
-              </button>
+              <div className="flex items-center gap-2 p-2">
+                {/* --- Text Specific Tools --- */}
+                {(activeObj.type === "textbox" || activeObj.type === "i-text" || activeObj.type === "text") && (
+                  <>
+                    <input
+                      type="color"
+                      value={fill}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFill(val);
+                        if (editingTextObj && editingTextObj.isEditing) {
+                          const start = editingTextObj.selectionStart;
+                          const end = editingTextObj.selectionEnd;
+                          if (start !== end) editingTextObj.setSelectionStyles({ fill: val }, start, end);
+                          else activeObj.set("fill", val);
+                        } else {
+                          activeObj.set("fill", val);
+                        }
+                        fabricCanvasRef.current?.requestRenderAll();
+                        fabricCanvasRef.current?.__saveHistory();
+                      }}
+                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-zinc-600 p-0 hover:border-zinc-400"
+                      title="Text Color"
+                    />
+                    <div className="w-px h-6 bg-zinc-700 mx-1" />
+
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        const val = !bold;
+                        setBold(val);
+                        if (editingTextObj && editingTextObj.isEditing) {
+                          // Apply to selection
+                          const start = editingTextObj.selectionStart;
+                          const end = editingTextObj.selectionEnd;
+                          const newWeight = val ? 'bold' : 'normal';
+                          if (start !== end) editingTextObj.setSelectionStyles({ fontWeight: newWeight }, start, end);
+                          else editingTextObj.set("fontWeight", newWeight);
+                        } else {
+                          activeObj.set("fontWeight", val ? 'bold' : 'normal');
+                        }
+                        fabricCanvasRef.current?.requestRenderAll();
+                        fabricCanvasRef.current?.__saveHistory();
+                      }}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${bold ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
+                    >
+                      <Bold className="w-4 h-4" />
+                    </button>
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        const val = !italic;
+                        setItalic(val);
+                        // logic for selection vs object 
+                        if (editingTextObj && editingTextObj.isEditing) {
+                          const start = editingTextObj.selectionStart;
+                          const end = editingTextObj.selectionEnd;
+                          const newStyle = val ? 'italic' : 'normal';
+                          if (start !== end) editingTextObj.setSelectionStyles({ fontStyle: newStyle }, start, end);
+                          else editingTextObj.set("fontStyle", newStyle);
+                        } else {
+                          activeObj.set("fontStyle", val ? 'italic' : 'normal');
+                        }
+                        fabricCanvasRef.current?.requestRenderAll();
+                        fabricCanvasRef.current?.__saveHistory();
+                      }}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${italic ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
+                    >
+                      <Italic className="w-4 h-4" />
+                    </button>
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        const isHollow = activeObj.fill === 'transparent';
+                        if (isHollow) {
+                          // Turn off hollow - restore fill, remove stroke
+                          activeObj.set({
+                            fill: fill || '#e2e8f0',
+                            stroke: undefined,
+                            strokeWidth: 0
+                          });
+                        } else {
+                          // Turn on hollow - transparent fill, add stroke
+                          activeObj.set({
+                            fill: 'transparent',
+                            stroke: fill || '#e2e8f0',
+                            strokeWidth: 2
+                          });
+                        }
+                        fabricCanvasRef.current?.requestRenderAll();
+                        fabricCanvasRef.current?.__saveHistory();
+                      }}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeObj.fill === 'transparent' ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
+                      title="Hollow Text"
+                    >
+                      <Circle className="w-4 h-4" />
+                    </button>
+
+                    {/* Font Size Controls */}
+                    <div className="flex items-center bg-zinc-800 rounded-lg border border-zinc-700">
+                      <button
+                        onClick={() => {
+                          const newSize = Math.max(8, fontSize - 2);
+                          setFontSize(newSize);
+                          activeObj.set("fontSize", newSize);
+                          fabricCanvasRef.current?.requestRenderAll();
+                          fabricCanvasRef.current?.__saveHistory();
+                        }}
+                        className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-l-lg text-zinc-400 hover:text-white"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="w-8 text-center text-xs font-mono text-white">{fontSize}</span>
+                      <button
+                        onClick={() => {
+                          const newSize = Math.min(200, fontSize + 2);
+                          setFontSize(newSize);
+                          activeObj.set("fontSize", newSize);
+                          fabricCanvasRef.current?.requestRenderAll();
+                          fabricCanvasRef.current?.__saveHistory();
+                        }}
+                        className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-r-lg text-zinc-400 hover:text-white"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Font Family Quick Switch */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setFontDropdownOpen(!fontDropdownOpen)}
+                        className="h-8 px-2 rounded-lg bg-zinc-800 border border-zinc-700 text-xs font-medium text-white flex items-center gap-1 hover:bg-zinc-700"
+                      >
+                        Aa <span className="max-w-[60px] truncate">{fontFamily}</span>
+                      </button>
+                      {/* Dropdown - click based */}
+                      {fontDropdownOpen && (
+                        <div className="absolute top-full left-0 mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-1 w-40 z-50">
+                          {POPULAR_GOOGLE_FONTS.slice(0, 15).map(f => (
+                            <button key={f} onClick={async () => {
+                              setFontFamily(f);
+                              await loadGoogleFont(f);
+                              activeObj.set("fontFamily", f);
+                              fabricCanvasRef.current?.requestRenderAll();
+                              fabricCanvasRef.current?.__saveHistory();
+                              setFontDropdownOpen(false);
+                            }} className="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded">{f}</button>
+                          ))}
+                          <div className="border-t border-zinc-700 mt-1 pt-1">
+                            <button
+                              onClick={() => {
+                                setFontDropdownOpen(false);
+                                setShowFontPicker(true);
+                              }}
+                              className="w-full text-left px-2 py-1.5 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-zinc-800 rounded"
+                            >
+                              More fonts...
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="w-px h-6 bg-zinc-700 mx-1" />
+
+                    {/* Alignment */}
+                    <div className="flex bg-zinc-800/50 rounded-lg border border-zinc-700/50 p-0.5 gap-0.5">
+                      {['left', 'center', 'right'].map((align) => (
+                        <button
+                          key={align}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setTextAlign(align as any);
+                            if (editingTextObj && editingTextObj.isEditing) {
+                              // Align usually applies to whole object in basic fabric, but let's just set it
+                              editingTextObj.set("textAlign", align);
+                            } else {
+                              activeObj.set("textAlign", align);
+                            }
+                            fabricCanvasRef.current?.requestRenderAll();
+                            fabricCanvasRef.current?.__saveHistory();
+                          }}
+                          className={`w-7 h-7 rounded flex items-center justify-center transition-all ${textAlign === align ? 'bg-zinc-600 text-white' : 'text-zinc-500 hover:text-white'}`}
+                          title={`Align ${align}`}
+                        >
+                          {align === 'left' && <AlignLeft className="w-3.5 h-3.5" />}
+                          {align === 'center' && <AlignCenter className="w-3.5 h-3.5" />}
+                          {align === 'right' && <AlignRight className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* --- Image Specific Tools --- */}
+                {activeObj.type === "image" && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white flex flex-col items-center gap-0.5"
+                    title="Replace Image"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    <span className="text-[9px] font-medium">Replace</span>
+                  </button>
+                )}
+
+
+                <div className="w-px h-6 bg-zinc-700 mx-1" />
+
+                {/* --- Common Actions --- */}
+
+                {/* Layer Handling */}
+                <div className="flex bg-zinc-800/50 rounded-lg border border-zinc-700/50">
+                  <button
+                    onClick={() => {
+                      const c = fabricCanvasRef.current;
+                      if (c) { activeObj.bringForward(); c.requestRenderAll(); c.__saveHistory(); }
+                    }}
+                    className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-l-lg text-zinc-400 hover:text-white"
+                    title="Bring Forward"
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const c = fabricCanvasRef.current;
+                      // Prevent sending behind bg/artboard
+                      // Complex logic handled in sidepanel, simplifying for updated
+                      // Just sendBackwards
+                      if (c) { activeObj.sendBackwards(); c.requestRenderAll(); c.__saveHistory(); }
+                    }}
+                    className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-r-lg text-zinc-400 hover:text-white"
+                    title="Send Backward"
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Duplicate */}
+                <button
+                  onClick={async () => {
+                    const c = fabricCanvasRef.current;
+                    if (!c) return;
+                    activeObj.clone((cloned: any) => {
+                      c.discardActiveObject();
+                      cloned.set({
+                        left: cloned.left + 20,
+                        top: cloned.top + 20,
+                        evented: true,
+                      });
+                      if (cloned.type === 'activeSelection') {
+                        // active selection needs special handling
+                        cloned.canvas = c;
+                        cloned.forEachObject((obj: any) => c.add(obj));
+                        cloned.setCoords();
+                      } else {
+                        c.add(cloned);
+                      }
+                      c.setActiveObject(cloned);
+                      c.requestRenderAll();
+                      c.__saveHistory();
+                    });
+                  }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                  title="Duplicate"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+
+                {/* Delete */}
+                <button
+                  onClick={() => {
+                    const c = fabricCanvasRef.current;
+                    c.remove(activeObj);
+                    c.discardActiveObject();
+                    c.requestRenderAll();
+                    setSelectedObjects([]);
+                    c.__saveHistory();
+                  }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/20 text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
-      </div>
+      </div >
 
       <input
         type="file"
@@ -1574,66 +1639,68 @@ export default function FabricEditor() {
       />
 
       {/* Mockup Preview Modal */}
-      {showMockupPreview && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-              <h3 className="text-white font-bold text-lg">
-                Product Mockups ({getAllVariants().length} variants)
-              </h3>
-              <button onClick={() => setShowMockupPreview(false)} className="text-zinc-400 hover:text-white transition-colors">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-6 custom-scrollbar bg-[#0c0c0e]">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {getAllVariants().map((variant, idx) => {
-                  const product = PRODUCTS[variant.product];
-                  return (
-                    <div
-                      key={`${variant.product}-${variant.color}-${idx}`}
-                      onClick={() => {
-                        setPreviewProduct(variant.product);
-                        setPreviewColor(variant.color);
-                        setShowMockupPreview(false);
-                      }}
-                      className="group cursor-pointer bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
-                    >
+      {
+        showMockupPreview && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                <h3 className="text-white font-bold text-lg">
+                  Product Mockups ({getAllVariants().length} variants)
+                </h3>
+                <button onClick={() => setShowMockupPreview(false)} className="text-zinc-400 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-6 custom-scrollbar bg-[#0c0c0e]">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {getAllVariants().map((variant, idx) => {
+                    const product = PRODUCTS[variant.product];
+                    return (
                       <div
-                        className="aspect-square relative flex items-center justify-center"
-                        style={{ backgroundColor: variant.color }}
+                        key={`${variant.product}-${variant.color}-${idx}`}
+                        onClick={() => {
+                          setPreviewProduct(variant.product);
+                          setPreviewColor(variant.color);
+                          setShowMockupPreview(false);
+                        }}
+                        className="group cursor-pointer bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
                       >
-                        <img
-                          src={product.assets.front}
-                          alt={product.name}
-                          className="w-4/5 h-4/5 object-contain mix-blend-multiply opacity-80"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                          <span className="text-white text-sm font-medium">Preview</span>
+                        <div
+                          className="aspect-square relative flex items-center justify-center"
+                          style={{ backgroundColor: variant.color }}
+                        >
+                          <img
+                            src={product.assets.front}
+                            alt={product.name}
+                            className="w-4/5 h-4/5 object-contain mix-blend-multiply opacity-80"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                            <span className="text-white text-sm font-medium">Preview</span>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-zinc-950">
+                          <p className="text-white font-medium text-sm">{product.name}</p>
+                          <p className="text-zinc-500 text-xs">{variant.colorName}</p>
                         </div>
                       </div>
-                      <div className="p-3 bg-zinc-950">
-                        <p className="text-white font-medium text-sm">{product.name}</p>
-                        <p className="text-zinc-500 text-xs">{variant.colorName}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="p-4 border-t border-zinc-800 flex justify-between items-center bg-zinc-900">
+                <p className="text-zinc-500 text-sm">Click a variant to preview on canvas</p>
+                <button
+                  onClick={exportJson}
+                  className="px-6 py-2 bg-white text-black rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export All Variants
+                </button>
               </div>
             </div>
-            <div className="p-4 border-t border-zinc-800 flex justify-between items-center bg-zinc-900">
-              <p className="text-zinc-500 text-sm">Click a variant to preview on canvas</p>
-              <button
-                onClick={exportJson}
-                className="px-6 py-2 bg-white text-black rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export All Variants
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Export JSON Modal */}
       {
@@ -1663,8 +1730,93 @@ export default function FabricEditor() {
               </div>
             </div>
           </div>
-        )
-      }
+        )}
+
+      {/* Font Picker Modal */}
+      {showFontPicker && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-zinc-800 flex items-center justify-between gap-4">
+              <input
+                type="text"
+                placeholder="Search fonts..."
+                value={fontSearch}
+                onChange={(e) => {
+                  setFontSearch(e.target.value);
+                  setFontLoadCount(15); // Reset count on search
+                }}
+                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+              />
+              <button onClick={() => { setShowFontPicker(false); setFontSearch(""); setFontLoadCount(15); }} className="text-zinc-400 hover:text-white transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div
+              ref={fontListRef}
+              className="flex-1 overflow-auto p-4 custom-scrollbar bg-[#0c0c0e]"
+              onScroll={(e) => {
+                const target = e.target as HTMLDivElement;
+                if (target.scrollHeight - target.scrollTop - target.clientHeight < 100) {
+                  setFontLoadCount(prev => Math.min(prev + 15, POPULAR_GOOGLE_FONTS.length));
+                }
+              }}
+            >
+              {(() => {
+                const filteredFonts = POPULAR_GOOGLE_FONTS.filter(f =>
+                  f.toLowerCase().includes(fontSearch.toLowerCase())
+                );
+                const displayFonts = filteredFonts.slice(0, fontLoadCount);
+
+                // Load fonts as they appear
+                displayFonts.forEach(f => loadGoogleFont(f));
+
+                return (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {displayFonts.map(f => (
+                        <button
+                          key={f}
+                          onClick={async () => {
+                            setFontFamily(f);
+                            await loadGoogleFont(f);
+                            if (activeObj) {
+                              activeObj.set("fontFamily", f);
+                              fabricCanvasRef.current?.requestRenderAll();
+                              fabricCanvasRef.current?.__saveHistory();
+                            }
+                            setShowFontPicker(false);
+                            setFontSearch("");
+                            setFontLoadCount(15);
+                          }}
+                          className={`p-3 rounded-lg border text-left transition-all ${fontFamily === f
+                            ? 'border-white bg-zinc-800'
+                            : 'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800'
+                            }`}
+                        >
+                          <span className="text-white font-medium text-sm">{f}</span>
+                          <span className="block text-zinc-500 text-xs mt-1" style={{ fontFamily: f }}>
+                            Sample Text
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    {displayFonts.length < filteredFonts.length && (
+                      <div className="text-center py-4 text-zinc-500 text-sm">
+                        Scroll for more fonts ({displayFonts.length}/{filteredFonts.length})
+                      </div>
+                    )}
+                    {filteredFonts.length === 0 && (
+                      <div className="text-center py-8 text-zinc-500">
+                        No fonts found matching &ldquo;{fontSearch}&rdquo;
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div >
   );
