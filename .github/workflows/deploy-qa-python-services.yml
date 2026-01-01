@@ -1,0 +1,79 @@
+name: Deploy Python Services to Cloud Run (QA)
+
+on:
+  push:
+    branches:
+      - release/qa
+    paths:
+      - "apps/python-services/**"
+      - ".github/workflows/deploy-qa-python-services.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  SERVICE_NAME: cottonbro-python-services
+  DOCKERFILE: apps/python-services/Dockerfile
+
+  GCP_PROJECT_ID: cottonbro-dev
+  REGION: europe-west1
+  REGISTRY: europe-west1-docker.pkg.dev
+
+jobs:
+  deploy-python-services:
+    runs-on: ubuntu-latest
+    environment: qa
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configure Docker auth for Artifact Registry
+        run: |
+          gcloud auth configure-docker "$REGISTRY" --quiet
+
+      - name: Build Python Services image
+        run: |
+          IMAGE="$REGISTRY/$GCP_PROJECT_ID/api/$SERVICE_NAME:${{ github.sha }}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build \
+            -f "$DOCKERFILE" \
+            -t "$IMAGE" \
+            apps/python-services
+
+      - name: Push Python Services image
+        run: |
+          docker push "$IMAGE"
+
+      - name: Deploy Python Services to Cloud Run (QA)
+        run: |
+          gcloud run deploy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$REGION" \
+            --platform managed \
+            --image "$IMAGE" \
+            --service-account "${{ secrets.RUNTIME_SA }}" \
+            --no-allow-unauthenticated \
+            --ingress internal \
+            --set-secrets PYTHON_API_KEY=python-api-key:latest \
+            --memory 2Gi \
+            --cpu 2 \
+            --timeout 300
+
+      - name: Show service URL
+        run: |
+          gcloud run services describe "$SERVICE_NAME" \
+            --region "$REGION" \
+            --format='value(status.url)'
