@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
-  MousePointer2,
   Type,
   Download,
   Trash2,
@@ -14,23 +14,20 @@ import {
   Upload,
   Undo2,
   Redo2,
-  Shirt,
-  Check,
-  ChevronLeft,
-  ArrowRight,
   X,
   Minus,
   Plus,
   CloudUpload,
   Copy,
-  Layers,
   ArrowUp,
   ArrowDown,
   Image as ImageIcon,
   Circle,
+  Eye,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
-import { PRODUCTS, ProductType, ProductDefinition, ViewSide } from "../config/products";
+import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
+import { PreviewModal } from "./preview-modal";
 
 const ARTBOARD = { w: 500, h: 500 }; // “shirt design area” units
 
@@ -182,12 +179,10 @@ const getOriginInArtboardSpace = (c: any, ab: any, obj: any) => {
   });
 };
 
-type Tool = "select" | "text" | "uploads" | "products";
+const isTextObject = (obj: any) =>
+  obj && (obj.type === "textbox" || obj.type === "i-text" || obj.type === "text");
 
-// Selected colors per product type
-type ProductColorSelection = {
-  [key in ProductType]?: string[];
-};
+type Tool = "select" | "text" | "uploads";
 
 export default function FabricEditor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -197,26 +192,19 @@ export default function FabricEditor() {
   const fabricCanvasRef = useRef<any>(null);
   const artboardRef = useRef<any>(null);
 
-  // --- Multi-Product Selection State ---
-  const [selectedProducts, setSelectedProducts] = useState<ProductType[]>(["t-shirt"]);
-  const [productColors, setProductColors] = useState<ProductColorSelection>({
-    "t-shirt": ["#ffffff", "#000000"],
-    "hoodie": [],
-    "crop-top": [],
-  });
-  const [previewProduct, setPreviewProduct] = useState<ProductType>("t-shirt");
-  const [previewColor, setPreviewColor] = useState<string>("#ffffff");
+  // Preview mode (triggered after design is ready)
+  const [showPreview, setShowPreview] = useState(false);
 
   // UI State
   const [activeTool, setActiveTool] = useState<Tool>("select");
   const [zoom, setZoom] = useState(1);
   const [selectedObjects, setSelectedObjects] = useState<any[]>([]);
   const [exportedJson, setExportedJson] = useState<string>("");
-  const [showMockupPreview, setShowMockupPreview] = useState(false);
 
-  const [viewSide, setViewSide] = useState<ViewSide>("front");
   const [canvasReady, setCanvasReady] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<{ id: string, src: string, name: string }[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<
+    { id: string; src: string; name: string }[]
+  >([]);
 
   // Selection Properties
   const [fill, setFill] = useState("#e2e8f0");
@@ -231,21 +219,12 @@ export default function FabricEditor() {
   const [fontLoadCount, setFontLoadCount] = useState(15);
   const fontListRef = useRef<HTMLDivElement>(null);
 
-  // New Props (Spec V2)
-  const [lineHeight, setLineHeight] = useState(1.16);
-  const [charSpacing, setCharSpacing] = useState(0);
-  const [textBackgroundColor, setTextBackgroundColor] = useState<string>("");
-  const [opacity, setOpacity] = useState(1);
-  const [blendMode, setBlendMode] = useState<string>("source-over");
-
   // Navigation State
   const isPanningRef = useRef(false);
 
   // Text Tool State
   const isAddingTextRef = useRef(false);
-  const [isEditingText, setIsEditingText] = useState(false);
   const [editingTextObj, setEditingTextObj] = useState<any>(null);
-  const [floatingToolbarPos, setFloatingToolbarPos] = useState({ x: 0, y: 0 });
 
   // History State
   const [canUndo, setCanUndo] = useState(false);
@@ -254,56 +233,31 @@ export default function FabricEditor() {
   const redoStackRef = useRef<string[]>([]);
   const isHistoryProcessing = useRef(false);
 
+  const renderCanvas = () => {
+    fabricCanvasRef.current?.requestRenderAll();
+  };
+
+  const saveHistorySnapshot = () => {
+    fabricCanvasRef.current?.__saveHistory?.();
+  };
+
+  const renderAndSave = () => {
+    renderCanvas();
+    saveHistorySnapshot();
+  };
+
   // --- Preload Fonts on Mount ---
   useEffect(() => {
     TEXT_PRESETS.forEach(p => loadGoogleFont(p.fontFamily));
   }, []);
 
-  // --- Helper: Toggle product selection ---
-  const toggleProduct = (productId: ProductType) => {
-    setSelectedProducts(prev => {
-      if (prev.includes(productId)) {
-        // Don't allow deselecting if it's the only one
-        if (prev.length === 1) return prev;
-        return prev.filter(p => p !== productId);
-      }
-      // Add product with default colors
-      const product = PRODUCTS[productId];
-      const defaultColors = product.colors.slice(0, 2).map(c => c.value);
-      setProductColors(pc => ({ ...pc, [productId]: defaultColors }));
-      return [...prev, productId];
-    });
-  };
+  // --- Export design as data URL for preview ---
+  const getDesignDataUrl = (): string | null => {
+    const c = fabricCanvasRef.current;
+    if (!c) return null;
 
-  // --- Helper: Toggle color for a product ---
-  const toggleColorForProduct = (productId: ProductType, colorValue: string) => {
-    setProductColors(prev => {
-      const current = prev[productId] || [];
-      if (current.includes(colorValue)) {
-        // Don't allow deselecting if it's the only one
-        if (current.length === 1) return prev;
-        return { ...prev, [productId]: current.filter(c => c !== colorValue) };
-      }
-      return { ...prev, [productId]: [...current, colorValue] };
-    });
-  };
-
-  // --- Compute all product variants ---
-  const getAllVariants = () => {
-    const variants: { product: ProductType; color: string; colorName: string }[] = [];
-    selectedProducts.forEach(productId => {
-      const product = PRODUCTS[productId];
-      const colors = productColors[productId] || [];
-      colors.forEach(colorValue => {
-        const colorDef = product.colors.find(c => c.value === colorValue);
-        variants.push({
-          product: productId,
-          color: colorValue,
-          colorName: colorDef?.name || "Unknown",
-        });
-      });
-    });
-    return variants;
+    // Export just the design content (no background)
+    return c.toDataURL({ format: 'png', multiplier: 2 });
   };
 
 
@@ -461,70 +415,25 @@ export default function FabricEditor() {
           setItalic(obj.fontStyle === "italic");
           if (obj.textAlign) setTextAlign(obj.textAlign);
 
-          if (obj.lineHeight) setLineHeight(obj.lineHeight);
-          if (obj.charSpacing) setCharSpacing(obj.charSpacing);
-          if (obj.textBackgroundColor)
-            setTextBackgroundColor(obj.textBackgroundColor);
-          if (typeof obj.opacity !== "undefined") setOpacity(obj.opacity);
-          if (obj.globalCompositeOperation) {
-            setBlendMode(obj.globalCompositeOperation);
-          } else {
-            setBlendMode("source-over");
-          }
         }
       };
 
       c.on("selection:created", () => {
         syncSelection();
-        updateToolbar();
       });
       c.on("selection:updated", () => {
         syncSelection();
-        updateToolbar();
       });
       c.on("selection:cleared", () => {
         syncSelection();
       });
 
-      const updateToolbar = () => {
-        const active = c.getActiveObject();
-        if (!active) return;
-
-        // Get the bounding rect - includes viewport transform
-        active.setCoords();
-        const br = active.getBoundingRect(true, true);
-
-        // For absolute positioning within container, we just need to scale
-        // from internal canvas pixels to CSS pixels
-        const canvasEl = canvasElRef.current;
-        if (!canvasEl) return;
-
-        const scale = canvasEl.getBoundingClientRect().width / canvasEl.width;
-
-        // Position relative to container (not screen)
-        const x = (br.left + br.width / 2) * scale;
-        const y = br.top * scale - 12;
-
-        setFloatingToolbarPos({ x, y });
-      };
-
-      c.on("object:moving", updateToolbar);
-      c.on("object:scaling", updateToolbar);
-      c.on("object:rotating", updateToolbar);
-      c.on("object:resizing", updateToolbar);
-      c.on("object:modified", updateToolbar);
-
       // --- Text Editing Events ---
       c.on("text:editing:entered", (e: any) => {
-        setIsEditingText(true);
         setEditingTextObj(e.target);
-        setIsEditingText(true);
-        setEditingTextObj(e.target);
-        updateToolbar();
       });
 
       c.on("text:editing:exited", () => {
-        setIsEditingText(false);
         setEditingTextObj(null);
       });
 
@@ -745,50 +654,33 @@ export default function FabricEditor() {
 
 
 
-  // --- Product & Color Update Effect (Step 3) ---
+  // --- Artboard Setup Effect ---
   useEffect(() => {
     if (!canvasReady) return;
     const c = fabricCanvasRef.current;
     if (!c) return;
 
-    const updateProduct = () => {
-      // Update Artboard to match selected color and center it
-      let ab = artboardRef.current || c.getObjects().find((o: any) => o.id === "artboard");
-
-      if (ab) {
-        // Get viewport center for correct positioning
-        const vpCenter = c.getVpCenter();
-
-        ab.set({
-          width: ARTBOARD.w,
-          height: ARTBOARD.h,
-          fill: previewColor,
-          stroke: "rgba(255, 255, 255, 0.3)",
-          strokeWidth: 2,
-          strokeDashArray: null,
-          visible: true,
-          originX: "center",
-          originY: "center",
-          left: vpCenter.x,
-          top: vpCenter.y
-        });
-
-        ab.setCoords();
-        artboardRef.current = ab;
-
-        // Also update clipPath to match
-        const clipRect = (c as any).__clipRect;
-        if (clipRect) {
-          clipRect.set({ left: vpCenter.x, top: vpCenter.y });
-          clipRect.setCoords();
-        }
-      }
-
-      c.requestRenderAll();
-    };
-
-    updateProduct();
-  }, [previewProduct, viewSide, previewColor, canvasReady]);
+    // Use white artboard as default design canvas
+    let ab = artboardRef.current || c.getObjects().find((o: any) => o.id === "artboard");
+    if (ab) {
+      const vpCenter = c.getVpCenter();
+      ab.set({
+        width: ARTBOARD.w,
+        height: ARTBOARD.h,
+        fill: "#ffffff",
+        stroke: "rgba(255, 255, 255, 0.3)",
+        strokeWidth: 2,
+        visible: true,
+        originX: "center",
+        originY: "center",
+        left: vpCenter.x,
+        top: vpCenter.y
+      });
+      ab.setCoords();
+      artboardRef.current = ab;
+    }
+    c.requestRenderAll();
+  }, [canvasReady]);
 
 
   // --- Helper Functions (Same as before) ---
@@ -926,7 +818,7 @@ export default function FabricEditor() {
         blendMode: obj.globalCompositeOperation,
       };
 
-      if (obj.type === "textbox" || obj.type === "i-text" || obj.type === "text") {
+      if (isTextObject(obj)) {
         Object.assign(style, {
           text: obj.text,
           fontFamily: obj.fontFamily,
@@ -966,11 +858,6 @@ export default function FabricEditor() {
     c.setViewportTransform(vpt);
 
     const payload = {
-      // Include all selected product/color variants
-      variants: getAllVariants(),
-      // Current preview product/color (primary)
-      primaryProduct: previewProduct,
-      primaryColor: previewColor,
       design: designIntent,
       printData: normalizedObjects
     };
@@ -1071,12 +958,12 @@ export default function FabricEditor() {
   // --- Render ---
 
   return (
-    <div className="flex h-screen w-full bg-[#09090b] text-white font-sans overflow-hidden">
+    <div className="flex h-screen w-full bg-[#09090b] text-white font-urbanist overflow-hidden selection:bg-cyan selection:text-black">
       {/* Left Sidebar - Tools */}
-      <aside className="w-20 border-r border-white/10 flex flex-col items-center py-6 gap-6 bg-[#0c0c0e] z-30 shadow-xl">
-        <div className="mb-2 p-2 bg-white text-black rounded-lg">
-          <Shirt className="w-8 h-8" />
-        </div>
+      <aside className="w-20 border-r border-white/5 flex flex-col items-center py-6 gap-6 bg-[#0c0c0e] z-30 shadow-2xl">
+        <Link href="/" className="mb-2 p-2 bg-cyan text-black rounded-lg font-bold text-lg hover:scale-110 transition-transform cursor-pointer" title="Back to Home">
+          CB
+        </Link>
 
 
         <ToolButton
@@ -1091,19 +978,13 @@ export default function FabricEditor() {
           icon={<Upload className="w-6 h-6" />}
           label="Uploads"
         />
-        <ToolButton
-          active={activeTool === "products"}
-          onClick={() => setActiveTool("products")}
-          icon={<Shirt className="w-6 h-6" />}
-          label="Products"
-        />
       </aside>
 
       {/* Sub-Sidebar (Drawer) - Hidden when in Select mode */}
       {activeTool !== "select" && (
         <div className="w-80 border-r border-white/10 bg-[#0c0c0e] flex flex-col z-20 shadow-2xl">
           <div className="h-16 px-6 font-bold text-sm tracking-wider uppercase text-zinc-400 flex items-center border-b border-white/5">
-            {activeTool === "text" ? "Add Text" : activeTool === "uploads" ? "Your Uploads" : activeTool === "products" ? "Configure Products" : "Properties"}
+            {activeTool === "text" ? "Add Text" : "Your Uploads"}
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
@@ -1115,7 +996,7 @@ export default function FabricEditor() {
                       isAddingTextRef.current = true;
                       fabricCanvasRef.current.defaultCursor = "text";
                     }}
-                    className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
+                    className="p-4 bg-zinc-900/50 rounded-2xl border border-white/5 hover:border-cyan/50 hover:bg-zinc-900 transition-all flex flex-col items-center gap-2 group"
                   >
                     <Type className="w-6 h-6 text-zinc-400 group-hover:text-white" />
                     <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Click Canvas</span>
@@ -1164,7 +1045,7 @@ export default function FabricEditor() {
               <div className="space-y-6">
                 <button
                   onClick={triggerFileUpload}
-                  className="w-full p-4 bg-white text-black rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform active:scale-95"
+                  className="w-full p-4 bg-white text-black rounded-2xl font-black uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-gray-200 transition-transform active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
                 >
                   <Plus className="w-5 h-5" />
                   Upload Image
@@ -1197,80 +1078,6 @@ export default function FabricEditor() {
               </div>
             )}
 
-            {/* Products Multi-Select Panel */}
-            {activeTool === "products" && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Select Products</h3>
-                  <div className="space-y-2">
-                    {(Object.values(PRODUCTS) as ProductDefinition[]).map((product) => (
-                      <button
-                        key={product.id}
-                        onClick={() => toggleProduct(product.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedProducts.includes(product.id)
-                          ? "border-white bg-zinc-800"
-                          : "border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800"
-                          }`}
-                      >
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedProducts.includes(product.id) ? "border-white bg-white" : "border-zinc-600"
-                          }`}>
-                          {selectedProducts.includes(product.id) && (
-                            <Check className="w-3 h-3 text-black" />
-                          )}
-                        </div>
-                        <span className="font-medium text-white">{product.name}</span>
-                        <span className="ml-auto text-xs text-zinc-500">
-                          {(productColors[product.id] || []).length} colors
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Color Selection per Product */}
-                {selectedProducts.map((productId) => {
-                  const product = PRODUCTS[productId];
-                  const colors = productColors[productId] || [];
-                  return (
-                    <div key={productId} className="border-t border-zinc-800 pt-4">
-                      <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">
-                        {product.name} Colors
-                      </h3>
-                      <div className="grid grid-cols-4 gap-2">
-                        {product.colors.map((color) => (
-                          <button
-                            key={color.value}
-                            onClick={() => toggleColorForProduct(productId, color.value)}
-                            className={`relative aspect-square rounded-lg border-2 transition-all ${colors.includes(color.value)
-                              ? "border-white scale-105"
-                              : "border-transparent hover:border-zinc-600"
-                              }`}
-                            style={{ backgroundColor: color.value }}
-                            title={color.name}
-                          >
-                            {colors.includes(color.value) && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <Check className={`w-4 h-4 ${color.value === "#ffffff" ? "text-black" : "text-white"}`} />
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Mockup Preview Button */}
-                <div className="border-t border-zinc-800 pt-4">
-                  <button
-                    onClick={() => setShowMockupPreview(true)}
-                    className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all"
-                  >
-                    Preview Mockups ({getAllVariants().length})
-                  </button>
-                </div>
-              </div>
-            )}
 
           </div>
         </div>
@@ -1313,12 +1120,20 @@ export default function FabricEditor() {
             </div>
           </div>
 
-          <button
-            onClick={exportJson}
-            className="bg-white text-black px-3 py-1.5 rounded-lg font-bold text-sm hover:bg-zinc-200 transition-colors flex items-center gap-1.5 shrink-0"
-          >
-            <Download className="w-4 h-4" /> Export
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={exportJson}
+              className="bg-black text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-zinc-900 transition-all flex items-center gap-2 shrink-0 border border-white/10 hover:border-white/20"
+            >
+              <Download className="w-4 h-4" /> EXPORT
+            </button>
+            <button
+              onClick={() => setShowPreview(true)}
+              className="bg-cyan text-black px-6 py-2 rounded-full font-black text-sm uppercase tracking-wider hover:bg-cyan-400 hover:scale-105 transition-all flex items-center gap-2 shrink-0 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+            >
+              <Eye className="w-4 h-4" /> Preview
+            </button>
+          </div>
         </header>
 
         {/* Canvas Wrapper */}
@@ -1342,7 +1157,7 @@ export default function FabricEditor() {
             >
               <div className="flex items-center gap-2 p-2">
                 {/* --- Text Specific Tools --- */}
-                {(activeObj.type === "textbox" || activeObj.type === "i-text" || activeObj.type === "text") && (
+                {isTextObject(activeObj) && (
                   <>
                     <input
                       type="color"
@@ -1358,8 +1173,7 @@ export default function FabricEditor() {
                         } else {
                           activeObj.set("fill", val);
                         }
-                        fabricCanvasRef.current?.requestRenderAll();
-                        fabricCanvasRef.current?.__saveHistory();
+                        renderAndSave();
                       }}
                       className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-zinc-600 p-0 hover:border-zinc-400"
                       title="Text Color"
@@ -1381,8 +1195,7 @@ export default function FabricEditor() {
                         } else {
                           activeObj.set("fontWeight", val ? 'bold' : 'normal');
                         }
-                        fabricCanvasRef.current?.requestRenderAll();
-                        fabricCanvasRef.current?.__saveHistory();
+                        renderAndSave();
                       }}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${bold ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
                     >
@@ -1403,8 +1216,7 @@ export default function FabricEditor() {
                         } else {
                           activeObj.set("fontStyle", val ? 'italic' : 'normal');
                         }
-                        fabricCanvasRef.current?.requestRenderAll();
-                        fabricCanvasRef.current?.__saveHistory();
+                        renderAndSave();
                       }}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${italic ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
                     >
@@ -1429,8 +1241,7 @@ export default function FabricEditor() {
                             strokeWidth: 2
                           });
                         }
-                        fabricCanvasRef.current?.requestRenderAll();
-                        fabricCanvasRef.current?.__saveHistory();
+                        renderAndSave();
                       }}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeObj.fill === 'transparent' ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
                       title="Hollow Text"
@@ -1445,8 +1256,7 @@ export default function FabricEditor() {
                           const newSize = Math.max(8, fontSize - 2);
                           setFontSize(newSize);
                           activeObj.set("fontSize", newSize);
-                          fabricCanvasRef.current?.requestRenderAll();
-                          fabricCanvasRef.current?.__saveHistory();
+                          renderAndSave();
                         }}
                         className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-l-lg text-zinc-400 hover:text-white"
                       >
@@ -1458,8 +1268,7 @@ export default function FabricEditor() {
                           const newSize = Math.min(200, fontSize + 2);
                           setFontSize(newSize);
                           activeObj.set("fontSize", newSize);
-                          fabricCanvasRef.current?.requestRenderAll();
-                          fabricCanvasRef.current?.__saveHistory();
+                          renderAndSave();
                         }}
                         className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-r-lg text-zinc-400 hover:text-white"
                       >
@@ -1483,8 +1292,7 @@ export default function FabricEditor() {
                               setFontFamily(f);
                               await loadGoogleFont(f);
                               activeObj.set("fontFamily", f);
-                              fabricCanvasRef.current?.requestRenderAll();
-                              fabricCanvasRef.current?.__saveHistory();
+                              renderAndSave();
                               setFontDropdownOpen(false);
                             }} className="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded">{f}</button>
                           ))}
@@ -1519,8 +1327,7 @@ export default function FabricEditor() {
                             } else {
                               activeObj.set("textAlign", align);
                             }
-                            fabricCanvasRef.current?.requestRenderAll();
-                            fabricCanvasRef.current?.__saveHistory();
+                            renderAndSave();
                           }}
                           className={`w-7 h-7 rounded flex items-center justify-center transition-all ${textAlign === align ? 'bg-zinc-600 text-white' : 'text-zinc-500 hover:text-white'}`}
                           title={`Align ${align}`}
@@ -1556,7 +1363,11 @@ export default function FabricEditor() {
                   <button
                     onClick={() => {
                       const c = fabricCanvasRef.current;
-                      if (c) { activeObj.bringForward(); c.requestRenderAll(); c.__saveHistory(); }
+                      if (c) {
+                        activeObj.bringForward();
+                        c.requestRenderAll();
+                        c.__saveHistory();
+                      }
                     }}
                     className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-l-lg text-zinc-400 hover:text-white"
                     title="Bring Forward"
@@ -1569,7 +1380,11 @@ export default function FabricEditor() {
                       // Prevent sending behind bg/artboard
                       // Complex logic handled in sidepanel, simplifying for updated
                       // Just sendBackwards
-                      if (c) { activeObj.sendBackwards(); c.requestRenderAll(); c.__saveHistory(); }
+                      if (c) {
+                        activeObj.sendBackwards();
+                        c.requestRenderAll();
+                        c.__saveHistory();
+                      }
                     }}
                     className="w-7 h-8 flex items-center justify-center hover:bg-zinc-700 rounded-r-lg text-zinc-400 hover:text-white"
                     title="Send Backward"
@@ -1638,69 +1453,40 @@ export default function FabricEditor() {
         onChange={uploadImage}
       />
 
-      {/* Mockup Preview Modal */}
-      {
-        showMockupPreview && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <h3 className="text-white font-bold text-lg">
-                  Product Mockups ({getAllVariants().length} variants)
-                </h3>
-                <button onClick={() => setShowMockupPreview(false)} className="text-zinc-400 hover:text-white transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-auto p-6 custom-scrollbar bg-[#0c0c0e]">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {getAllVariants().map((variant, idx) => {
-                    const product = PRODUCTS[variant.product];
-                    return (
-                      <div
-                        key={`${variant.product}-${variant.color}-${idx}`}
-                        onClick={() => {
-                          setPreviewProduct(variant.product);
-                          setPreviewColor(variant.color);
-                          setShowMockupPreview(false);
-                        }}
-                        className="group cursor-pointer bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
-                      >
-                        <div
-                          className="aspect-square relative flex items-center justify-center"
-                          style={{ backgroundColor: variant.color }}
-                        >
-                          <img
-                            src={product.assets.front}
-                            alt={product.name}
-                            className="w-4/5 h-4/5 object-contain mix-blend-multiply opacity-80"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                            <span className="text-white text-sm font-medium">Preview</span>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-zinc-950">
-                          <p className="text-white font-medium text-sm">{product.name}</p>
-                          <p className="text-zinc-500 text-xs">{variant.colorName}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="p-4 border-t border-zinc-800 flex justify-between items-center bg-zinc-900">
-                <p className="text-zinc-500 text-sm">Click a variant to preview on canvas</p>
-                <button
-                  onClick={exportJson}
-                  className="px-6 py-2 bg-white text-black rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Export All Variants
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
+      {/* Preview Modal with Interactive Design Positioning */}
+      {showPreview && (
+        <PreviewModal
+          onClose={() => setShowPreview(false)}
+          getDesignImage={() => {
+            const c = fabricCanvasRef.current;
+            if (!c) return null;
+
+            // Save viewport, reset to identity
+            const vpt = c.viewportTransform;
+            c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+            // Get design area only (artboard content)
+            const ab = artboardRef.current;
+            if (!ab) {
+              c.setViewportTransform(vpt);
+              return null;
+            }
+
+            // Export just the artboard area
+            const dataUrl = c.toDataURL({
+              format: 'png',
+              multiplier: 2,
+              left: ab.left - ab.width / 2,
+              top: ab.top - ab.height / 2,
+              width: ab.width,
+              height: ab.height,
+            });
+
+            c.setViewportTransform(vpt);
+            return dataUrl;
+          }}
+        />
+      )}
 
       {/* Export JSON Modal */}
       {
@@ -1781,8 +1567,7 @@ export default function FabricEditor() {
                             await loadGoogleFont(f);
                             if (activeObj) {
                               activeObj.set("fontFamily", f);
-                              fabricCanvasRef.current?.requestRenderAll();
-                              fabricCanvasRef.current?.__saveHistory();
+                              renderAndSave();
                             }
                             setShowFontPicker(false);
                             setFontSearch("");
