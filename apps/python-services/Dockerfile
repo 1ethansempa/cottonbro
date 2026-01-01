@@ -21,8 +21,8 @@ RUN python -c "from rembg import new_session; new_session()"
 # Copy application code
 COPY src/ ./src/
 
-# Expose port
-EXPOSE 8000
+# Expose port (Cloud Run uses PORT env var, defaults to 8080)
+EXPOSE 8080
 
-# Run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application - use PORT env var for Cloud Run
+CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
