@@ -11,6 +11,7 @@ const connectSrc = [
   "https://fonts.googleapis.com",
   "https://fonts.gstatic.com",
   "https://challenges.cloudflare.com",
+  "http://localhost:8000",
 ];
 
 if (isDev) {

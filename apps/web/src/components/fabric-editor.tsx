@@ -24,6 +24,8 @@ import {
   Image as ImageIcon,
   Circle,
   Eye,
+  Wand2,
+  Loader2,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
@@ -205,6 +207,7 @@ export default function FabricEditor() {
   const [uploadedImages, setUploadedImages] = useState<
     { id: string; src: string; name: string }[]
   >([]);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
 
   // Selection Properties
   const [fill, setFill] = useState("#e2e8f0");
@@ -953,6 +956,65 @@ export default function FabricEditor() {
     }
   };
 
+  // Remove background from selected image using NestJS API (which proxies to Python)
+  const removeBackground = async () => {
+    const selected = fabricCanvasRef.current?.getActiveObject();
+    if (!selected || selected.type !== 'image') return;
+
+    setIsRemovingBg(true);
+    try {
+      // Get image data as base64
+      const imgElement = (selected as any).getElement();
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = imgElement.naturalWidth || imgElement.width;
+      tempCanvas.height = imgElement.naturalHeight || imgElement.height;
+      const ctx = tempCanvas.getContext('2d');
+      ctx?.drawImage(imgElement, 0, 0);
+      const base64 = tempCanvas.toDataURL('image/png');
+
+      // Call NestJS API (handles auth + proxies to Python service)
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiBase}/images/remove-background`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Send session cookie
+        body: JSON.stringify({ image_base64: base64 }),
+      });
+
+      if (!response.ok) throw new Error('API request failed');
+
+      const result = await response.json();
+
+      // Replace image source with transparent version
+      const { FabricImage } = await import('fabric');
+      const newImg = await FabricImage.fromURL(result.image_base64);
+      if (!newImg) throw new Error('Failed to load result image');
+
+      // Copy properties from old image
+      newImg.set({
+        left: selected.left,
+        top: selected.top,
+        scaleX: selected.scaleX,
+        scaleY: selected.scaleY,
+        angle: selected.angle,
+        originX: selected.originX,
+        originY: selected.originY,
+      });
+
+      const c = fabricCanvasRef.current;
+      c.remove(selected);
+      c.add(newImg);
+      c.setActiveObject(newImg);
+      c.requestRenderAll();
+      c.__saveHistory && c.__saveHistory();
+    } catch (err) {
+      console.error('Background removal failed:', err);
+      alert('Background removal failed. Please make sure you are logged in.');
+    } finally {
+      setIsRemovingBg(false);
+    }
+  };
+
   const activeObj = selectedObjects[0];
 
   // --- Render ---
@@ -1343,14 +1405,29 @@ export default function FabricEditor() {
 
                 {/* --- Image Specific Tools --- */}
                 {activeObj.type === "image" && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white flex flex-col items-center gap-0.5"
-                    title="Replace Image"
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                    <span className="text-[9px] font-medium">Replace</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white flex flex-col items-center gap-0.5"
+                      title="Replace Image"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                      <span className="text-[9px] font-medium">Replace</span>
+                    </button>
+                    <button
+                      onClick={removeBackground}
+                      disabled={isRemovingBg}
+                      className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-cyan flex flex-col items-center gap-0.5 disabled:opacity-50"
+                      title="Remove Background (AI)"
+                    >
+                      {isRemovingBg ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-4 h-4" />
+                      )}
+                      <span className="text-[9px] font-medium">{isRemovingBg ? "Working..." : "Remove BG"}</span>
+                    </button>
+                  </>
                 )}
 
 
