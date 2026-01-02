@@ -10,8 +10,23 @@ import { adminAuth } from "@cottonbro/auth-server";
 export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const sessionCookie = request.cookies?.["__session"];
+    const authHeader =
+      request.headers?.authorization ?? request.headers?.Authorization;
+    if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+      const idToken = authHeader.slice("Bearer ".length).trim();
+      if (!idToken) {
+        throw new UnauthorizedException("Missing bearer token");
+      }
+      try {
+        const decodedClaims = await adminAuth.verifyIdToken(idToken, true);
+        request.user = decodedClaims;
+        return true;
+      } catch {
+        throw new UnauthorizedException("Invalid bearer token");
+      }
+    }
 
+    const sessionCookie = request.cookies?.["__session"];
     if (!sessionCookie) {
       throw new UnauthorizedException("No session cookie");
     }

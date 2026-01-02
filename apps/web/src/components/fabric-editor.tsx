@@ -31,7 +31,7 @@ import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { publicEnv } from "../config/env";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";
-import { removeBackgroundAction } from "@/app/(authenticated)/design/actions";
+import { useAuth } from "@cottonbro/auth-react";
 
 const ARTBOARD = { w: 500, h: 500 }; // “shirt design area” units
 
@@ -192,6 +192,7 @@ export default function FabricEditor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { refreshIdToken } = useAuth();
 
   const fabricCanvasRef = useRef<any>(null);
   const artboardRef = useRef<any>(null);
@@ -977,7 +978,23 @@ export default function FabricEditor() {
       const base64 = tempCanvas.toDataURL('image/png');
 
       // Call NestJS API directly using env var
-      const result = await removeBackgroundAction(base64);
+      const idToken = await refreshIdToken();
+      if (!idToken) {
+        throw new Error("missing_id_token");
+      }
+
+      const response = await fetch(`${apiBaseUrl}/v1/images/remove-background`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ image_base64: base64 }),
+      });
+
+      if (!response.ok) throw new Error("API request failed");
+
+      const result = await response.json();
 
       // Replace image source with transparent version
       const { FabricImage } = await import('fabric');
