@@ -297,14 +297,14 @@ export default function LandingPage() {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`text-base font-medium transition-colors duration-200 ease-out whitespace-nowrap relative ${activeTab === tab
-                    ? "text-cyan drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                    ? "text-cyan drop-shadow-[0_0_8px_rgba(147,197,253,0.5)]"
                     : "text-gray-500 hover:text-cyan"
                     }`}
                 >
                   {tab}
                   {/* Dot Indicator */}
                   {activeTab === tab && (
-                    <span className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-cyan rounded-full shadow-[0_0_5px_#22d3ee]" />
+                    <span className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-cyan rounded-full shadow-[0_0_5px_#93c5fd]" />
                   )}
                 </button>
               ))}
@@ -350,7 +350,7 @@ export default function LandingPage() {
 
                   {/* Hover Interaction: Circle Arrow */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                    <div className="w-14 h-14 bg-cyan rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <div className="w-14 h-14 bg-cyan rounded-full shadow-glow-cyan flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                       <svg
                         className="w-6 h-6 text-black"
                         fill="none"
@@ -411,7 +411,7 @@ export default function LandingPage() {
                 key={idx}
                 className="group pt-6 border-t border-white/10 hover:border-cyan transition-colors duration-200 ease-out"
               >
-                <div className="mb-6 text-cyan drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
+                <div className="mb-6 text-cyan drop-shadow-[0_0_10px_rgba(147,197,253,0.4)]">
                   {feature.icon}
                 </div>
                 <h3 className="text-lg font-black text-white mb-3 tracking-wide uppercase group-hover:text-cyan transition-colors duration-200">
@@ -453,7 +453,7 @@ export default function LandingPage() {
                     key={step.n}
                     className="group flex flex-col md:flex-row gap-6 md:gap-12 border-b border-white/5 pb-12 hover:border-cyan/50 transition-colors duration-200 ease-out cursor-default"
                   >
-                    <div className="text-zinc-800 text-6xl md:text-7xl font-black font-mono leading-none tracking-tighter group-hover:text-cyan group-hover:drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all duration-200 ease-out">
+                    <div className="text-zinc-800 text-6xl md:text-7xl font-black font-mono leading-none tracking-tighter group-hover:text-cyan group-hover:drop-shadow-[0_0_15px_rgba(147,197,253,0.4)] transition-all duration-200 ease-out">
                       0{step.n}
                     </div>
                     <div className="flex-1 pt-2">
@@ -521,7 +521,7 @@ export default function LandingPage() {
 
 
             <Link href="/auth/login">
-              <Button className="w-full md:w-auto rounded-full px-6 md:px-16 py-6 bg-cyan hover:bg-cyan-bold border border-transparent text-black font-bold text-sm md:text-lg tracking-widest uppercase transition-all duration-200 ease-out transform cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:scale-[1.02]">
+              <Button className="w-full md:w-auto rounded-full px-6 md:px-16 py-6 bg-cyan hover:bg-cyan-bold border border-transparent text-black font-bold text-sm md:text-lg tracking-widest uppercase transition-all duration-200 ease-out transform cursor-pointer shadow-glow-cyan hover:scale-[1.02]">
                 Open Your Studio
               </Button>
             </Link>

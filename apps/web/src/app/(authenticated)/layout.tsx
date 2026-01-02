@@ -1,20 +1,55 @@
-import { cookies } from "next/headers";
-import WebAuthProvider from "@/app/providers/auth-provider";
-import { AuthRedirect } from "@/components/auth-redirect";
+"use client";
 
-export default async function AuthenticatedLayout({
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { clientAuth } from "@/lib/firebase-client";
+import { useRouter } from "next/navigation";
+
+export default function AuthenticatedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const session = cookieStore.get("__session")?.value;
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
-  // Server-side auth check for security
-  if (!session) {
-    // Use client component to handle redirect with pathname
-    return <AuthRedirect />;
+  useEffect(() => {
+    // Listen directly to Firebase auth state changes
+    // This fires once auth state is restored from IndexedDB
+    const unsubscribe = onAuthStateChanged(clientAuth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setAuthReady(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Only redirect after auth state is determined
+    if (authReady && !user) {
+      const currentPath = window.location.pathname;
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+    }
+  }, [authReady, user, router]);
+
+  // Show loading until Firebase auth state is ready
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  return <WebAuthProvider>{children}</WebAuthProvider>;
+  // No user after auth ready = redirect happening
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

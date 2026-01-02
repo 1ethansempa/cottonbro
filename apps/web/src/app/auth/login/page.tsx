@@ -175,7 +175,7 @@ function LoginView() {
             <GoogleButton
               onClick={onGoogle}
               disabled={busy}
-              className="w-full justify-center rounded-full border border-white/10 bg-white text-black hover:bg-gray-200 font-bold transition-all py-3 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+              className="w-full justify-center rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold transition-all py-3 shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-glow-cyan/20"
             />
           </div>
 
@@ -196,7 +196,7 @@ function LoginView() {
               <div className="flex flex-col gap-3 mt-6">
                 <Button
                   onClick={handleContinue}
-                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] uppercase tracking-widest text-xs cursor-pointer transition-all hover:scale-[1.02]"
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-glow-cyan uppercase tracking-widest text-xs cursor-pointer transition-all hover:scale-[1.02]"
                 >
                   Proceed to Dashboard
                 </Button>
@@ -242,7 +242,7 @@ function LoginView() {
                 <Button
                   type="submit"
                   disabled={!email || busy}
-                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest group cursor-pointer hover:scale-[1.02]"
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-glow-cyan transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest group cursor-pointer hover:scale-[1.02]"
                 >
                   {busy ? "Sending..." : "Send Login Code"}
                 </Button>
@@ -266,7 +266,7 @@ function LoginView() {
                 <Button
                   type="submit"
                   disabled={code.length !== 6 || busy}
-                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest cursor-pointer hover:scale-[1.02]"
+                  className="w-full bg-cyan hover:bg-cyan-bold text-black font-bold py-4 rounded-full shadow-glow-cyan transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest cursor-pointer hover:scale-[1.02]"
                 >
                   {busy ? "Verifying..." : "Open Studio"}
                 </Button>

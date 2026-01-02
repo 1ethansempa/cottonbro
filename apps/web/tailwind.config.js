@@ -19,8 +19,8 @@ const config = {
         silver: "#E1E1E1", // Kept for generic structure
         
         // Primary & Secondary
-        cyan: "#22D3EE", // Primary Accent - Electric Cyan
-        "cyan-bold": "#0891b2", // Darker Cyan for Light Mode Text
+        cyan: "#93C5FD", // Primary Accent - Glacier Blue (was Electric Cyan)
+        "cyan-bold": "#3B82F6", // Darker Blue for Light Mode Text/Contrast
         graphite: "#6B7280", // Secondary - Cool Neutral Gray
         
         "neon-red": "#FF2E2E", // Errors/Urgency only
@@ -38,7 +38,7 @@ const config = {
         "page-gradient": "linear-gradient(to bottom, #050505, #000000)",
       },
       boxShadow: {
-        "glow-cyan": "0 0 40px -10px rgba(34, 211, 238, 0.4)", 
+        "glow-cyan": "0 0 20px -5px rgba(147, 197, 253, 0.25)", // Reduced glow intensity for Glacier Blue
         "card": "0 1px 3px rgba(0,0,0,0.05)",
         "card-hover": "0 10px 40px rgba(0,0,0,0.08)",
       },

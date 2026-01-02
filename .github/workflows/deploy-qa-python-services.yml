@@ -1,56 +1,29 @@
-name: Deploy API to Cloud Run (QA)
+name: Deploy Python Services to Cloud Run (QA)
 
 on:
   push:
     branches:
       - release/qa
     paths:
-      - "apps/api/**"
-      - "packages/backend/**"
-      - "apps/api/Dockerfile"
-      - ".github/workflows/deploy-qa-api.yml"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
+      - "apps/python-services/**"
+      - ".github/workflows/deploy-qa-python-services.yml"
 
 permissions:
   contents: read
   id-token: write
 
 env:
-  SERVICE_NAME: cottonbro-api
-  DOCKERFILE: apps/api/Dockerfile
+  SERVICE_NAME: cottonbro-python-services
+  DOCKERFILE: apps/python-services/Dockerfile
 
-  # Hardcode these for now so they are NEVER empty
   GCP_PROJECT_ID: cottonbro-dev
   REGION: europe-west1
   REGISTRY: europe-west1-docker.pkg.dev
 
 jobs:
-  test:
+  deploy-python-services:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run tests
-        run: pnpm test
-
-  deploy-qa-api:
-    runs-on: ubuntu-latest
-    needs: test
-    environment: qa # use env-level secrets from "qa"
+    environment: qa
 
     steps:
       - name: Checkout repo
@@ -71,23 +44,20 @@ jobs:
         run: |
           gcloud auth configure-docker "$REGISTRY" --quiet
 
-      - name: Build API image
+      - name: Build Python Services image
         run: |
-          echo "REGISTRY=$REGISTRY"
-          echo "GCP_PROJECT_ID=$GCP_PROJECT_ID"
           IMAGE="$REGISTRY/$GCP_PROJECT_ID/api/$SERVICE_NAME:${{ github.sha }}"
-          echo "Using image: $IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
           docker build \
             -f "$DOCKERFILE" \
             -t "$IMAGE" \
-            .
+            apps/python-services
 
-      - name: Push API image
+      - name: Push Python Services image
         run: |
           docker push "$IMAGE"
 
-      - name: Deploy API to Cloud Run (QA)
+      - name: Deploy Python Services to Cloud Run (QA)
         run: |
           gcloud run deploy "$SERVICE_NAME" \
             --project "$GCP_PROJECT_ID" \
@@ -96,15 +66,11 @@ jobs:
             --image "$IMAGE" \
             --service-account "${{ secrets.RUNTIME_SA }}" \
             --allow-unauthenticated \
-            --set-env-vars NODE_ENV=production \
-            --set-env-vars APP_ENV=qa \
-            --set-secrets FIREBASE_PROJECT_ID=api-firebase-project-id:latest \
-            --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
-            --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest \
-            --set-secrets SMTP_USER=api-smtp-user:latest \
-            --set-secrets SMTP_PASS=api-smtp-pass:latest \
+            --ingress all \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
-            --set-env-vars PYTHON_SERVICE_URL=${{ secrets.QA_PYTHON_SERVICE_URL }}
+            --memory 2Gi \
+            --cpu 2 \
+            --timeout 300
 
       - name: Show service URL
         run: |

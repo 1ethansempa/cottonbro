@@ -3,12 +3,17 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import { json, urlencoded } from "express";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: false });
 
   // Security headers
   app.use(helmet());
+
+  // Allow larger JSON payloads for base64 image uploads
+  app.use(json({ limit: "15mb" }));
+  app.use(urlencoded({ extended: true, limit: "15mb" }));
 
   // Cookies
   app.use(cookieParser());
@@ -22,6 +27,8 @@ async function bootstrap() {
           "http://localhost:5173",
           "https://cottonbro-web-rgkcirpgkq-ew.a.run.app",
           "https://cottonbro-web-491077850913.europe-west1.run.app",
+          "http://localhost:8000",
+          "https://cottonbro-python-services-491077850913.europe-west1.run.app",
         ];
 
   app.enableCors({
