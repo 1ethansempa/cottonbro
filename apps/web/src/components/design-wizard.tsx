@@ -137,9 +137,9 @@ export default function DesignWizard({ onComplete, onSkipToEditor }: DesignWizar
                     scaleX: designPosition.scaleX || designScale,
                     scaleY: designPosition.scaleY || designScale,
                     angle: designPosition.angle,
-                    cornerColor: "#22D3EE",
+                    cornerColor: "#93C5FD", // Glacier Blue
                     cornerStyle: "circle",
-                    borderColor: "#22D3EE",
+                    borderColor: "#93C5FD",
                     transparentCorners: false,
                     centeredRotation: true,
                 });
