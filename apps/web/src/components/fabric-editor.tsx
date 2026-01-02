@@ -31,6 +31,7 @@ import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { publicEnv } from "../config/env";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";
+import { removeBackgroundAction } from "@/app/(authenticated)/design/actions";
 
 const ARTBOARD = { w: 500, h: 500 }; // “shirt design area” units
 
@@ -975,18 +976,8 @@ export default function FabricEditor() {
       ctx?.drawImage(imgElement, 0, 0);
       const base64 = tempCanvas.toDataURL('image/png');
 
-      // Call NestJS API via Next.js proxy so cookies work on same origin
-      // The proxy rewrites /api/* → API backend /v1/*
-      const response = await fetch('/api/images/remove-background', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Send session cookie
-        body: JSON.stringify({ image_base64: base64 }),
-      });
-
-      if (!response.ok) throw new Error('API request failed');
-
-      const result = await response.json();
+      // Call NestJS API directly using env var
+      const result = await removeBackgroundAction(base64);
 
       // Replace image source with transparent version
       const { FabricImage } = await import('fabric');

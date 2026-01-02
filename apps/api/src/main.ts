@@ -27,6 +27,8 @@ async function bootstrap() {
           "http://localhost:5173",
           "https://cottonbro-web-rgkcirpgkq-ew.a.run.app",
           "https://cottonbro-web-491077850913.europe-west1.run.app",
+          "http://localhost:8000",
+          "https://cottonbro-python-services-491077850913.europe-west1.run.app",
         ];
 
   app.enableCors({
