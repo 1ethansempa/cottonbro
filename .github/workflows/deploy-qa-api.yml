@@ -104,7 +104,7 @@ jobs:
             --set-secrets SMTP_USER=api-smtp-user:latest \
             --set-secrets SMTP_PASS=api-smtp-pass:latest \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
-            --set-env-vars PYTHON_SERVICE_URL=https://cottonbro-python-services-${{ env.GCP_PROJECT_ID }}.a.run.app
+            --set-env-vars PYTHON_SERVICE_URL=${{ secrets.QA_PYTHON_SERVICE_URL }}
 
       - name: Show service URL
         run: |
