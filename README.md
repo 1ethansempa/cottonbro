@@ -10,20 +10,44 @@ Cottonbro lets creators design merch (tees, beanies, crop tops, etc.), render th
 |-------|------------|---------|
 | **Frontend** | Next.js (App Router) | 15.5 |
 | **React** | React | 19.2 |
-| **3D Rendering** | Three.js + React Three Fiber | 0.181 |
+| **Canvas Editor** | Fabric.js | 6.x |
 | **Styling** | Tailwind CSS | 4.1 |
 | **Animation** | Framer Motion | 12.23 |
-| **Backend** | NestJS | 11.1 |
-| **Runtime** | Node.js | 22.x |
+| **Backend API** | NestJS | 11.1 |
+| **Python Services** | FastAPI | 0.115 |
+| **Runtime** | Node.js 22.x / Python 3.11 |
 | **Authentication** | Firebase Admin SDK | 11.10 |
-| **Email** | Nodemailer + AWS SES | 7.0 |
+| **Email** | Nodemailer + Zoho SMTP | 7.0 |
 | **Captcha** | Cloudflare Turnstile | — |
+
+### Python Services
+
+| Service | Purpose |
+|---------|---------|
+| **Background Removal** | AI-powered image transparency using rembg/ONNX |
+
+### Authentication Architecture
+
+```
+Frontend (Firebase Client) 
+    ↓ Bearer Token (ID Token)
+NestJS API (AuthGuard verifies token)
+    ↓ X-API-Key header
+Python Services (API key middleware)
+```
+
+### Design System
+
+- **Primary Accent**: Glacier Blue (`#93C5FD`)
+- **Background**: Deep Black (`#030303`)
+- **Typography**: Urbanist font family
+- **Style**: Premium dark mode with subtle glows
 
 ### Monorepo & Tooling
 
 - **Package Manager**: pnpm 10 with workspaces
 - **Build Orchestration**: Turborepo 2.5
-- **Language**: TypeScript 5.9 (strict mode)
+- **Language**: TypeScript 5.9 (strict mode) / Python 3.11
 - **Linting**: ESLint 9 + Prettier 3
 - **Git Hooks**: Husky + Commitlint
 
@@ -50,17 +74,18 @@ Cottonbro lets creators design merch (tees, beanies, crop tops, etc.), render th
 ```
 cottonbro/
 ├── apps/
-│   ├── api/          # NestJS backend (Auth, OTP, Sessions)
-│   └── web/          # Next.js frontend (Marketing + Studio)
+│   ├── api/              # NestJS backend (Auth, OTP, Sessions, Image Proxy)
+│   ├── web/              # Next.js frontend (Marketing + Studio + Editor)
+│   └── python-services/  # FastAPI (Background Removal, Image Processing)
 ├── packages/
 │   ├── core/
-│   │   ├── contracts/  # Shared Zod schemas
-│   │   ├── utils/      # Common utilities
-│   │   ├── pricing/    # Pricing logic
-│   │   └── orders/     # Order management
+│   │   ├── contracts/    # Shared Zod schemas
+│   │   ├── utils/        # Common utilities
+│   │   ├── pricing/      # Pricing logic
+│   │   └── orders/       # Order management
 │   ├── frontend/
-│   │   ├── ui/         # React component library
-│   │   └── auth-react/ # Firebase auth hooks
+│   │   ├── ui/           # React component library
+│   │   └── auth-react/   # Firebase auth hooks
 │   └── backend/
 │       ├── auth-server/  # Firebase Admin helpers
 │       └── jobs/         # Background jobs
@@ -78,6 +103,7 @@ cottonbro/
 | Start all services | `pnpm dev` |
 | Web dev server | `pnpm --filter @cottonbro/web dev` |
 | API dev server | `pnpm --filter @cottonbro/api dev` |
+| Python services | `cd apps/python-services && uvicorn src.main:app --reload` |
 | Build all | `pnpm build` |
 
 ### Testing
@@ -109,6 +135,10 @@ docker run --rm -p 5173:5173 -e APP_ENV=qa cottonbro-web:qa
 # API (QA env)
 docker build -f apps/api/Dockerfile --build-arg APP_ENV=qa -t cottonbro-api:qa .
 docker run --rm -p 3001:3001 -e APP_ENV=qa cottonbro-api:qa
+
+# Python Services
+docker build -f apps/python-services/Dockerfile -t cottonbro-python:qa apps/python-services
+docker run --rm -p 8000:8000 -e PYTHON_API_KEY=your-key cottonbro-python:qa
 ```
 
 ---
