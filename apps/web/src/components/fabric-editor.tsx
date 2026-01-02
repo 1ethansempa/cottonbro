@@ -28,6 +28,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
+import { publicEnv } from "../config/env";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";
 
@@ -956,6 +957,8 @@ export default function FabricEditor() {
     }
   };
 
+  const apiBaseUrl = publicEnv.API_BASE_URL?.trim() || "/api";
+
   // Remove background from selected image using NestJS API (which proxies to Python)
   const removeBackground = async () => {
     const selected = fabricCanvasRef.current?.getActiveObject();
@@ -972,9 +975,8 @@ export default function FabricEditor() {
       ctx?.drawImage(imgElement, 0, 0);
       const base64 = tempCanvas.toDataURL('image/png');
 
-      // Call NestJS API (handles auth + proxies to Python service)
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiBase}/images/remove-background`, {
+      // Call NestJS API via Next.js proxy (handles auth + routes to backend)
+      const response = await fetch(`${apiBaseUrl}/images/remove-background`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Send session cookie

@@ -3,12 +3,17 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import { json, urlencoded } from "express";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: false });
 
   // Security headers
   app.use(helmet());
+
+  // Allow larger JSON payloads for base64 image uploads
+  app.use(json({ limit: "15mb" }));
+  app.use(urlencoded({ extended: true, limit: "15mb" }));
 
   // Cookies
   app.use(cookieParser());
