@@ -5,13 +5,12 @@ const isDev = process.env.NODE_ENV !== "production";
 const connectSrc = [
   "'self'",
   "https://cottonbro-api-491077850913.europe-west1.run.app",
-  "https://identitytoolkit.googleapis.com",
-  "https://securetoken.googleapis.com",
+  "https://*.googleapis.com",
   "https://www.googleapis.com",
-  "https://fonts.googleapis.com",
   "https://fonts.gstatic.com",
-  "https://challenges.cloudflare.com",
+  "https://*.cloudflare.com",
   "http://localhost:8000",
+  "https://*.google.com",
 ];
 
 if (isDev) {
@@ -20,7 +19,7 @@ if (isDev) {
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: https: https://staticimgly.com",
   `connect-src ${connectSrc.join(" ")}`,
@@ -69,11 +68,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       // Proxy API requests through Next.js so cookies work on same origin
+      // NestJS uses /v1/ global prefix
       {
         source: "/api/:path*",
         destination: isDev
-          ? "http://localhost:3001/:path*"
-          : "https://cottonbro-api-491077850913.europe-west1.run.app/:path*",
+          ? "http://localhost:3001/v1/:path*"
+          : "https://cottonbro-api-491077850913.europe-west1.run.app/v1/:path*",
       },
     ];
   },
