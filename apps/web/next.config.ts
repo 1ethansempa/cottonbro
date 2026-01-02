@@ -66,6 +66,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      // Proxy API requests through Next.js so cookies work on same origin
+      {
+        source: "/api/:path*",
+        destination: isDev
+          ? "http://localhost:3001/:path*"
+          : "https://cottonbro-api-491077850913.europe-west1.run.app/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

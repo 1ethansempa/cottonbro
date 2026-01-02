@@ -85,6 +85,7 @@ export const AuthProvider: React.FC<
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const hasResolvedAuth = useRef(false);
 
   // Derived role from custom claims
   const role = (claims?.role as AuthRole) ?? undefined;
@@ -93,7 +94,13 @@ export const AuthProvider: React.FC<
   useEffect(() => {
     mounted.current = true;
 
-    const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (!hasResolvedAuth.current) {
+        hasResolvedAuth.current = true;
+        if (mounted.current) setLoading(false);
+      }
+    });
     const unsubToken = onIdTokenChanged(auth, async (u) => {
       if (!u) {
         setClaims(null);
@@ -106,8 +113,6 @@ export const AuthProvider: React.FC<
         // ignore
       }
     });
-
-    setLoading(false);
 
     return () => {
       mounted.current = false;
