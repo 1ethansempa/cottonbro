@@ -1,74 +1,40 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@cottonbro/auth-react";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { clientAuth } from "@/lib/firebase-client";
 import { useRouter } from "next/navigation";
-import { publicEnv } from "@/config/env";
 
 export default function AuthenticatedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
   const router = useRouter();
-  const [isReady, setIsReady] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
-  const [sessionValid, setSessionValid] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
-  // Use NEXT_PUBLIC_API_BASE_URL with /v1/auth suffix, fallback to /api/auth for local
-  const authBaseUrl = useMemo(() => {
-    const base = publicEnv.API_BASE_URL?.trim();
-    return base && base.length > 0 ? `${base}/v1/auth` : "/api/auth";
+  useEffect(() => {
+    // Listen directly to Firebase auth state changes
+    // This fires once auth state is restored from IndexedDB
+    const unsubscribe = onAuthStateChanged(clientAuth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setAuthReady(true);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    // Firebase auth state takes a moment to restore from persistence
-    // Wait for loading to finish, then give it a tick to settle
-    if (!loading) {
-      const timer = setTimeout(() => {
-        setIsReady(true);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [loading]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const checkSession = async () => {
-      try {
-        const response = await fetch(`${authBaseUrl}/session`, {
-          method: "GET",
-          credentials: "include",
-        });
-        if (!cancelled) {
-          setSessionValid(response.ok);
-          setSessionChecked(true);
-        }
-      } catch {
-        if (!cancelled) {
-          setSessionValid(false);
-          setSessionChecked(true);
-        }
-      }
-    };
-
-    checkSession();
-    return () => {
-      cancelled = true;
-    };
-  }, [authBaseUrl]);
-
-  useEffect(() => {
-    // Only redirect after auth state is ready and we confirm no user
-    if (isReady && sessionChecked && !user && !sessionValid) {
+    // Only redirect after auth state is determined
+    if (authReady && !user) {
       const currentPath = window.location.pathname;
       router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
     }
-  }, [isReady, sessionChecked, sessionValid, user, router]);
+  }, [authReady, user, router]);
 
-  // Show loading spinner until auth state is confirmed
-  if (!sessionChecked || (!isReady && !sessionValid) || (!user && loading)) {
+  // Show loading until Firebase auth state is ready
+  if (!authReady) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
@@ -76,8 +42,8 @@ export default function AuthenticatedLayout({
     );
   }
 
-  // Redirect is happening
-  if (!user && !sessionValid) {
+  // No user after auth ready = redirect happening
+  if (!user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin" />

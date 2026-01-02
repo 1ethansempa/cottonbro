@@ -66,14 +66,19 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
+    // Use env var to override API URL, otherwise use local in dev, deployed in prod
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      (isDev
+        ? "http://localhost:3001"
+        : "https://cottonbro-api-491077850913.europe-west1.run.app");
+
     return [
       // Proxy API requests through Next.js so cookies work on same origin
       // NestJS uses /v1/ global prefix
       {
         source: "/api/:path*",
-        destination: isDev
-          ? "http://localhost:3001/v1/:path*"
-          : "https://cottonbro-api-491077850913.europe-west1.run.app/v1/:path*",
+        destination: `${apiUrl}/v1/:path*`,
       },
     ];
   },
