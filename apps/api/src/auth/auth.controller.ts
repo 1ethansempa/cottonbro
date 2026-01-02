@@ -1,20 +1,23 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Ip,
   Post,
+  Req,
   Res,
   UseGuards,
   ValidationPipe,
   UsePipes,
 } from "@nestjs/common";
-import { Response } from "express";
+import { Response, Request } from "express";
 import { AuthService } from "./auth.service.js";
 import { OtpStartDto } from "./dto/otp-start.dto.js";
 import { OtpVerifyDto } from "./dto/otp-verify.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
 import { ThrottlerGuard } from "@nestjs/throttler";
+import { AuthGuard } from "./auth.guard.js";
 
 @Controller("auth") // with app.setGlobalPrefix('v1') this becomes /v1/auth/*
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
@@ -52,5 +55,12 @@ export class AuthController {
   @HttpCode(204)
   async logout(@Res({ passthrough: true }) res: Response) {
     await this.service.logoutAndRevoke(res);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get("session")
+  session(@Req() req: Request) {
+    const user = (req as any).user;
+    return { ok: true, uid: user?.uid, claims: user };
   }
 }
