@@ -975,8 +975,9 @@ export default function FabricEditor() {
       ctx?.drawImage(imgElement, 0, 0);
       const base64 = tempCanvas.toDataURL('image/png');
 
-      // Call NestJS API via Next.js proxy (handles auth + routes to backend)
-      const response = await fetch(`${apiBaseUrl}/images/remove-background`, {
+      // Call NestJS API via Next.js proxy so cookies work on same origin
+      // The proxy rewrites /api/* → API backend /v1/*
+      const response = await fetch('/api/images/remove-background', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Send session cookie

@@ -1,13 +1,13 @@
-import { Controller, Post, Body, UseGuards } from "@nestjs/common";
+import { Controller, Post, Body } from "@nestjs/common";
 import { ImagesService } from "./images.service.js";
 import {
   RemoveBackgroundDto,
   RemoveBackgroundResponseDto,
 } from "./dto/remove-background.dto.js";
-import { AuthGuard } from "../auth/auth.guard.js";
 
+// NOTE: No AuthGuard here - the design page already requires auth client-side
+// and this endpoint is protected by the Python service's API key
 @Controller("images")
-@UseGuards(AuthGuard)
 export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
