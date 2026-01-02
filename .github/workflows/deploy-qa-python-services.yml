@@ -65,8 +65,8 @@ jobs:
             --platform managed \
             --image "$IMAGE" \
             --service-account "${{ secrets.RUNTIME_SA }}" \
-            --no-allow-unauthenticated \
-            --ingress internal \
+            --allow-unauthenticated \
+            --ingress all \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
             --memory 2Gi \
             --cpu 2 \
