@@ -26,6 +26,7 @@ import {
   Eye,
   Wand2,
   Loader2,
+  FolderOpen,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { publicEnv } from "../config/env";
@@ -192,6 +193,7 @@ export default function FabricEditor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const jsonInputRef = useRef<HTMLInputElement | null>(null);
   const { refreshIdToken } = useAuth();
 
   const fabricCanvasRef = useRef<any>(null);
@@ -872,6 +874,174 @@ export default function FabricEditor() {
     setExportedJson(JSON.stringify(payload, null, 2));
   };
 
+  // --- Import Design from JSON File ---
+  const importDesign = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const jsonData = event.target?.result as string;
+        const parsed = JSON.parse(jsonData);
+
+        const c = fabricCanvasRef.current;
+        if (!c) return;
+
+        // Use the design (Fabric.js format) from the exported payload
+        const designData = parsed.design || parsed;
+
+        // Clear current canvas objects (except artboard)
+        const objectsToRemove = c.getObjects().filter((obj: any) => obj.id !== "artboard");
+        objectsToRemove.forEach((obj: any) => c.remove(obj));
+
+        // Load the design
+        await c.loadFromJSON(designData);
+
+        // Re-setup artboard if needed
+        const existingArtboard = c.getObjects().find((obj: any) => obj.id === "artboard");
+        if (!existingArtboard && artboardRef.current) {
+          c.add(artboardRef.current);
+          c.sendObjectToBack(artboardRef.current);
+        }
+
+        c.requestRenderAll();
+        console.log("Design loaded successfully");
+      } catch (error) {
+        console.error("Failed to load design:", error);
+        alert("Failed to load design file. Please check the file format.");
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  };
+
+  // --- Export Design as SVG ---
+  const exportSvg = () => {
+    const c = fabricCanvasRef.current;
+    if (!c) return;
+
+    // Store original viewport
+    const vpt = c.viewportTransform;
+    c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    // Get artboard rect for cropping
+    const ab = artboardRef.current;
+    const artboardRect = ab
+      ? getArtboardRect(c, ab)
+      : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+
+    // Temporarily hide artboard and non-visible objects
+    const hiddenObjects: any[] = [];
+    c.getObjects().forEach((obj: any) => {
+      if (obj.id === "artboard" || obj.visible === false || obj.excludeFromExport) {
+        if (obj.visible !== false) {
+          obj.set("visible", false);
+          hiddenObjects.push(obj);
+        }
+      }
+    });
+
+    c.requestRenderAll();
+
+    // Generate SVG with viewBox matching artboard
+    const svgString = c.toSVG({
+      viewBox: {
+        x: artboardRect.left,
+        y: artboardRect.top,
+        width: artboardRect.width,
+        height: artboardRect.height,
+      },
+      width: `${artboardRect.width}px`,
+      height: `${artboardRect.height}px`,
+    });
+
+    // Restore hidden objects
+    hiddenObjects.forEach((obj) => obj.set("visible", true));
+    c.setViewportTransform(vpt);
+    c.requestRenderAll();
+
+    // Download SVG file
+    const blob = new Blob([svgString], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cottonbro-design-${Date.now()}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // --- Export Design as PDF (Print-Safe) ---
+  const exportPdf = async () => {
+    const c = fabricCanvasRef.current;
+    if (!c) return;
+
+    // Dynamic import jspdf
+    const { jsPDF } = await import("jspdf");
+
+    // Store original viewport
+    const vpt = c.viewportTransform;
+    c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    // Get artboard rect
+    const ab = artboardRef.current;
+    const artboardRect = ab
+      ? getArtboardRect(c, ab)
+      : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+
+    // Temporarily hide artboard
+    const hiddenObjects: any[] = [];
+    c.getObjects().forEach((obj: any) => {
+      if (obj.id === "artboard" || obj.visible === false || obj.excludeFromExport) {
+        if (obj.visible !== false) {
+          obj.set("visible", false);
+          hiddenObjects.push(obj);
+        }
+      }
+    });
+
+    c.requestRenderAll();
+
+    // Calculate high-DPI dimensions (300 DPI for print)
+    const DPI = 300;
+    const SCREEN_DPI = 72;
+    const scale = DPI / SCREEN_DPI;
+
+    // Create high-resolution data URL
+    const dataUrl = c.toDataURL({
+      format: "png",
+      multiplier: scale * 2, // Extra scaling for quality
+      left: artboardRect.left,
+      top: artboardRect.top,
+      width: artboardRect.width,
+      height: artboardRect.height,
+    });
+
+    // Restore hidden objects and viewport
+    hiddenObjects.forEach((obj) => obj.set("visible", true));
+    c.setViewportTransform(vpt);
+    c.requestRenderAll();
+
+    // Create PDF - dimensions in mm (artboard is in pixels, convert roughly)
+    // Assuming 500px artboard = ~6 inches = ~152mm for a roughly 6"x6" print area
+    const mmWidth = (artboardRect.width / 72) * 25.4;
+    const mmHeight = (artboardRect.height / 72) * 25.4;
+
+    const pdf = new jsPDF({
+      orientation: mmWidth > mmHeight ? "landscape" : "portrait",
+      unit: "mm",
+      format: [mmWidth, mmHeight],
+    });
+
+    // Add image to PDF
+    pdf.addImage(dataUrl, "PNG", 0, 0, mmWidth, mmHeight);
+
+    // Download
+    pdf.save(`cottonbro-design-${Date.now()}.pdf`);
+  };
+
   const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1195,6 +1365,12 @@ export default function FabricEditor() {
 
           <div className="flex items-center gap-3">
             <button
+              onClick={() => jsonInputRef.current?.click()}
+              className="bg-black text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-zinc-900 transition-all flex items-center gap-2 shrink-0 border border-white/10 hover:border-white/20"
+            >
+              <FolderOpen className="w-4 h-4" /> LOAD
+            </button>
+            <button
               onClick={exportJson}
               className="bg-black text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-zinc-900 transition-all flex items-center gap-2 shrink-0 border border-white/10 hover:border-white/20"
             >
@@ -1202,7 +1378,7 @@ export default function FabricEditor() {
             </button>
             <button
               onClick={() => setShowPreview(true)}
-              className="bg-cyan text-black px-6 py-2 rounded-full font-black text-sm uppercase tracking-wider hover:bg-cyan-400 hover:scale-105 transition-all flex items-center gap-2 shrink-0 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+              className="bg-cyan text-black px-6 py-2 rounded-full font-black text-sm uppercase tracking-wider hover:bg-cyan-400 hover:scale-105 transition-all flex items-center gap-2 shrink-0 shadow-glow-cyan"
             >
               <Eye className="w-4 h-4" /> Preview
             </button>
@@ -1541,6 +1717,15 @@ export default function FabricEditor() {
         onChange={uploadImage}
       />
 
+      {/* Hidden JSON file input for importing designs */}
+      <input
+        type="file"
+        ref={jsonInputRef}
+        className="hidden"
+        accept=".json,application/json"
+        onChange={importDesign}
+      />
+
       {/* Preview Modal with Interactive Design Positioning */}
       {showPreview && (
         <PreviewModal
@@ -1593,6 +1778,32 @@ export default function FabricEditor() {
                 </pre>
               </div>
               <div className="p-4 border-t border-zinc-800 flex justify-end gap-2 bg-zinc-900">
+                <button
+                  onClick={exportPdf}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-500 transition-colors"
+                >
+                  Export PDF
+                </button>
+                <button
+                  onClick={exportSvg}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-500 transition-colors"
+                >
+                  Export SVG
+                </button>
+                <button
+                  onClick={() => {
+                    const blob = new Blob([exportedJson], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `cottonbro-design-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="px-4 py-2 bg-cyan text-black rounded-lg font-bold hover:bg-cyan-bold transition-colors"
+                >
+                  Download JSON
+                </button>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(exportedJson);

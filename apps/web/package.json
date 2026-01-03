@@ -32,6 +32,7 @@
     "fabric": "^6.9.1",
     "firebase": "^11.10.0",
     "framer-motion": "^12.23.22",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.562.0",
     "nanoid": "^5.1.6",
     "next": "^15.5.9",
