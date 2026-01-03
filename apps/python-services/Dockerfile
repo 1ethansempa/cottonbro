@@ -15,8 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download the rembg model
-RUN python -c "from rembg import new_session; new_session()"
+# Pre-download the rembg u2net model (~170MB) during build
+RUN python -c "from rembg import remove, new_session; \
+    session = new_session('u2net'); \
+    print('Model downloaded successfully')"
 
 # Copy application code
 COPY src/ ./src/
