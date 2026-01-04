@@ -12,7 +12,6 @@ import {
   signInOrCreateUser,
   mintCustomToken,
 } from "@cottonbro/auth-server";
-import { ConfigService } from "../common/config/config.service.js";
 import { MailService } from "../common/mail/mail.service.js";
 
 const DEFAULT_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -35,10 +34,7 @@ type TurnstileVerifyResponse = {
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly mail: MailService
-  ) {}
+  constructor(private readonly mail: MailService) {}
 
   /** Starts an OTP flow: generate & email the code */
   async startOtp(email: string, captchaToken: string, remoteIp?: string) {
@@ -126,10 +122,12 @@ export class AuthService {
     if (!token) {
       throw new BadRequestException("Captcha token is required");
     }
-    const secret = this.config.TURNSTILE_SECRET;
+    const secret = process.env.TURNSTILE_SECRET?.trim();
     if (!secret) {
       console.error("Turnstile secret is not configured");
-      throw new InternalServerErrorException("Captcha verification unavailable");
+      throw new InternalServerErrorException(
+        "Captcha verification unavailable"
+      );
     }
 
     const params = new URLSearchParams();

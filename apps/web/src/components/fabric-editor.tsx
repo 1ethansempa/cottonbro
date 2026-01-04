@@ -262,10 +262,47 @@ export default function FabricEditor() {
   // --- Export design as data URL for preview ---
   const getDesignDataUrl = (): string | null => {
     const c = fabricCanvasRef.current;
+    const ab = artboardRef.current;
     if (!c) return null;
 
-    // Export just the design content (no background)
-    return c.toDataURL({ format: 'png', multiplier: 2 });
+    // Store original states
+    const vpt = c.viewportTransform;
+    c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    // Hide artboard and any excludeFromExport objects
+    const hiddenObjects: any[] = [];
+    c.getObjects().forEach((obj: any) => {
+      if (obj.id === "artboard" || obj.excludeFromExport) {
+        if (obj.visible !== false) {
+          obj.set("visible", false);
+          hiddenObjects.push(obj);
+        }
+      }
+    });
+
+    c.requestRenderAll();
+
+    // Get artboard bounds for cropping
+    const artboardRect = ab
+      ? getArtboardRect(c, ab)
+      : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+
+    // Export only the artboard region with transparent background
+    const dataUrl = c.toDataURL({
+      format: "png",
+      multiplier: 2,
+      left: artboardRect.left,
+      top: artboardRect.top,
+      width: artboardRect.width,
+      height: artboardRect.height,
+    });
+
+    // Restore hidden objects and viewport
+    hiddenObjects.forEach((obj) => obj.set("visible", true));
+    c.setViewportTransform(vpt);
+    c.requestRenderAll();
+
+    return dataUrl;
   };
 
 
