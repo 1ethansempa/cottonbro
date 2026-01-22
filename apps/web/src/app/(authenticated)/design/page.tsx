@@ -5,12 +5,12 @@ import dynamic from "next/dynamic";
 
 const FabricEditor = dynamic(
   () => import("../../../components/fabric-editor"),
-  { ssr: false }
+  { ssr: false },
 );
 
 const DesignWizard = dynamic(
   () => import("../../../components/design-wizard"),
-  { ssr: false }
+  { ssr: false },
 );
 
 type ViewMode = "wizard" | "editor" | "complete";
@@ -25,14 +25,18 @@ export default function DesignPage() {
 
   if (viewMode === "complete") {
     return (
-      <div className="min-h-screen bg-page text-white font-urbanist flex items-center justify-center">
+      <div className="min-h-screen bg-page text-primary font-urbanist flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-black mb-4">Design Confirmed!</h1>
-          <p className="text-zinc-400 mb-8">Your products are ready to publish.</p>
+          <h1 className="text-4xl font-black mb-4 uppercase tracking-tight">
+            Design Confirmed!
+          </h1>
+          <p className="text-secondary mb-8 text-lg font-medium">
+            Your products are ready to publish.
+          </p>
           {/* TODO: Connect to publish flow */}
           <button
             onClick={() => setViewMode("wizard")}
-            className="px-8 py-4 bg-cyan text-black font-bold rounded-full"
+            className="px-8 py-4 bg-black text-white hover:bg-gray-900 font-bold rounded-full shadow-lg transition-all hover:scale-[1.02] uppercase tracking-widest text-xs"
           >
             Start Over
           </button>

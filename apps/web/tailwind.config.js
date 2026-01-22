@@ -7,50 +7,57 @@ const config = {
   theme: {
     extend: {
       colors: {
-        page: "#030303", // Softer Deep Black
-        "page-gradient": "#080808",
-        
+        page: "#FFFFFF", // Clean White
+        "page-gradient": "#FAFAFA",
+
         // Typography
-        primary: "#FFFFFF",
-        secondary: "#A1A1AA",
-        tertiary: "#52525B",
-        
+        primary: "#171717", // Neutral-900 Deep Black
+        secondary: "#52525B", // Zinc-600 Dark Gray
+        tertiary: "#A1A1AA",
+
         // Creative Lab Accents
-        silver: "#E1E1E1", // Kept for generic structure
-        
+        silver: "#F4F4F5", // Zinc-100 Light Gray
+
         // Primary & Secondary
-        cyan: "#93C5FD", // Primary Accent - Glacier Blue (was Electric Cyan)
-        "cyan-bold": "#3B82F6", // Darker Blue for Light Mode Text/Contrast
-        graphite: "#6B7280", // Secondary - Cool Neutral Gray
-        
-        "neon-red": "#FF2E2E", // Errors/Urgency only
-        
+        cyan: "#2563EB", // Cobalt Blue (Primary Brand)
+        "cyan-bold": "#1D4ED8", // Darker Blue
+        graphite: "#E4E4E7", // Zinc-200
+
+        "neon-red": "#EF4444",
+
         // Borders
-        "border-subtle": "rgba(255, 255, 255, 0.08)",
-        "border-glow": "rgba(255, 255, 255, 0.15)",
+        "border-subtle": "rgba(0, 0, 0, 0.05)",
+        "border-glow": "rgba(37, 99, 235, 0.1)",
       },
       fontFamily: {
         urbanist: ["var(--font-urbanist)", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
+        mono: [
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          "monospace",
+        ],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "page-gradient": "linear-gradient(to bottom, #050505, #000000)",
+        "page-gradient": "linear-gradient(to bottom, #FFFFFF, #FAFAFA)",
       },
       boxShadow: {
-        "glow-cyan": "0 0 20px -5px rgba(147, 197, 253, 0.25)", // Reduced glow intensity for Glacier Blue
-        "card": "0 1px 3px rgba(0,0,0,0.05)",
-        "card-hover": "0 10px 40px rgba(0,0,0,0.08)",
+        "glow-cyan": "0 0 25px -5px rgba(37, 99, 235, 0.15)", // Soft Blue Shadow
+        card: "0 2px 8px rgba(0,0,0,0.04)",
+        "card-hover": "0 12px 24px rgba(0,0,0,0.06)",
       },
       animation: {
-        "shimmer": "shimmer 2.5s linear infinite",
+        shimmer: "shimmer 2.5s linear infinite",
       },
       keyframes: {
         shimmer: {
           "0%": { backgroundPosition: "100% 0" },
           "100%": { backgroundPosition: "-100% 0" },
-        }
-      }
+        },
+      },
     },
   },
   plugins: [],
