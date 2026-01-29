@@ -38,24 +38,30 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
 
     return (
         <>
-            <header className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-colors duration-300 ${theme === "light"
-                ? "bg-white/80 border-black/5"
-                : "bg-black/80 border-white/5"
-                }`}>
+            <header
+                className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-colors duration-300 ${theme === "light"
+                        ? "bg-white/80 border-black/5"
+                        : "bg-black/80 border-white/5"
+                    }`}
+            >
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                     <div className="flex items-center gap-12">
                         <Link href="/" className="flex items-center gap-2">
-                            <Logo size="md" color={theme === "light" ? "black" : "white"} fontClassName="font-bold tracking-tight" />
+                            <Logo
+                                size="md"
+                                color={theme === "light" ? "black" : "white"}
+                                fontClassName="font-bold tracking-tight"
+                            />
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-8">
-                            {['Features', 'How it works', 'Pricing'].map((item) => (
+                            {["Features", "How it works", "Pricing"].map((item) => (
                                 <Link
                                     key={item}
-                                    href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                    href={`/#${item.toLowerCase().replace(/\s+/g, "-")}`}
                                     className={`text-sm font-medium transition-colors tracking-wide uppercase ${theme === "light"
-                                        ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
-                                        : "text-gray-400 hover:text-cyan hover:underline underline-offset-4"
+                                            ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
+                                            : "text-gray-400 hover:text-white hover:underline underline-offset-4"
                                         }`}
                                 >
                                     {item}
@@ -70,17 +76,19 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                 <Link
                                     href="/auth/login"
                                     className={`text-sm font-semibold transition px-2 tracking-wide ${theme === "light"
-                                        ? "text-black hover:opacity-70"
-                                        : "text-white hover:text-cyan"
+                                            ? "text-black hover:opacity-70"
+                                            : "text-white hover:text-gray-300"
                                         }`}
                                 >
                                     Login
                                 </Link>
                                 <Link href="/auth/login">
-                                    <button className={`rounded-full px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
-                                        ? "bg-black text-white hover:bg-gray-900"
-                                        : "bg-cyan text-black hover:bg-cyan-bold shadow-[0_0_15px_rgba(34,211,238,0.3)]"
-                                        }`}>
+                                    <button
+                                        className={`rounded-full px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
+                                                ? "bg-black text-white hover:bg-gray-900"
+                                                : "bg-white text-black hover:bg-gray-100"
+                                            }`}
+                                    >
                                         Sign Up
                                     </button>
                                 </Link>
@@ -91,8 +99,8 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                 onClick={handleLogout}
                                 disabled={loggingOut || busy}
                                 className={`rounded-full border px-5 py-2 text-sm font-medium transition disabled:opacity-60 tracking-wide cursor-pointer ${theme === "light"
-                                    ? "border-black/10 bg-black/5 text-gray-600 hover:text-black hover:bg-black/10"
-                                    : "border-white/10 bg-white/5 text-secondary hover:text-white hover:bg-white/10"
+                                        ? "border-black/10 bg-black/5 text-gray-600 hover:text-black hover:bg-black/10"
+                                        : "border-white/10 bg-white/5 text-secondary hover:text-white hover:bg-white/10"
                                     }`}
                             >
                                 {loggingOut ? "Logging out…" : "Log out"}
@@ -107,13 +115,18 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                     >
                         <div className="space-y-1.5">
                             <div className="space-y-1.5">
-                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
-                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
-                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
+                                <span
+                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
+                                ></span>
+                                <span
+                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
+                                ></span>
+                                <span
+                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
+                                ></span>
                             </div>
                         </div>
                     </button>
-
                 </div>
             </header>
 
@@ -137,12 +150,12 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                         </div>
 
                         <nav className="flex flex-col gap-8 items-center text-center">
-                            {['The Lab', 'Process', 'Pricing'].map((item) => (
+                            {["The Lab", "Process", "Pricing"].map((item) => (
                                 <Link
                                     key={item}
-                                    href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                    href={`/#${item.toLowerCase().replace(/\s+/g, "-")}`}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="text-4xl font-extrabold tracking-tight text-white hover:text-cyan transition-all"
+                                    className="text-4xl font-extrabold tracking-tight text-white hover:text-gray-300 transition-all"
                                 >
                                     {item}
                                 </Link>
@@ -159,14 +172,16 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                     <Link
                                         href="/auth/login"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="rounded-full bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-cyan mt-4 tracking-wide hover:bg-cyan hover:shadow-cyan/50"
+                                        className="rounded-full bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-white mt-4 tracking-wide hover:bg-gray-100 hover:scale-[1.02]"
                                     >
                                         Open Studio
                                     </Link>
                                 </>
                             ) : (
                                 <button
-                                    onClick={() => { handleLogout(); }}
+                                    onClick={() => {
+                                        handleLogout();
+                                    }}
                                     className="text-2xl font-bold text-secondary hover:text-white mt-8 uppercase cursor-pointer"
                                 >
                                     Log Out
