@@ -1,6 +1,7 @@
 name: Deploy API to Cloud Run (QA)
 
 on:
+  # workflow runs on push to this branch and changes to these file paths
   push:
     branches:
       - release/qa
@@ -12,23 +13,29 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
 
+# contents: read allows checkout and reading repo contents.
+# id-token: write ets GitHub mint an OIDC token that Google Cloud can trust for Workload Identity Federation (WIF).
+# That’s how you authenticate to GCP without storing a long-lived JSON key in GitHub.
+# WIF - a secure method allowing external workloads in GCP
+# OIDC token - used to identify user, repo, workflow, commit hash
 permissions:
   contents: read
   id-token: write
 
 env:
+  # global envs used in workflow
   SERVICE_NAME: cottonbro-api
   DOCKERFILE: apps/api/Dockerfile
-
-  # Hardcode these for now so they are NEVER empty
   GCP_PROJECT_ID: cottonbro-dev
   REGION: europe-west1
+  # artifact registry for that region
   REGISTRY: europe-west1-docker.pkg.dev
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
+      # run tests
       - name: Checkout repo
         uses: actions/checkout@v4
 
@@ -39,7 +46,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -48,29 +55,40 @@ jobs:
         run: pnpm test
 
   deploy-qa-api:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    # this job needs test to run before we can get to it
     needs: test
-    environment: qa # use env-level secrets from "qa"
+    # use env-level secrets from "qa" environment
+    environment: qa
 
     steps:
+      # downloads repo code onto runner
       - name: Checkout repo
         uses: actions/checkout@v4
 
+        # GitHub mints an OIDC token, Google trusts it via WIF, and impersonates the GCP service account.
+        # no need to store json key in github
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          # email of the GCP service account that GitHub will impersonate
+          # service account has permissions for pushing to artifact registry, deploying & updating cloud run services
+          # & reading secret manager secrets
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
+          # install ,set google cloud cli and set project
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
+        # writes docker credential helper config so docker push can authenticate to registry
       - name: Configure Docker auth for Artifact Registry
         run: |
           gcloud auth configure-docker "$REGISTRY" --quiet
 
+        # build docker image and tag it with commit SHA
       - name: Build API image
         run: |
           echo "REGISTRY=$REGISTRY"
@@ -83,10 +101,18 @@ jobs:
             -t "$IMAGE" \
             .
 
+      # push docker image
       - name: Push API image
         run: |
           docker push "$IMAGE"
 
+      # RUNTIME_SA is the service account that your Cloud Run service runs as at runtime
+      # Creates or updates a Cloud Run service named cottonbro-api
+      # targets project called cottonbro-dev in region
+      # Deploys the container image just built and pushed
+      # allow unauthenticated makes the service publicly invokable
+      # set-env-vars set env values
+      # set-secrets binds secret Manager secrets into the service as environment variables
       - name: Deploy API to Cloud Run (QA)
         run: |
           gcloud run deploy "$SERVICE_NAME" \
@@ -104,8 +130,9 @@ jobs:
             --set-secrets SMTP_USER=api-smtp-user:latest \
             --set-secrets SMTP_PASS=api-smtp-pass:latest \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
-            --set-env-vars PYTHON_SERVICE_URL=${{ secrets.QA_PYTHON_SERVICE_URL }}
+            --set-secrets PYTHON_SERVICE_URL=python-service-url:latest
 
+        # Prints the service’s public URL
       - name: Show service URL
         run: |
           gcloud run services describe "$SERVICE_NAME" \

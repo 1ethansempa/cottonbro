@@ -1,59 +1,57 @@
-# ---------- Base builder image (Node 22 + pnpm) ----------
+# Base: Node 22 + pnpm
 FROM node:22-slim AS base
 
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Enable pnpm
+# pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@10.11.1 --activate
 
-# ---------- Dependencies stage ----------
+# Dependencies
 FROM base AS deps
 
-# Copy root-level files needed for workspaces + TS
+# Workspace manifests + TS configs
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.json tsconfig.types.json ./
 
-# Copy workspace packages (so pnpm can resolve all workspace deps)
+# Workspace packages for dependency resolution
 COPY packages ./packages
 
-# Copy API package manifest so pnpm can resolve this workspace
+# API manifest
 COPY apps/api/package.json ./apps/api/package.json
 
-# Install all workspace dependencies (dev deps included for build)
-# This ensures @cottonbro/auth-server and any other workspace deps are available.
+# Install all workspace deps (incl. dev) for build
 RUN pnpm install --prod=false
 
-# ---------- Build stage ----------
+# Build
 FROM deps AS build
 
 ENV NODE_ENV=production
 
-# Copy full app sources (now that deps are installed)
+# Full sources after deps
 COPY apps ./apps
 
-# Build shared auth-server package so compiled output exists for API build
+# Build shared auth-server first
 RUN pnpm --filter @cottonbro/auth-server build
 
-# Build API (NestJS -> dist/)
+# Build API (NestJS -> dist)
 RUN pnpm --filter @cottonbro/api build
 
-# Create a trimmed production payload (code + prod node_modules)
-# This should only copy what @cottonbro/api needs into /app/deploy
+# Trim to production payload (app + prod node_modules)
 RUN pnpm deploy --filter @cottonbro/api --prod --legacy /app/deploy
 
-# ---------- Runtime stage ----------
+# Runtime
 FROM node:22-slim AS runner
 
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Create non-root user
+# Non-root user
 RUN addgroup --system app && adduser --system --ingroup app app
 
-# Copy only the trimmed deploy artifacts
+# Deploy artifacts only
 COPY --from=build --chown=app:app /app/deploy/ ./
 
-# Switch to non-root user for runtime safety
+# Drop privileges
 USER app
 
 # Port & env
