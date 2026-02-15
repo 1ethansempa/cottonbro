@@ -32,6 +32,10 @@ export class ImagesService {
       );
 
       if (!response.ok) {
+        const contentType = response.headers.get("content-type") || "unknown";
+        console.error(
+          `[ImagesService] Upstream error: ${response.status} ${response.statusText} (content-type: ${contentType})`
+        );
         const errorText = await response.text();
         throw new HttpException(
           `Python service error: ${errorText}`,
