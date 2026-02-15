@@ -129,6 +129,9 @@ jobs:
             --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest \
             --set-secrets SMTP_USER=api-smtp-user:latest \
             --set-secrets SMTP_PASS=api-smtp-pass:latest \
+            --set-secrets SMTP_HOST=api-smtp-host:latest \
+            --set-secrets SMTP_PORT=api-smtp-port:latest \
+            --set-secrets SMTP_FROM=api-smtp-user:latest \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
             --set-secrets PYTHON_SERVICE_URL=python-service-url:latest
 
