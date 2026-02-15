@@ -92,7 +92,7 @@ jobs:
             --image "$IMAGE" \
             --service-account "${{ secrets.RUNTIME_SA }}" \
           --no-allow-unauthenticated \
-          --ingress internal \
+          --ingress all \
             --memory 2Gi \
             --cpu 1 \
             --timeout 300
