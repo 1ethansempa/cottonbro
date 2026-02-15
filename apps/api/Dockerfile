@@ -55,9 +55,9 @@ COPY --from=build --chown=app:app /app/deploy/ ./
 USER app
 
 # Port & env
-ENV PORT=3001
+ENV PORT=8080
 ENV APP_ENV=prod
 
-EXPOSE 3001
+EXPOSE 8080
 
 CMD ["node", "dist/main.js"]
