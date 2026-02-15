@@ -93,7 +93,7 @@ jobs:
             --service-account "${{ secrets.RUNTIME_SA }}" \
           --no-allow-unauthenticated \
           --ingress internal \
-            --memory 1Gi \
+            --memory 2Gi \
             --cpu 1 \
             --timeout 300
 
