@@ -17,8 +17,10 @@ export class ImagesService {
   }> {
     try {
       const idToken = await mintApiIdToken(this.pythonServiceUrl);
+      const upstreamUrl = `${this.pythonServiceUrl}/v1/images/remove-background`;
+      console.log(`[ImagesService] Calling Python service: ${upstreamUrl}`);
       const response = await fetch(
-        `${this.pythonServiceUrl}/v1/images/remove-background`,
+        upstreamUrl,
         {
           method: "POST",
           headers: {
