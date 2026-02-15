@@ -18,25 +18,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# API Key for internal service-to-service auth
-API_KEY = os.getenv("PYTHON_API_KEY")
-if not API_KEY:
-    raise RuntimeError("PYTHON_API_KEY is not set")
-
-
-@app.middleware("http")
-async def verify_api_key(request: Request, call_next):
-    """Validate API key for all requests except health check"""
-    if request.url.path == "/health":
-        return await call_next(request)
-    
-    api_key = request.headers.get("X-API-Key")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid or missing API key")
-    
-    return await call_next(request)
-
-
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,

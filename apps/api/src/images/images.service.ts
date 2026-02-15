@@ -1,15 +1,13 @@
 import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { mintApiIdToken } from "../auth/api-auth.js";
 
 @Injectable()
 export class ImagesService {
   private readonly pythonServiceUrl: string;
-  private readonly pythonApiKey: string;
 
   constructor() {
     this.pythonServiceUrl =
       process.env.PYTHON_SERVICE_URL ?? "http://localhost:8000";
-    this.pythonApiKey =
-      process.env.PYTHON_API_KEY ?? "dev-key-change-in-production";
   }
 
   async removeBackground(imageBase64: string): Promise<{
@@ -18,13 +16,14 @@ export class ImagesService {
     message: string;
   }> {
     try {
+      const idToken = await mintApiIdToken(this.pythonServiceUrl);
       const response = await fetch(
         `${this.pythonServiceUrl}/v1/images/remove-background`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-API-Key": this.pythonApiKey,
+            Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({ image_base64: imageBase64 }),
         }

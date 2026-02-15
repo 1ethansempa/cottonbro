@@ -311,9 +311,14 @@ export const AuthProvider: React.FC<
     async () =>
       runWithBusy(async () => {
         try {
+          const idToken = await auth.currentUser?.getIdToken().catch(() => "");
+          const headers = idToken
+            ? { authorization: `Bearer ${idToken}` }
+            : undefined;
           await fetch(endpoints.logout, {
             method: "POST",
             credentials: "include",
+            headers,
           }).catch(() => {});
           await auth.signOut().catch(() => {});
           setClaims(null);
