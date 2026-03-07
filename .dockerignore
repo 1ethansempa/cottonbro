@@ -8,3 +8,10 @@ node_modules
 **/coverage
 **/.cache
 .DS_Store
+*.log
+.env*
+.idea
+.vscode
+.pnpm-store
+**/tmp
+**/.DS_Store

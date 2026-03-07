@@ -17,10 +17,8 @@ export class ImagesService {
   }> {
     try {
       const idToken = await mintApiIdToken(this.pythonServiceUrl);
-      const upstreamUrl = `${this.pythonServiceUrl}/v1/images/remove-background`;
-      console.log(`[ImagesService] Calling Python service: ${upstreamUrl}`);
       const response = await fetch(
-        upstreamUrl,
+        `${this.pythonServiceUrl}/v1/images/remove-background`,
         {
           method: "POST",
           headers: {
@@ -32,10 +30,6 @@ export class ImagesService {
       );
 
       if (!response.ok) {
-        const contentType = response.headers.get("content-type") || "unknown";
-        console.error(
-          `[ImagesService] Upstream error: ${response.status} ${response.statusText} (content-type: ${contentType})`
-        );
         const errorText = await response.text();
         throw new HttpException(
           `Python service error: ${errorText}`,
