@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nest start --watch",
+    "dev": "node --env-file-if-exists=.env.local ./node_modules/@nestjs/cli/bin/nest.js start --watch",
     "build": "nest build",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",

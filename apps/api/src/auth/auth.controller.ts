@@ -26,6 +26,7 @@ export class AuthController {
   constructor(private readonly service: AuthService) {}
 
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post("otp/start")
   @HttpCode(204)
   async startOtp(@Body() dto: OtpStartDto, @Ip() ip: string): Promise<void> {
@@ -33,6 +34,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 15 } })
   @Post("otp/verify")
   async verifyOtp(@Body() dto: OtpVerifyDto) {
     const customToken = await this.service.verifyOtpAndMintCustomToken(
@@ -43,7 +45,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Throttle({ default: { ttl: 60_000, limit: 15 } })
   @Post("login")
   @HttpCode(204)
   async login(

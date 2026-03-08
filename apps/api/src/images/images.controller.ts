@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UseGuards } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { ImagesService } from "./images.service.js";
 import {
   RemoveBackgroundDto,
@@ -11,6 +12,7 @@ export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
   @UseGuards(AuthGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 15 } })
   @Post("remove-background")
   async removeBackground(
     @Body() dto: RemoveBackgroundDto

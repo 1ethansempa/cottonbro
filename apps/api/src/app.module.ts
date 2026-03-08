@@ -1,5 +1,9 @@
 import { Module } from "@nestjs/common";
+// APP_GUARD is a special Nest injection token.
+// It allows you to register a global guard using the dependency injection system.
+// Instead of attaching a guard to each controller manually: you register it once globally
 import { APP_GUARD } from "@nestjs/core";
+// ThrottlerModule → configures rate limiting, ThrottlerGuard → actually enforces the limits
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { MailModule } from "./common/mail/mail.module.js";
 import { AuthModule } from "./auth/auth.module.js";

@@ -19,6 +19,8 @@ out/
 .env
 .env*.local
 apps/api/firebase-admin*.json
+.venv/
+venv/
 
 # Logs
 npm-debug.log*
@@ -45,4 +47,3 @@ cdk.context.json
 .serverless/
 
 .pnpm-store
-
