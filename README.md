@@ -69,6 +69,67 @@ Python Services (API key middleware)
 
 ---
 
+## Architecture
+
+### Deployment Topology
+
+```text
+                   ┌─────────────────────────────┐
+                   │   Users (Uganda / EA / EU)  │
+                   └──────────────┬──────────────┘
+                                  │
+                                  ▼
+                   ┌─────────────────────────────┐
+                   │ Cloudflare CDN / Edge Cache │
+                   │ - cache images              │
+                   │ - cache static assets       │
+                   │ - optional HTML caching     │
+                   └──────────────┬──────────────┘
+                                  │
+                                  ▼
+                ┌──────────────────────────────────────┐
+                │ Next.js Frontend on Cloud Run        │
+                │ region: europe-west1 (Belgium)       │
+                │ - SSR / ISR / app routes             │
+                │ - calls API                          │
+                └──────────────┬───────────────────────┘
+                               │
+                               ▼
+                ┌──────────────────────────────────────┐
+                │ NestJS API on Cloud Run              │
+                │ region: europe-west1 (Belgium)       │
+                │ - auth                               │
+                │ - products / cart / orders           │
+                │ - payments / admin                   │
+                │ - generates signed upload URLs       │
+                └───────────┬───────────────┬──────────┘
+                            │               │
+                            │               ▼
+                            │     ┌──────────────────────┐
+                            │     │ Cloudflare R2        │
+                            │     │ - product images     │
+                            │     │ - uploads/media      │
+                            │     └──────────────────────┘
+                            │
+                            ▼
+              ┌────────────────────────────────────────────┐
+              │ PostgreSQL                                 │
+              │ Option A: Neon (recommended now)           │
+              │ Option B: Cloud SQL (boring upgrade path)  │
+              │ Option C: DO droplet (ops-heavy)           │
+              └────────────────────────────────────────────┘
+```
+
+### Notes
+
+- Cloudflare is the edge layer for static assets, image caching, and optional cached HTML responses.
+- The Next.js frontend and NestJS API are both hosted on Cloud Run in `europe-west1`.
+- The API is responsible for auth, commerce flows, admin operations, and signed upload URL generation.
+- Product and upload media are stored in Cloudflare R2.
+- PostgreSQL is expected to run on Neon initially, with Cloud SQL as the low-friction managed migration path.
+
+---
+
 ## Packages Layout
 
 ```
@@ -129,16 +190,28 @@ cottonbro/
 
 ```bash
 # Web (QA env)
-docker build -f apps/web/Dockerfile --build-arg APP_ENV=qa -t cottonbro-web:qa .
-docker run --rm -p 5173:5173 -e APP_ENV=qa cottonbro-web:qa
+docker build -f apps/web/Dockerfile \
+  --build-arg APP_ENV=qa \
+  --build-arg NEXT_PUBLIC_APP_ENV=qa \
+  --build-arg NEXT_PUBLIC_AUTH_BASE_URL=https://qa-auth.example.com \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=https://qa-api.example.com \
+  --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key \
+  --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com \
+  --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id \
+  --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=your-firebase-app-id \
+  --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id \
+  --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com \
+  --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-turnstile-site-key \
+  -t cottonbro-web:qa .
+docker run --rm -p 5173:5173 -e PORT=5173 -e APP_ENV=qa cottonbro-web:qa
 
 # API (QA env)
 docker build -f apps/api/Dockerfile --build-arg APP_ENV=qa -t cottonbro-api:qa .
-docker run --rm -p 3001:3001 -e APP_ENV=qa cottonbro-api:qa
+docker run --rm -p 3001:8080 -e APP_ENV=qa cottonbro-api:qa
 
 # Python Services
 docker build -f apps/python-services/Dockerfile -t cottonbro-python:qa apps/python-services
-docker run --rm -p 8000:8000 -e PYTHON_API_KEY=your-key cottonbro-python:qa
+docker run --rm -p 8000:8080 -e PORT=8080 -e PYTHON_API_KEY=your-key cottonbro-python:qa
 ```
 
 ---
@@ -163,17 +236,31 @@ Tests must pass before deployment. See `.github/workflows/` for details.
 1. Copy env templates:
    ```bash
    cp apps/api/.env.example apps/api/.env.local
-   cp apps/web/.env.qa.local.example apps/web/.env.qa.local
    ```
 
-2. Fill in required secrets (Firebase, Turnstile, SMTP)
+2. Create `apps/web/.env.qa.local` with the required public web vars:
+   ```env
+   APP_ENV=qa
+   NEXT_PUBLIC_APP_ENV=qa
+   NEXT_PUBLIC_FIREBASE_API_KEY=
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+   NEXT_PUBLIC_FIREBASE_APP_ID=
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+   NEXT_PUBLIC_AUTH_BASE_URL=
+   NEXT_PUBLIC_API_BASE_URL=
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+   ```
 
-3. Install dependencies:
+3. Fill in required secrets (Firebase, Turnstile, SMTP)
+
+4. Install dependencies:
    ```bash
    pnpm install
    ```
 
-4. Start development:
+5. Start development:
    ```bash
    pnpm dev
    ```

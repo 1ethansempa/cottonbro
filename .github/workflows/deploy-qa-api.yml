@@ -124,6 +124,7 @@ jobs:
             --allow-unauthenticated \
             --set-env-vars NODE_ENV=production \
             --set-env-vars APP_ENV=qa \
+            --set-env-vars CORS_ORIGINS=${{ secrets.QA_API_CORS_ORIGINS }} \
             --set-secrets FIREBASE_PROJECT_ID=api-firebase-project-id:latest \
             --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
             --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest \

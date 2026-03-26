@@ -30,10 +30,9 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
     }
 
     const nav = [
-        { href: "/#features", label: "Features" },
-        { href: "/#how", label: "How it works" },
-        { href: "/#pricing", label: "Pricing" },
-        { href: "/#faq", label: "FAQ" },
+        { href: "/", label: "Home" },
+        { href: "/products", label: "Products" },
+        { href: "/design", label: "Design" },
     ];
 
     return (
@@ -55,16 +54,16 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-8">
-                            {["Features", "How it works", "Pricing"].map((item) => (
+                            {nav.map((item) => (
                                 <Link
-                                    key={item}
-                                    href={`/#${item.toLowerCase().replace(/\s+/g, "-")}`}
+                                    key={item.label}
+                                    href={item.href}
                                     className={`text-sm font-medium transition-colors tracking-wide uppercase ${theme === "light"
                                             ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
                                             : "text-gray-400 hover:text-white hover:underline underline-offset-4"
                                         }`}
                                 >
-                                    {item}
+                                    {item.label}
                                 </Link>
                             ))}
                         </nav>
@@ -150,14 +149,14 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                         </div>
 
                         <nav className="flex flex-col gap-8 items-center text-center">
-                            {["The Lab", "Process", "Pricing"].map((item) => (
+                            {nav.map((item) => (
                                 <Link
-                                    key={item}
-                                    href={`/#${item.toLowerCase().replace(/\s+/g, "-")}`}
+                                    key={item.label}
+                                    href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="text-4xl font-extrabold tracking-tight text-white hover:text-gray-300 transition-all"
                                 >
-                                    {item}
+                                    {item.label}
                                 </Link>
                             ))}
                             {!isAuthenticated ? (

@@ -1,142 +1,39 @@
-// ...existing imports...
-import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
+import { Logo } from "@cottonbro/ui";
 
 interface SiteFooterProps {
     theme?: "light" | "dark";
 }
 
 export function SiteFooter({ theme = "dark" }: SiteFooterProps) {
-    // ...existing code...
     return (
-        <footer
-            className={`border-t pt-20 pb-10 transition-colors duration-300 ${theme === "light"
-                    ? "bg-white border-black/5 text-gray-900"
-                    : "bg-page border-white/5 text-primary"
-                }`}
+        <footer 
+            className={`flex flex-col md:flex-row justify-between items-start md:items-end py-14 px-6 md:px-[6%] ${
+                theme === "light" ? "bg-white text-black border-t border-gray-100" : "bg-black text-white"
+            }`}
         >
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 md:grid-cols-4 lg:gap-16 relative z-10">
-                <div className="col-span-2 md:col-span-1">
-                    <Link
-                        href="/"
-                        className="inline-block hover:opacity-80 transition-opacity"
-                    >
-                        <Logo
-                            size="md"
-                            color={theme === "light" ? "black" : "white"}
-                            fontClassName="font-bold tracking-tight"
-                        />
-                    </Link>
-                    <p
-                        className={`mt-6 text-sm leading-relaxed max-w-xs font-medium ${theme === "light" ? "text-gray-500" : "text-secondary"}`}
-                    >
-                        CottonBro is the engine for the next generation of brands.
-                        <br />
-                        <span className={theme === "light" ? "text-black" : "text-white"}>
-                            Design to drop in minutes.
-                        </span>
-                    </p>
-                </div>
-                <div>
-                    <h4
-                        className={`mb-6 text-xs font-bold uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}
-                    >
-                        Studio
-                    </h4>
-                    <ul
-                        className={`space-y-4 text-sm font-medium ${theme === "light" ? "text-gray-500" : "text-secondary"}`}
-                    >
-                        <li>
-                            <Link
-                                href="/#features"
-                                className="hover:underline transition-all"
-                            >
-                                The Lab
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/#how" className="hover:underline transition-all">
-                                Process
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/#pricing" className="hover:underline transition-all">
-                                Pricing
-                            </Link>
-                        </li>
-                        <li>
-                            <Link
-                                href="/#faq"
-                                className="hover:text-white hover:underline transition-all"
-                            >
-                                Q&A
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <h4
-                        className={`mb-6 text-xs font-bold uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}
-                    >
-                        Company
-                    </h4>
-                    <ul
-                        className={`space-y-4 text-sm font-medium ${theme === "light" ? "text-gray-500" : "text-secondary"}`}
-                    >
-                        <li>
-                            <Link href="#" className="hover:underline transition-all">
-                                About
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="#" className="hover:underline transition-all">
-                                Contact
-                            </Link>
-                        </li>
-                        <li>
-                            <Link
-                                href="#"
-                                className="hover:text-white hover:underline transition-all"
-                            >
-                                Privacy Policy
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <h4
-                        className={`mb-6 text-xs font-bold uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}
-                    >
-                        The Drop List
-                    </h4>
-                    <form className="flex flex-col gap-3">
-                        <input
-                            type="email"
-                            placeholder="Email address"
-                            className={`w-full border-b px-4 py-3 text-sm outline-none transition-all placeholder:tracking-wide placeholder:uppercase placeholder:text-xs rounded-t-lg ${theme === "light"
-                                    ? "bg-transparent border-gray-200 text-black placeholder:text-gray-400 focus:border-black"
-                                    : "bg-transparent border-white/20 text-white placeholder:text-tertiary focus:border-white"
-                                }`}
-                        />
-                        <button
-                            className={`w-full px-4 py-4 text-xs font-bold transition uppercase tracking-widest border rounded-full ${theme === "light"
-                                    ? "border-black bg-black text-white hover:bg-white hover:text-black"
-                                    : "border-black bg-black text-white hover:bg-gray-800 hover:border-black hover:text-white"
-                                }`}
-                        >
-                            Join Waitlist
-                        </button>
-                    </form>
+            <div className="flex flex-col gap-2 mb-10 md:mb-0">
+                <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
+                    <Logo size="md" color={theme === "light" ? "black" : "white"} fontClassName="font-black tracking-tighter uppercase" />
+                </Link>
+                <div className={`text-[10px] uppercase tracking-widest font-bold mt-1 ${theme === "light" ? "text-gray-400" : "text-gray-500"}`}>
+                    TERMS AND PRIVACY &middot; &copy; {new Date().getFullYear()} ALL RIGHTS RESERVED.
                 </div>
             </div>
 
-            <div
-                className={`mt-16 border-t pt-8 text-center text-sm font-medium uppercase tracking-wide ${theme === "light"
-                        ? "border-black/5 text-gray-400"
-                        : "border-white/5 text-tertiary"
-                    }`}
-            >
-                © {new Date().getFullYear()} CottonBro. Built for creators.
+            <div className="flex flex-wrap gap-6 md:gap-10 items-center">
+                <Link href="/terms" className={`text-[10px] font-bold tracking-widest uppercase transition-colors ${theme === "light" ? "hover:text-gray-400 text-black" : "hover:text-gray-400 text-white"}`}>
+                    TERMS
+                </Link>
+                <Link href="/privacy" className={`text-[10px] font-bold tracking-widest uppercase transition-colors ${theme === "light" ? "hover:text-gray-400 text-black" : "hover:text-gray-400 text-white"}`}>
+                    PRIVACY
+                </Link>
+                <Link href="/about" className={`text-[10px] font-bold tracking-widest uppercase transition-colors ${theme === "light" ? "hover:text-gray-400 text-black" : "hover:text-gray-400 text-white"}`}>
+                    ABOUT
+                </Link>
+                <Link href="/contact" className={`text-[10px] font-bold tracking-widest uppercase transition-colors ${theme === "light" ? "hover:text-gray-400 text-black" : "hover:text-gray-400 text-white"}`}>
+                    CONTACT US
+                </Link>
             </div>
         </footer>
     );
