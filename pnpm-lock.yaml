@@ -245,9 +245,6 @@ importers:
 
   packages/backend/auth-server:
     dependencies:
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
       firebase-admin:
         specifier: ^12.6.0
         version: 12.7.0
