@@ -30,9 +30,9 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
     }
 
     const nav = [
-        { href: "/", label: "Home" },
-        { href: "/products", label: "Products" },
-        { href: "/design", label: "Design" },
+        { href: "#", label: "Home" },
+        { href: "#", label: "Products" },
+        { href: "#", label: "Design" },
     ];
 
     return (
@@ -45,7 +45,7 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
             >
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                     <div className="flex items-center gap-12">
-                        <Link href="/" className="flex items-center gap-2">
+                        <Link href="#" className="flex items-center gap-2">
                             <Logo
                                 size="md"
                                 color={theme === "light" ? "black" : "white"}
@@ -73,7 +73,7 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                         {!isAuthenticated ? (
                             <>
                                 <Link
-                                    href="/auth/login"
+                                    href="#"
                                     className={`text-sm font-semibold transition px-2 tracking-wide ${theme === "light"
                                             ? "text-black hover:opacity-70"
                                             : "text-white hover:text-gray-300"
@@ -81,9 +81,9 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                 >
                                     Login
                                 </Link>
-                                <Link href="/auth/login">
+                                <Link href="#">
                                     <button
-                                        className={`rounded-full px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
+                                        className={`rounded-none px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
                                                 ? "bg-black text-white hover:bg-gray-900"
                                                 : "bg-white text-black hover:bg-gray-100"
                                             }`}
@@ -97,7 +97,7 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                 type="button"
                                 onClick={handleLogout}
                                 disabled={loggingOut || busy}
-                                className={`rounded-full border px-5 py-2 text-sm font-medium transition disabled:opacity-60 tracking-wide cursor-pointer ${theme === "light"
+                                className={`rounded-none border px-5 py-2 text-sm font-medium transition disabled:opacity-60 tracking-wide cursor-pointer ${theme === "light"
                                         ? "border-black/10 bg-black/5 text-gray-600 hover:text-black hover:bg-black/10"
                                         : "border-white/10 bg-white/5 text-secondary hover:text-white hover:bg-white/10"
                                     }`}
@@ -162,16 +162,16 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                             {!isAuthenticated ? (
                                 <>
                                     <Link
-                                        href="/auth/login"
+                                        href="#"
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="text-2xl font-bold text-secondary hover:text-white mt-8"
                                     >
                                         Enter Studio
                                     </Link>
                                     <Link
-                                        href="/auth/login"
+                                        href="#"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="rounded-full bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-white mt-4 tracking-wide hover:bg-gray-100 hover:scale-[1.02]"
+                                        className="rounded-none bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-white mt-4 tracking-wide hover:bg-gray-100 hover:scale-[1.02]"
                                     >
                                         Open Studio
                                     </Link>

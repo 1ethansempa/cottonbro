@@ -3,13 +3,24 @@
 import React, { useState } from "react";
 
 export function ProfitCalculator() {
+  const [productType, setProductType] = useState<string>("heavyweight");
   const [sellingPrice, setSellingPrice] = useState<number>(60000);
   const [salesQuantity, setSalesQuantity] = useState<number>(50);
 
-  // Base production cost + platform fee
-  const BASE_COST = 45000; 
+  // Platform fee (flat)
+  const PLATFORM_FEE = 10000;
 
-  const profitPerItem = Math.max(0, sellingPrice - BASE_COST);
+  // Base blank cost per product type (excluding platform fee)
+  const blankCosts: Record<string, number> = {
+    heavyweight: 35000,
+    classic: 25000,
+    polo: 40000,
+    hoodie: 45000,
+  };
+  const blankCost = blankCosts[productType] ?? 35000;
+  const totalCost = blankCost + PLATFORM_FEE;
+
+  const profitPerItem = Math.max(0, sellingPrice - totalCost);
   const totalProfit = profitPerItem * salesQuantity;
 
   return (
@@ -31,12 +42,17 @@ export function ProfitCalculator() {
             <label className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase block">
               SELECT PRODUCT TYPE
             </label>
-            <div className="border border-gray-200 px-5 py-4 bg-white flex items-center justify-between cursor-pointer">
-              <span className="font-bold text-sm tracking-wide text-black">Heavyweight Tee</span>
-              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+            <select
+              value={productType}
+              onChange={(e) => setProductType(e.target.value)}
+              className="w-full border border-gray-200 px-5 py-4 bg-white font-bold text-sm tracking-wide text-black cursor-pointer appearance-none focus:outline-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='1.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center', backgroundSize: '20px' }}
+            >
+              <option value="heavyweight">Heavyweight Tee</option>
+              <option value="classic">Classic Tee</option>
+              <option value="polo">Polo Shirt</option>
+              <option value="hoodie">Hoodie</option>
+            </select>
           </div>
 
           {/* Selling Price */}

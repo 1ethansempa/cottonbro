@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@cottonbro/ui";
+
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,8 +23,6 @@ export default function LandingPage() {
   const stillInterested = [
     { id: 5, name: "YURI TEE", price: "UGX 60,000", colors: 3, img: "/product-5.png" },
     { id: 6, name: "PREMIUM SOFT", price: "UGX 55,000", colors: 6, img: "/product-1.png" },
-    { id: 7, name: "UTILITY TEE", price: "UGX 65,000", colors: 2, img: "/product-2.png" },
-    { id: 8, name: "SMILEY TEE", price: "UGX 50,000", colors: 1, img: "/product-3.png" },
   ];
 
   const steps = [
@@ -87,20 +85,20 @@ export default function LandingPage() {
               A BRAND.
             </h1>
 
-            <p className="text-sm text-gray-400 font-medium tracking-[0.15em] uppercase mb-10">
+            <p className="text-sm text-gray-500 font-medium tracking-[0.15em] uppercase mb-10">
               Create your brand. Design. Launch. Get Paid.
             </p>
 
             <div className="flex flex-row items-center gap-3">
-              <Link href="/design">
-                <Button className="bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer">
+              <Link href="#">
+                <button className="bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer">
                   START DESIGNING
-                </Button>
+                </button>
               </Link>
-              <Link href="#drops">
-                <Button variant="outline" className="border border-gray-300 text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer">
+              <Link href="#">
+                <button className="border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer">
                   SHOP NOW
-                </Button>
+                </button>
               </Link>
             </div>
           </motion.div>
@@ -128,7 +126,7 @@ export default function LandingPage() {
       <section className="py-20 px-6 md:px-[6%]">
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
           <h2 className="text-xl font-black tracking-[-0.02em] uppercase text-black">LATEST DROPS</h2>
-          <Link href="/products" className="text-[10px] font-bold text-gray-400 hover:text-black tracking-[0.15em] uppercase transition-colors">
+          <Link href="#" className="text-[10px] font-bold text-gray-400 hover:text-black tracking-[0.15em] uppercase transition-colors">
             VIEW ALL →
           </Link>
         </div>
@@ -162,7 +160,7 @@ export default function LandingPage() {
           <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] leading-[0.88] uppercase mb-4 text-white">
             FROM VISION<br />TO REALITY.
           </h2>
-          <p className="text-[10px] font-bold tracking-[0.3em] text-gray-500 uppercase mb-16">
+          <p className="text-[10px] font-bold tracking-[0.3em] text-gray-400 uppercase mb-16">
             We handle the logistics. You earn the profit.
           </p>
 
@@ -180,7 +178,7 @@ export default function LandingPage() {
                 </span>
                 <div className="pt-2 space-y-1">
                   <h4 className="text-sm font-black tracking-[0.2em] uppercase">{step.title}</h4>
-                  <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                  <p className="text-xs text-gray-400 font-medium leading-relaxed">
                     {step.desc}
                   </p>
                 </div>
@@ -239,12 +237,12 @@ export default function LandingPage() {
               YOUR CREATIVE<br />SPACE.
             </h2>
             <p className="text-[10px] font-bold text-gray-600 tracking-[0.2em] uppercase mb-10 max-w-[240px]">
-              The best ideas start here. We give you all your tools.
+              The best ideas start here. We give you the tools.
             </p>
-            <Link href="/design">
-              <Button className="bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-pointer shadow-lg border border-gray-200">
+            <Link href="#">
+              <button className="bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-pointer shadow-lg border border-gray-200">
                 START DESIGNING
-              </Button>
+              </button>
             </Link>
           </div>
         </div>
@@ -257,12 +255,12 @@ export default function LandingPage() {
             <span className="text-3xl md:text-4xl font-black tracking-normal align-middle text-gray-500">UGX</span> 10k
           </h2>
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 max-w-sm mx-auto mb-10">
-            Flat platform fee. Business model? You sell the product & keep the profit.
+            UGX 10K platform fee + base blank cost per item sold. You set the price & keep the profit.
           </p>
-          <Link href="/design">
-            <Button className="bg-black text-white px-10 py-5 text-[10px] font-black tracking-[0.2em] uppercase rounded-none hover:opacity-80 transition-all cursor-pointer shadow-xl">
+          <Link href="#">
+            <button className="bg-black text-white px-10 py-5 text-[10px] font-black tracking-[0.2em] uppercase rounded-none hover:opacity-80 transition-all cursor-pointer shadow-xl">
               START YOUR BRAND TODAY
-            </Button>
+            </button>
           </Link>
         </div>
       </section>
