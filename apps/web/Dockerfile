@@ -1,8 +1,8 @@
-# ---------- Base image: Node 22 + pnpm ----------
+# ---------- Base image: Node 24 + pnpm ----------
 
-# Start from the official lightweight Node.js 22 image.
+# Start from the official lightweight Node.js 24 image.
 # "slim" removes unnecessary packages to keep the container smaller.
-FROM node:22-slim AS base
+FROM node:24-slim AS base
 
 # Set production mode so Node frameworks disable dev features,
 # reduce logging, and enable optimizations.
@@ -13,7 +13,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 # Enable pnpm via Node's built-in package manager wrapper (corepack).
-# Node 22 includes corepack which manages package manager versions.
+# Node 24 includes corepack which manages package manager versions.
 # This ensures the container always uses pnpm v10.11.1.
 RUN corepack enable && corepack prepare pnpm@10.11.1 --activate
 
@@ -98,7 +98,7 @@ RUN pnpm --filter @cottonbro/web exec next build
 
 # Final runtime container with only the minimal files needed to run.
 # This keeps the production image smaller and more secure.
-FROM node:22-slim AS runner
+FROM node:24-slim AS runner
 
 # Set production environment again for safety.
 ENV NODE_ENV=production
