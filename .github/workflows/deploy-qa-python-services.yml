@@ -37,7 +37,7 @@ jobs:
     steps:
       # downloads repo code onto runner
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
         # GitHub mints an OIDC token, Google trusts it via WIF, and impersonates the GCP service account.
         # no need to store json key in github
