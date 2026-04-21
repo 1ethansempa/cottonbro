@@ -1205,17 +1205,14 @@ export default function FabricEditor() {
         throw new Error("missing_id_token");
       }
 
-      const response = await fetch(
-        `${apiBaseUrl}/v1/images/remove-background`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({ image_base64: base64 }),
+      const response = await fetch(`${apiBaseUrl}/images/remove-background`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
-      );
+        body: JSON.stringify({ image_base64: base64 }),
+      });
 
       if (!response.ok) throw new Error("API request failed");
 
@@ -1998,10 +1995,11 @@ export default function FabricEditor() {
                             setFontSearch("");
                             setFontLoadCount(15);
                           }}
-                          className={`p-3 rounded-lg border text-left transition-all ${fontFamily === f
+                          className={`p-3 rounded-lg border text-left transition-all ${
+                            fontFamily === f
                               ? "border-black bg-black shadow-lg"
                               : "border-gray-200 hover:border-gray-300 hover:bg-white bg-white shadow-sm"
-                            }`}
+                          }`}
                         >
                           <span
                             className={`font-medium text-sm ${fontFamily === f ? "text-white" : "text-black"}`}
@@ -2052,10 +2050,11 @@ const ToolButton = ({
 }) => (
   <button
     onClick={onClick}
-    className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${active
+    className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+      active
         ? "bg-black text-white shadow-xl scale-110"
         : "text-gray-400 hover:text-black hover:bg-gray-100"
-      }`}
+    }`}
   >
     {icon}
     <span className="absolute left-14 bg-black text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg font-bold">

@@ -15,7 +15,7 @@ Cottonbro lets creators design merch (tees, beanies, crop tops, etc.), render th
 | **Animation** | Framer Motion | 12.23 |
 | **Backend API** | NestJS | 11.1 |
 | **Python Services** | FastAPI | 0.115 |
-| **Runtime** | Node.js 22.x / Python 3.11 |
+| **Runtime** | Node.js 24.x / Python 3.11 |
 | **Authentication** | Firebase Admin SDK | 11.10 |
 | **Email** | Nodemailer + Zoho SMTP | 7.0 |
 | **Captcha** | Cloudflare Turnstile | — |
@@ -233,12 +233,19 @@ Tests must pass before deployment. See `.github/workflows/` for details.
 
 ## Environment Setup
 
-1. Copy env templates:
+1. Install prerequisites:
+   ```bash
+   corepack enable
+   node --version   # should be v24.x
+   pnpm --version
+   ```
+
+2. Copy env templates:
    ```bash
    cp apps/api/.env.example apps/api/.env.local
    ```
 
-2. Create `apps/web/.env.qa.local` with the required public web vars:
+3. Create `apps/web/.env.qa.local` with the required public web vars:
    ```env
    APP_ENV=qa
    NEXT_PUBLIC_APP_ENV=qa
@@ -253,14 +260,14 @@ Tests must pass before deployment. See `.github/workflows/` for details.
    NEXT_PUBLIC_TURNSTILE_SITE_KEY=
    ```
 
-3. Fill in required secrets (Firebase, Turnstile, SMTP)
+4. Fill in required secrets (Firebase, Turnstile, SMTP)
 
-4. Install dependencies:
+5. Install dependencies:
    ```bash
    pnpm install
    ```
 
-5. Start development:
+6. Start development:
    ```bash
    pnpm dev
    ```

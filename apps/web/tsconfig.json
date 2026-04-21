@@ -21,7 +21,9 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@cottonbro/auth-react": ["../../packages/frontend/auth-react/src"],
+      "@cottonbro/ui": ["../../packages/frontend/ui/src"]
     }
   },
   "include": [

@@ -1,7 +1,7 @@
 # -------- BASE IMAGE --------
-# Use the official Node.js 22 slim image.
+# Use the official Node.js 24 slim image.
 # "slim" keeps the image smaller by excluding unnecessary OS packages.
-FROM node:22-slim AS base
+FROM node:24-slim AS base
 
 # Set Node environment to production.
 # Many libraries change behavior (e.g. logging, optimizations) when NODE_ENV=production.
@@ -74,7 +74,7 @@ RUN pnpm deploy --filter @cottonbro/api --prod --legacy /app/deploy
 
 # -------- RUNTIME STAGE --------
 # Final lightweight container that will run in production.
-FROM node:22-slim AS runner
+FROM node:24-slim AS runner
 
 # Production environment again for safety.
 ENV NODE_ENV=production
