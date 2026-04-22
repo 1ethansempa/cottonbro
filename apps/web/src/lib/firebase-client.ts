@@ -1,18 +1,32 @@
-import { initializeApp, getApps } from "firebase/app";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import {
+  type Auth,
   getAuth,
   setPersistence,
   browserLocalPersistence,
 } from "firebase/auth";
-import { publicEnv } from "@/config/env";
+import { getFirebasePublicEnv } from "@/config/env";
 
-const config = {
-  apiKey: publicEnv.FIREBASE_API_KEY,
-  authDomain: publicEnv.FIREBASE_AUTH_DOMAIN,
-  projectId: publicEnv.FIREBASE_PROJECT_ID,
-};
+let cachedAuth: Auth | null = null;
+let persistenceConfigured = false;
 
-export const clientApp = getApps()[0] ?? initializeApp(config);
-export const clientAuth = getAuth(clientApp);
+export function getClientAuth() {
+  if (cachedAuth) {
+    return cachedAuth;
+  }
 
-setPersistence(clientAuth, browserLocalPersistence).catch(() => {});
+  const clientApp =
+    getApps()[0] ??
+    initializeApp({
+      ...getFirebasePublicEnv(),
+    });
+
+  cachedAuth = getAuth(clientApp ?? getApp());
+
+  if (!persistenceConfigured && typeof window !== "undefined") {
+    persistenceConfigured = true;
+    setPersistence(cachedAuth, browserLocalPersistence).catch(() => {});
+  }
+
+  return cachedAuth;
+}

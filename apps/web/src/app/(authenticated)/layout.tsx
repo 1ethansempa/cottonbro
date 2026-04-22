@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { clientAuth } from "@/lib/firebase-client";
+import { getClientAuth } from "@/lib/firebase-client";
 import { useRouter } from "next/navigation";
 
 export default function AuthenticatedLayout({
@@ -15,6 +15,8 @@ export default function AuthenticatedLayout({
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    const clientAuth = getClientAuth();
+
     // Listen directly to Firebase auth state changes
     // This fires once auth state is restored from IndexedDB
     const unsubscribe = onAuthStateChanged(clientAuth, (firebaseUser) => {
