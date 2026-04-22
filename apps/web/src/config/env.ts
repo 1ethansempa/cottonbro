@@ -3,16 +3,22 @@ import { z } from "zod";
 export const APP_ENV = (process.env.APP_ENV as "qa" | "prod") ?? "qa";
 
 const firebasePublicSchema = z.object({
-  FIREBASE_API_KEY: z.string().min(1),
-  FIREBASE_AUTH_DOMAIN: z.string().min(1),
-  FIREBASE_PROJECT_ID: z.string().min(1),
+  apiKey: z.string().min(1),
+  authDomain: z.string().min(1),
+  projectId: z.string().min(1),
+  appId: z.string().min(1).optional(),
+  messagingSenderId: z.string().min(1).optional(),
+  storageBucket: z.string().min(1).optional(),
 });
 
 export function getFirebasePublicEnv() {
   return firebasePublicSchema.parse({
-    FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
 }
 

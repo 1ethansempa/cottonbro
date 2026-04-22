@@ -36,7 +36,7 @@ export interface Endpoints {
 }
 
 export interface AuthContextConfig {
-  auth: FirebaseAuth;
+  auth: FirebaseAuth | null;
   endpoints: Endpoints;
   onSession?: (args: { idToken: string; user: User }) => void;
   onLogout?: () => void;
@@ -93,6 +93,16 @@ export const AuthProvider: React.FC<
   // Lifecycle: track mount + sync auth state/claims
   useEffect(() => {
     mounted.current = true;
+
+    if (!auth) {
+      if (!hasResolvedAuth.current) {
+        hasResolvedAuth.current = true;
+        if (mounted.current) setLoading(false);
+      }
+      return () => {
+        mounted.current = false;
+      };
+    }
 
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -156,7 +166,7 @@ export const AuthProvider: React.FC<
         if (mounted.current) setBusy(false);
       }
     },
-    []
+    [],
   );
 
   // Mint/refresh the backend session cookie from a Firebase ID token.
@@ -167,7 +177,7 @@ export const AuthProvider: React.FC<
       if (emitSessionEvent) onSession?.({ idToken, user: u });
       return idToken;
     },
-    [endpoints.login, onSession, postJson, sessionTtlMs]
+    [endpoints.login, onSession, postJson, sessionTtlMs],
   );
 
   // Exchange Firebase ID token for our session cookie, optionally sign out client.
@@ -175,10 +185,10 @@ export const AuthProvider: React.FC<
     async (u: User) => {
       await syncSessionCookie(u, true);
       if (!keepClientSignedIn) {
-        await auth.signOut();
+        await auth?.signOut?.();
       }
     },
-    [syncSessionCookie, keepClientSignedIn, auth]
+    [syncSessionCookie, keepClientSignedIn, auth],
   );
 
   // Public actions
@@ -193,13 +203,14 @@ export const AuthProvider: React.FC<
         if (!token) throw new Error("captcha_required");
         await postJson(endpoints.startOtp, { email: e, captchaToken: token });
       }),
-    [endpoints.startOtp, postJson, runWithBusy]
+    [endpoints.startOtp, postJson, runWithBusy],
   );
 
   // Verify OTP -> sign in -> mint cookie.
   const confirmOtp = useCallback<AuthContextValue["confirmOtp"]>(
     async (email, code) =>
       runWithBusy(async () => {
+        if (!auth) throw new Error("auth_not_initialized");
         try {
           const e = email.trim();
           const c = code.trim();
@@ -221,13 +232,14 @@ export const AuthProvider: React.FC<
           throw err;
         }
       }),
-    [auth, endpoints.verifyOtp, establishSession, postJson, runWithBusy]
+    [auth, endpoints.verifyOtp, establishSession, postJson, runWithBusy],
   );
 
   // Google OAuth; links existing OTP account when allowed.
   const googleSignIn = useCallback<AuthContextValue["googleSignIn"]>(
     async () =>
       runWithBusy(async () => {
+        if (!auth) throw new Error("auth_not_initialized");
         try {
           const provider = new GoogleAuthProvider();
 
@@ -243,7 +255,7 @@ export const AuthProvider: React.FC<
         } catch (e: any) {
           if (e?.code === "auth/account-exists-with-different-credential") {
             setError(
-              "Account exists with a different sign-in method. Sign in with email, then add Google."
+              "Account exists with a different sign-in method. Sign in with email, then add Google.",
             );
           } else {
             setError(e?.message ?? "google_signin_failed");
@@ -251,7 +263,7 @@ export const AuthProvider: React.FC<
           throw e;
         }
       }),
-    [allowAutoLink, auth, establishSession, runWithBusy]
+    [allowAutoLink, auth, establishSession, runWithBusy],
   );
 
   // Refresh Firebase token + claims + cookie.
@@ -259,7 +271,7 @@ export const AuthProvider: React.FC<
     AuthContextValue["refreshIdToken"]
   >(async () => {
     try {
-      if (!auth.currentUser) return null;
+      if (!auth?.currentUser) return null;
       const token = await syncSessionCookie(auth.currentUser, false);
       const info = await auth.currentUser.getIdTokenResult();
       if (mounted.current) setClaims(info.claims);
@@ -281,7 +293,7 @@ export const AuthProvider: React.FC<
       baseInterval && baseInterval > 0
         ? Math.max(
             MIN_REFRESH_INTERVAL_MS,
-            Math.min(baseInterval, MAX_REFRESH_INTERVAL_MS)
+            Math.min(baseInterval, MAX_REFRESH_INTERVAL_MS),
           )
         : undefined;
     if (!user || !intervalMs) return undefined;
@@ -311,7 +323,7 @@ export const AuthProvider: React.FC<
     async () =>
       runWithBusy(async () => {
         try {
-          const idToken = await auth.currentUser?.getIdToken().catch(() => "");
+          const idToken = await auth?.currentUser?.getIdToken().catch(() => "");
           const headers = idToken
             ? { authorization: `Bearer ${idToken}` }
             : undefined;
@@ -320,7 +332,7 @@ export const AuthProvider: React.FC<
             credentials: "include",
             headers,
           }).catch(() => {});
-          await auth.signOut().catch(() => {});
+          await auth?.signOut().catch(() => {});
           setClaims(null);
           setUser(null);
           onLogout?.();
@@ -328,7 +340,7 @@ export const AuthProvider: React.FC<
           // `runWithBusy` handles busy flag; keep behavior the same.
         }
       }),
-    [auth, endpoints.logout, onLogout, runWithBusy]
+    [auth, endpoints.logout, onLogout, runWithBusy],
   );
 
   // Memoized context payload
@@ -359,7 +371,7 @@ export const AuthProvider: React.FC<
       logout,
       error,
       busy,
-    ]
+    ],
   );
 
   // No JSX so the file stays .ts
