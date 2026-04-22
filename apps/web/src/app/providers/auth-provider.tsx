@@ -2,13 +2,15 @@
 
 import React from "react";
 import { AuthProvider } from "@cottonbro/auth-react";
-import { clientAuth } from "@/lib/firebase-client";
+import { getClientAuth } from "@/lib/firebase-client";
 
 export default function WebAuthProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const clientAuth = getClientAuth();
+
   // Wraps the shared AuthProvider with app-specific endpoints/env-driven TTL +
   // refresh cadence so the web app can tune session behavior without duplicating logic.
   const apiBaseUrl =
