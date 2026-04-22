@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type { Auth } from "firebase/auth";
 import { AuthProvider } from "@cottonbro/auth-react";
 import { getClientAuth } from "@/lib/firebase-client";
 
@@ -9,7 +10,10 @@ export default function WebAuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const clientAuth = getClientAuth();
+  const [clientAuth] = React.useState<Auth | null>(() => {
+    if (typeof window === "undefined") return null;
+    return getClientAuth();
+  });
 
   // Wraps the shared AuthProvider with app-specific endpoints/env-driven TTL +
   // refresh cadence so the web app can tune session behavior without duplicating logic.
@@ -18,7 +22,7 @@ export default function WebAuthProvider({
   // Session TTL defaults to 14 days but can be overridden per environment for quicker expiry.
   const defaultSessionTtlMs = 14 * 24 * 60 * 60 * 1000;
   const configuredTtlMs = Number(
-    process.env.NEXT_PUBLIC_SESSION_TTL_MS?.trim() || ""
+    process.env.NEXT_PUBLIC_SESSION_TTL_MS?.trim() || "",
   );
   const sessionTtlMs =
     Number.isFinite(configuredTtlMs) && configuredTtlMs > 0
@@ -26,13 +30,13 @@ export default function WebAuthProvider({
       : defaultSessionTtlMs;
   // Auto-refresh the session well before TTL expiry; env var lets us tune the cadence.
   const configuredRefreshMs = Number(
-    process.env.NEXT_PUBLIC_SESSION_REFRESH_INTERVAL_MS?.trim() || ""
+    process.env.NEXT_PUBLIC_SESSION_REFRESH_INTERVAL_MS?.trim() || "",
   );
 
   //Refresh at most every 12 hours.Refresh at least every 1 hour.Ideally: refresh every 1/4 of the session lifetime.
   const fallbackRefreshMs = Math.min(
     12 * 60 * 60 * 1000,
-    Math.max(60 * 60 * 1000, Math.floor(sessionTtlMs / 4))
+    Math.max(60 * 60 * 1000, Math.floor(sessionTtlMs / 4)),
   );
   const sessionRefreshIntervalMs =
     Number.isFinite(configuredRefreshMs) && configuredRefreshMs > 0
