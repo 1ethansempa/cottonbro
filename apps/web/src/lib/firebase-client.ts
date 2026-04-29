@@ -5,7 +5,7 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from "firebase/auth";
-import { getFirebasePublicEnv } from "@/config/env";
+import { getOptionalFirebasePublicEnv } from "@/config/env";
 
 let cachedAuth: Auth | null = null;
 let persistenceConfigured = false;
@@ -15,10 +15,15 @@ export function getClientAuth() {
     return cachedAuth;
   }
 
+  const firebaseConfig = getOptionalFirebasePublicEnv();
+  if (!firebaseConfig) {
+    return null;
+  }
+
   const clientApp =
     getApps()[0] ??
     initializeApp({
-      ...getFirebasePublicEnv(),
+      ...firebaseConfig,
     });
 
   cachedAuth = getAuth(clientApp ?? getApp());

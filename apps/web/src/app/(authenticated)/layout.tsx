@@ -16,6 +16,10 @@ export default function AuthenticatedLayout({
 
   useEffect(() => {
     const clientAuth = getClientAuth();
+    if (!clientAuth) {
+      setAuthReady(true);
+      return;
+    }
 
     // Listen directly to Firebase auth state changes
     // This fires once auth state is restored from IndexedDB
