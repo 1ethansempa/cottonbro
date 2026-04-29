@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { SiteHeader } from "@/components/site-header";
@@ -67,7 +66,7 @@ export default function LandingPage() {
 
   return (
     <div className="font-sans bg-white text-black min-h-screen selection:bg-black selection:text-white">
-      <SiteHeader theme="light" />
+      <SiteHeader theme="light" disableLinks />
 
       {/* ═══════ HERO ═══════ */}
       <section className="relative w-full min-h-[90vh] flex flex-col md:flex-row items-stretch overflow-hidden bg-white">
@@ -90,16 +89,12 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-row items-center gap-3">
-              <Link href="#">
-                <button className="bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer">
-                  START DESIGNING
-                </button>
-              </Link>
-              <Link href="#">
-                <button className="border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer">
-                  SHOP NOW
-                </button>
-              </Link>
+              <button type="button" className="bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default">
+                START DESIGNING
+              </button>
+              <button type="button" className="border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default">
+                SHOP NOW
+              </button>
             </div>
           </motion.div>
         </div>
@@ -126,9 +121,9 @@ export default function LandingPage() {
       <section className="py-20 px-6 md:px-[6%]">
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
           <h2 className="text-xl font-black tracking-[-0.02em] uppercase text-black">LATEST DROPS</h2>
-          <Link href="#" className="text-[10px] font-bold text-gray-400 hover:text-black tracking-[0.15em] uppercase transition-colors">
+          <span aria-disabled="true" className="text-[10px] font-bold text-gray-400 tracking-[0.15em] uppercase cursor-default">
             VIEW ALL →
-          </Link>
+          </span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-x-5 gap-y-10">
@@ -239,11 +234,9 @@ export default function LandingPage() {
             <p className="text-[10px] font-bold text-gray-600 tracking-[0.2em] uppercase mb-10 max-w-[240px]">
               The best ideas start here. We give you the tools.
             </p>
-            <Link href="#">
-              <button className="bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-pointer shadow-lg border border-gray-200">
-                START DESIGNING
-              </button>
-            </Link>
+            <button type="button" className="bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-default shadow-lg border border-gray-200">
+              START DESIGNING
+            </button>
           </div>
         </div>
       </section>
@@ -257,11 +250,9 @@ export default function LandingPage() {
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 max-w-sm mx-auto mb-10">
             UGX 10K platform fee + base blank cost per item sold. You set the price & keep the profit.
           </p>
-          <Link href="#">
-            <button className="bg-black text-white px-10 py-5 text-[10px] font-black tracking-[0.2em] uppercase rounded-none hover:opacity-80 transition-all cursor-pointer shadow-xl">
-              START YOUR BRAND TODAY
-            </button>
-          </Link>
+          <button type="button" className="bg-black text-white px-10 py-5 text-[10px] font-black tracking-[0.2em] uppercase rounded-none hover:opacity-80 transition-all cursor-default shadow-xl">
+            START YOUR BRAND TODAY
+          </button>
         </div>
       </section>
 
@@ -315,7 +306,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <SiteFooter theme="dark" />
+      <SiteFooter theme="dark" disableLinks />
     </div>
   );
 }
