@@ -15,6 +15,7 @@ import {
   signInWithCustomToken,
   signInWithPopup,
 } from "firebase/auth";
+import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
 const ONE_MINUTE_MS = 60 * 1000;
 const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
@@ -50,6 +51,9 @@ export interface AuthContextConfig {
   //how often we refresh the firebase id token and re-sync
   //backend session cookie.
   sessionRefreshIntervalMs?: number;
+  //optional CSRF token or getter for CSRF token.
+  //Sent as the X-CSRF-Token header on every POST request.
+  csrfToken?: string | (() => string);
 }
 
 //This is a shape of what useAuth() gives inside
@@ -98,6 +102,7 @@ export const AuthProvider: React.FC<
   keepClientSignedIn = true,
   sessionTtlMs,
   sessionRefreshIntervalMs,
+  csrfToken,
   children,
 }) => {
   //auth state
@@ -110,36 +115,58 @@ export const AuthProvider: React.FC<
   //avoids setting React state after the component unmounts
   const mounted = useRef(true);
 
-  //make sure loading is turned off once,
-  //after firebase tells us that a user exists.
+  //has firebase told us the initial auth state yet
+  //useRef is used so it doesn't re-render component
   const hasResolvedInitialAuth = useRef(false);
 
   //derive roles from firebase custom claims
   const role = (claims?.role as AuthRole) ?? undefined;
 
+  //resolve the CSRF token value (supports static string or getter)
+  const resolveCsrfToken = useCallback((): string | undefined => {
+    if (!csrfToken) return undefined;
+    return typeof csrfToken === "function" ? csrfToken() : csrfToken;
+  }, [csrfToken]);
+
   // POST helper for auth endpoints.
   // `credentials: "include"` ensures cookies are sent and stored (needed for sessions).
-  const postJson = useCallback(async (url: string, body?: unknown) => {
-    const res = await fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body ?? {}),
-    });
+  // Includes X-CSRF-Token header when a csrfToken is configured.
+  const postJson = useCallback(
+    async (url: string, body?: unknown) => {
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+      };
 
-    if (!res.ok) {
-      const message = await res.text().catch(() => "");
-      throw new Error(message || `Request failed with status ${res.status}`);
-    }
+      const csrf = resolveCsrfToken();
+      if (csrf) {
+        headers["x-csrf-token"] = csrf;
+      }
 
-    const contentType = res.headers.get("content-type");
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify(body ?? {}),
+      });
 
-    if (contentType?.includes("application/json")) {
-      return res.json();
-    }
+      if (!res.ok) {
+        const raw = await res.text().catch(() => "");
+        throw new Error(
+          sanitizeBackendError(raw) ||
+            `Request failed with status ${res.status}`,
+        );
+      }
 
-    return undefined;
-  }, []);
+      const contentType = res.headers.get("content-type");
+
+      if (contentType?.includes("application/json")) {
+        return res.json();
+      }
+
+      return undefined;
+    },
+    [resolveCsrfToken],
+  );
 
   /**
    * Used by login/logout actions so the UI can show a spinner
@@ -303,9 +330,9 @@ export const AuthProvider: React.FC<
           );
 
           await finishSignIn(credential.user);
-        } catch (err: any) {
+        } catch (err: unknown) {
           if (mounted.current) {
-            setError(err?.message ?? "otp_verify_failed");
+            setError(toUserMessage(err));
           }
 
           throw err;
@@ -333,14 +360,9 @@ export const AuthProvider: React.FC<
           const result = await signInWithPopup(auth, provider);
 
           await finishSignIn(result.user);
-        } catch (err: any) {
-          const message =
-            err?.code === "auth/account-exists-with-different-credential"
-              ? "Account exists with a different sign-in method. Sign in with email, then add Google."
-              : (err?.message ?? "google_signin_failed");
-
+        } catch (err: unknown) {
           if (mounted.current) {
-            setError(message);
+            setError(toUserMessage(err));
           }
 
           throw err;
@@ -443,14 +465,19 @@ export const AuthProvider: React.FC<
       runAuthAction(async () => {
         const idToken = await auth?.currentUser?.getIdToken().catch(() => "");
 
+        const headers: Record<string, string> = {};
+        if (idToken) {
+          headers["authorization"] = `Bearer ${idToken}`;
+        }
+        const csrf = resolveCsrfToken();
+        if (csrf) {
+          headers["x-csrf-token"] = csrf;
+        }
+
         await fetch(endpoints.logout, {
           method: "POST",
           credentials: "include",
-          headers: idToken
-            ? {
-                authorization: `Bearer ${idToken}`,
-              }
-            : undefined,
+          headers,
         }).catch(() => {
           // We still sign out locally even if the backend logout fails.
         });
@@ -462,11 +489,12 @@ export const AuthProvider: React.FC<
         if (mounted.current) {
           setUser(null);
           setClaims(null);
+          setError(null);
         }
 
         onLogout?.();
       }),
-    [auth, endpoints.logout, onLogout, runAuthAction],
+    [auth, endpoints.logout, onLogout, resolveCsrfToken, runAuthAction],
   );
 
   //builds the context value - state & actions into one object

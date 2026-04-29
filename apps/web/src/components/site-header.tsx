@@ -3,14 +3,44 @@
 import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@cottonbro/auth-react";
 
 interface SiteHeaderProps {
     theme?: "light" | "dark";
+    disableLinks?: boolean;
 }
 
-export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
+function MaybeLink({
+    disabled,
+    href,
+    className,
+    onClick,
+    children,
+}: {
+    disabled?: boolean;
+    href: string;
+    className?: string;
+    onClick?: () => void;
+    children: ReactNode;
+}) {
+    if (disabled) {
+        return (
+            <span aria-disabled="true" className={`${className ?? ""} pointer-events-none cursor-default`}>
+                {children}
+            </span>
+        );
+    }
+
+    return (
+        <Link href={href} onClick={onClick} className={className}>
+            {children}
+        </Link>
+    );
+}
+
+export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const { user, logout, busy } = useAuth();
@@ -45,18 +75,19 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
             >
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                     <div className="flex items-center gap-12">
-                        <Link href="#" className="flex items-center gap-2">
+                        <MaybeLink disabled={disableLinks} href="#" className="flex items-center gap-2">
                             <Logo
                                 size="md"
                                 color={theme === "light" ? "black" : "white"}
                                 fontClassName="font-bold tracking-tight"
                             />
-                        </Link>
+                        </MaybeLink>
 
                         <nav className="hidden md:flex items-center gap-8">
                             {nav.map((item) => (
-                                <Link
+                                <MaybeLink
                                     key={item.label}
+                                    disabled={disableLinks}
                                     href={item.href}
                                     className={`text-sm font-medium transition-colors tracking-wide uppercase ${theme === "light"
                                             ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
@@ -64,7 +95,7 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                         }`}
                                 >
                                     {item.label}
-                                </Link>
+                                </MaybeLink>
                             ))}
                         </nav>
                     </div>
@@ -72,7 +103,8 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                     <div className="hidden md:flex items-center gap-6">
                         {!isAuthenticated ? (
                             <>
-                                <Link
+                                <MaybeLink
+                                    disabled={disableLinks}
                                     href="#"
                                     className={`text-sm font-semibold transition px-2 tracking-wide ${theme === "light"
                                             ? "text-black hover:opacity-70"
@@ -80,8 +112,8 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                         }`}
                                 >
                                     Login
-                                </Link>
-                                <Link href="#">
+                                </MaybeLink>
+                                <MaybeLink disabled={disableLinks} href="#">
                                     <button
                                         className={`rounded-none px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
                                                 ? "bg-black text-white hover:bg-gray-900"
@@ -90,7 +122,7 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                                     >
                                         Sign Up
                                     </button>
-                                </Link>
+                                </MaybeLink>
                             </>
                         ) : (
                             <button
@@ -150,31 +182,34 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
 
                         <nav className="flex flex-col gap-8 items-center text-center">
                             {nav.map((item) => (
-                                <Link
+                                <MaybeLink
                                     key={item.label}
+                                    disabled={disableLinks}
                                     href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="text-4xl font-extrabold tracking-tight text-white hover:text-gray-300 transition-all"
                                 >
                                     {item.label}
-                                </Link>
+                                </MaybeLink>
                             ))}
                             {!isAuthenticated ? (
                                 <>
-                                    <Link
+                                    <MaybeLink
+                                        disabled={disableLinks}
                                         href="#"
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="text-2xl font-bold text-secondary hover:text-white mt-8"
                                     >
                                         Enter Studio
-                                    </Link>
-                                    <Link
+                                    </MaybeLink>
+                                    <MaybeLink
+                                        disabled={disableLinks}
                                         href="#"
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="rounded-none bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-white mt-4 tracking-wide hover:bg-gray-100 hover:scale-[1.02]"
                                     >
                                         Open Studio
-                                    </Link>
+                                    </MaybeLink>
                                 </>
                             ) : (
                                 <button
