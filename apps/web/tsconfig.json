@@ -23,6 +23,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@cottonbro/auth-react": ["../../packages/frontend/auth-react/src"],
+      "@cottonbro/utils": ["../../packages/core/utils/src"],
       "@cottonbro/ui": ["../../packages/frontend/ui/src"]
     }
   },

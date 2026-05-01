@@ -1,13 +1,20 @@
 "use client";
 
-import * as React from "react";
 import { useAuth } from "@cottonbro/auth-react";
-import { Button, Input, GoogleButton } from "@cottonbro/ui";
+import {
+  isValidEmail,
+  isValidOtp,
+  normalizeEmail,
+  normalizeOtp,
+} from "@cottonbro/utils";
+import { Input, GoogleButton } from "@cottonbro/ui";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Logo } from "@cottonbro/ui";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
+// declare Turnstile’s HTML widget callbacks
 declare global {
   interface Window {
     turnstile?: {
@@ -19,24 +26,66 @@ declare global {
   }
 }
 
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
-
 function LoginView() {
   const { requestOtp, confirmOtp, googleSignIn, busy, error, user, logout } =
     useAuth();
 
-  const [email, setEmail] = React.useState("");
-  const [code, setCode] = React.useState("");
-  const [sent, setSent] = React.useState(false);
-  const [status, setStatus] = React.useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null);
-  const [switchingAccount, setSwitchingAccount] = React.useState(false);
-  const turnstileConfigured = Boolean(TURNSTILE_SITE_KEY);
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const turnstileConfigured = Boolean(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
+  );
+
   const searchParams = useSearchParams();
+  // Send users back to the protected page that redirected them here.
   const redirect = searchParams?.get("redirect") || "/";
   const isAuthenticated = Boolean(user);
+  const primaryButtonClass =
+    "w-full rounded-none border border-black bg-black px-8 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
+  const secondaryButtonClass =
+    "w-full rounded-none border border-gray-300 bg-white px-8 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:border-black hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
 
-  const resetCaptcha = React.useCallback(() => {
+  function validateEmail(value: string) {
+    const normalizedEmail = normalizeEmail(value);
+
+    if (!normalizedEmail) {
+      setEmailError("Please enter your email address.");
+      return null;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setEmailError("Please enter a valid email address.");
+      return null;
+    }
+
+    setEmailError(null);
+    return normalizedEmail;
+  }
+
+  function validateOtp(value: string) {
+    const normalizedCode = normalizeOtp(value);
+
+    if (!normalizedCode) {
+      setCodeError("Please enter your verification code.");
+      return null;
+    }
+
+    if (!isValidOtp(normalizedCode)) {
+      setCodeError("Code must be 4 or 6 numbers.");
+      return null;
+    }
+
+    setCodeError(null);
+    return normalizedCode;
+  }
+
+  const resetCaptcha = useCallback(() => {
     setCaptchaToken(null);
     if (typeof window !== "undefined" && window.turnstile?.reset) {
       try {
@@ -47,7 +96,9 @@ function LoginView() {
     }
   }, []);
 
-  React.useEffect(() => {
+  // Turnstile calls these global functions when the captcha succeeds,
+  // expires, or fails.
+  useEffect(() => {
     if (typeof window === "undefined" || !turnstileConfigured) return;
     window.cottonbroTurnstileCallback = (token: string) => {
       setCaptchaToken(token);
@@ -66,29 +117,33 @@ function LoginView() {
     };
   }, [turnstileConfigured]);
 
-  const handleContinue = React.useCallback(() => {
+  // Continue with the existing signed-in session.
+  const handleContinue = useCallback(() => {
     if (typeof window !== "undefined") {
       window.location.replace(redirect);
     }
   }, [redirect]);
 
-  const handleSwitchAccount = React.useCallback(async () => {
-    if (switchingAccount) return;
-    setSwitchingAccount(true);
+  // Sign out so the user can log in with a different account.
+  const handleSignOut = useCallback(async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
     setStatus("Signing you out…");
     try {
       await logout();
       setSent(false);
       setCode("");
+      setCodeError(null);
       resetCaptcha();
       setStatus("Signed out. Enter your email to continue.");
     } catch {
       setStatus("Could not sign you out. Please try again.");
     } finally {
-      setSwitchingAccount(false);
+      setIsSigningOut(false);
     }
-  }, [logout, resetCaptcha, switchingAccount]);
+  }, [logout, resetCaptcha, isSigningOut]);
 
+  // Start Google auth, then return to the requested page.
   async function onGoogle() {
     setStatus(null);
     try {
@@ -99,9 +154,11 @@ function LoginView() {
     }
   }
 
-  async function onSend(e: React.FormEvent) {
+  // Request an email login code after captcha verification.
+  async function onSend(e: FormEvent) {
     e.preventDefault();
-    if (!email) return;
+    const emailValue = validateEmail(email);
+    if (!emailValue) return;
     if (!turnstileConfigured) {
       setStatus("Captcha is not configured. Contact support.");
       return;
@@ -112,7 +169,7 @@ function LoginView() {
     }
     setStatus(null);
     try {
-      await requestOtp(email.trim(), captchaToken);
+      await requestOtp(emailValue, captchaToken);
       setSent(true);
       setStatus("Code sent. Check your inbox.");
     } catch {
@@ -122,24 +179,23 @@ function LoginView() {
     }
   }
 
-  async function onConfirm(e: React.FormEvent) {
+  // Verify the email code, create a session, then redirect.
+  async function onConfirm(e: FormEvent) {
     e.preventDefault();
-    if (!email || code.length !== 6) return;
+    const emailValue = validateEmail(email);
+    const codeValue = validateOtp(code);
+    if (!emailValue || !codeValue) return;
     setStatus(null);
     try {
-      await confirmOtp(email.trim(), code.trim());
+      await confirmOtp(emailValue, codeValue);
       window.location.replace(redirect);
     } catch {
       setStatus("Invalid code. Please try again.");
     }
   }
 
-  // ...existing code...
-  // ...existing code...
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-page p-6 font-urbanist relative overflow-hidden">
-      {/* Solid Black Background - No Noise */}
-
+    <div className="min-h-screen w-full flex items-center justify-center bg-white p-6 font-sans text-black relative overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -159,11 +215,11 @@ function LoginView() {
           </Link>
         </div>
 
-        <div className="bg-white p-10 relative overflow-hidden shadow-2xl rounded-sm border border-gray-100">
-          <h1 className="text-3xl font-black text-primary mb-2 text-center tracking-tighter uppercase">
+        <div className="bg-white p-10 relative overflow-hidden border border-gray-200">
+          <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
             Sign In / Sign Up
           </h1>
-          <p className="text-secondary text-sm text-center mb-10 font-medium">
+          <p className="text-gray-500 text-[10px] text-center mb-10 font-bold tracking-[0.2em] uppercase">
             Access your studio dashboard
           </p>
 
@@ -172,7 +228,7 @@ function LoginView() {
             <GoogleButton
               onClick={onGoogle}
               disabled={busy}
-              className="w-full justify-center rounded-full border border-gray-200 bg-white text-primary hover:bg-gray-50 hover:text-primary font-bold transition-all py-3 shadow-sm hover:shadow-md"
+              className={secondaryButtonClass}
             />
           </div>
 
@@ -187,27 +243,28 @@ function LoginView() {
 
           {isAuthenticated ? (
             <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-sm">
-              <p className="text-sm font-medium text-primary mb-1 font-mono">
+              <p className="text-xs font-medium text-black mb-1 font-mono">
                 ID: {user?.email}
               </p>
               <div className="flex flex-col gap-3 mt-6">
-                <Button
+                <button
+                  type="button"
                   onClick={handleContinue}
-                  className="w-full bg-black hover:bg-gray-900 text-white font-bold py-4 rounded-full shadow-xl uppercase tracking-widest text-xs cursor-pointer transition-all hover:scale-[1.02]"
+                  className={primaryButtonClass}
                 >
                   Proceed to Dashboard
-                </Button>
+                </button>
                 <button
-                  onClick={handleSwitchAccount}
-                  disabled={switchingAccount || busy}
-                  className="text-xs text-gray-400 hover:text-primary transition-colors uppercase tracking-widest font-bold cursor-pointer mt-2"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut || busy}
+                  className="text-[10px] text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em] font-bold cursor-pointer mt-2"
                 >
-                  {switchingAccount ? "Signing out..." : "Sign Out"}
+                  {isSigningOut ? "Signing out..." : "Sign Out"}
                 </button>
               </div>
             </div>
           ) : !sent ? (
-            <form onSubmit={onSend} className="space-y-6">
+            <form onSubmit={onSend} className="space-y-6" noValidate>
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider ml-1">
                   Email
@@ -215,65 +272,102 @@ function LoginView() {
                 <Input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={(e) => {
+                    if (e.target.value) validateEmail(e.target.value);
+                  }}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError(null);
+                  }}
                   placeholder="name@example.com"
+                  aria-invalid={Boolean(emailError)}
+                  aria-describedby={emailError ? "email-error" : undefined}
                   className="w-full bg-gray-50 border-gray-200 text-primary placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black rounded-none py-6 px-6 transition-all font-medium text-base h-14"
                   required
                 />
+                {emailError && (
+                  <p
+                    id="email-error"
+                    className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-500"
+                  >
+                    {emailError}
+                  </p>
+                )}
               </div>
 
               {turnstileConfigured && (
-                <div className="mb-4">
+                <div className="mb-4 w-full">
                   <div
-                    className="cf-turnstile"
-                    data-sitekey={TURNSTILE_SITE_KEY}
+                    className="cf-turnstile w-full"
+                    data-sitekey={
+                      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""
+                    }
                     data-callback="cottonbroTurnstileCallback"
                     data-expired-callback="cottonbroTurnstileExpired"
                     data-error-callback="cottonbroTurnstileError"
+                    data-size="flexible"
                     data-theme="dark"
                   />
                 </div>
               )}
 
-              <Button
+              <button
                 type="submit"
-                disabled={!email || busy}
-                className="w-full bg-black hover:bg-gray-900 text-white font-bold py-4 rounded-full shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest group cursor-pointer hover:scale-[1.02]"
+                disabled={!email.trim() || busy}
+                className={primaryButtonClass}
               >
                 {busy ? "Sending..." : "Send Login Code"}
-              </Button>
+              </button>
             </form>
           ) : (
-            <form onSubmit={onConfirm} className="space-y-6">
+            <form onSubmit={onConfirm} className="space-y-6" noValidate>
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider ml-1">
                   Enter Code
                 </label>
                 <Input
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="000000"
+                  onBlur={(e) => {
+                    if (e.target.value) validateOtp(e.target.value);
+                  }}
+                  onChange={(e) => {
+                    setCode(normalizeOtp(e.target.value));
+                    if (codeError) setCodeError(null);
+                  }}
+                  placeholder="0000 or 000000"
                   maxLength={6}
+                  aria-invalid={Boolean(codeError)}
+                  aria-describedby={codeError ? "code-error" : undefined}
                   className="w-full bg-gray-50 border-gray-200 text-primary text-center text-3xl font-black placeholder:text-gray-300 focus:border-black focus:ring-1 focus:ring-black rounded-none py-6 px-4 tracking-[0.5em] transition-all font-mono h-20"
                   required
                 />
+                {codeError && (
+                  <p
+                    id="code-error"
+                    className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-500"
+                  >
+                    {codeError}
+                  </p>
+                )}
               </div>
 
-              <Button
+              <button
                 type="submit"
-                disabled={code.length !== 6 || busy}
-                className="w-full bg-black hover:bg-gray-900 text-white font-bold py-4 rounded-full shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest cursor-pointer hover:scale-[1.02]"
+                disabled={!isValidOtp(code) || busy}
+                className={primaryButtonClass}
               >
                 {busy ? "Verifying..." : "Open Studio"}
-              </Button>
+              </button>
 
               <button
                 type="button"
                 onClick={() => {
                   setSent(false);
                   setCode("");
+                  setEmailError(null);
+                  setCodeError(null);
                 }}
-                className="w-full text-xs font-bold text-gray-400 hover:text-primary transition-colors uppercase tracking-widest cursor-pointer"
+                className="w-full text-[10px] font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em] cursor-pointer"
               >
                 Use different email
               </button>

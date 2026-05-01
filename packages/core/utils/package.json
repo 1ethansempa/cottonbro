@@ -14,24 +14,15 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./edge": {
-      "import": "./dist/edge.js",
-      "types": "./dist/edge.d.ts"
-    },
-    "./node": {
-      "import": "./dist/node.js",
-      "types": "./dist/node.d.ts"
+    "./validation": {
+      "import": "./dist/validation/index.js",
+      "types": "./dist/validation/index.d.ts"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/index.ts"
-  },
-  "dependencies": {
-    "firebase": "^11.0.0",
-    "firebase-admin": "^12.5.0",
-    "jose": "^5.8.0"
   },
   "devDependencies": {
     "tsx": "^4.19.0",
