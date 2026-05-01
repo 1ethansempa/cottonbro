@@ -18,7 +18,7 @@ jobs:
 
       # downloads pnpm into runner environment
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
 
       # set up node in runner environment
       - name: Setup Node.js
