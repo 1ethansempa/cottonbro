@@ -52,10 +52,11 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response
   ) {
-    await this.service.createSessionCookie(dto.idToken, dto.ttlMs, res);
+    await this.service.createSessionCookie(dto.idToken, res);
     // 204 No Content
   }
 
+  @Public()
   @Post("logout")
   @HttpCode(204)
   async logout(@Res({ passthrough: true }) res: Response) {

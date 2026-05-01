@@ -17,130 +17,78 @@ import {
 } from "firebase/auth";
 import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
-const ONE_MINUTE_MS = 60 * 1000;
-const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+const DEFAULT_AUTH_BASE_URL = "/api/auth";
+const SESSION_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 export type AuthRole = "User" | "Admin" | string | undefined;
 
-export interface Endpoints {
-  startOtp: string;
-  verifyOtp: string;
-  login: string;
-  logout: string;
-}
-
 export interface AuthContextConfig {
-  //firebase auth client instance
+  // Firebase client auth instance; pass null until the browser-only SDK is ready.
   auth: FirebaseAuth | null;
-  //backend API routes
-  endpoints: Endpoints;
-  //optional callback fired after a session is created
+  // Called after the backend has accepted the Firebase ID token and set its cookie.
   onSession?: (args: { idToken: string; user: User }) => void;
-  //optional callback fired after logout
+  // Called after local cleanup has run, even if backend logout was best-effort.
   onLogout?: () => void;
-  //optional flag for google sign-in behavior
-  //If there's an already signed in firebase user, google sign-in
-  //is treated as a continuation flow
-  allowAutoLink?: boolean;
-  //optional flag on whether firebase should keep user signed in.
-  //if false, create backend cookie then sign of firebase client auth.
-  //browser uses backend session instead of a persistent firebase client session.
-  keepClientSignedIn?: boolean;
-  //session lifetime in milliseconds
-  sessionTtlMs?: number;
-  //how often we refresh the firebase id token and re-sync
-  //backend session cookie.
-  sessionRefreshIntervalMs?: number;
-  //optional CSRF token or getter for CSRF token.
-  //Sent as the X-CSRF-Token header on every POST request.
-  csrfToken?: string | (() => string);
 }
 
-//This is a shape of what useAuth() gives inside
-//React components
 export interface AuthContextValue {
-  //current firebase user
+  // Firebase client state; server authorization must not rely on this alone.
   user: User | null;
-  //firebase still figuring out auth state
+  // True until Firebase has reported the first client auth state.
   loading: boolean;
-  //an auth action is in progress
+  // True while an explicit login/logout action is in flight.
   busy: boolean;
-  //latest auth-related error message that the UI can show.
+  // User-safe error text. Raw backend/Firebase errors are normalized first.
   error: string | null;
-  //Claims are extra server-set values inside the user’s token,
-  // like role, permissions, account status, etc.
+  // Claims are UI hints only; protected APIs must verify authorization server-side.
   claims: IdTokenResult["claims"] | null;
   role: AuthRole;
-  //keep auth/session fresh
+  // Refreshes the Firebase ID token and asks the backend to renew the cookie.
   refreshIdToken: () => Promise<string | null>;
-  //start email code login
+  // Starts the email OTP flow. Captcha must be verified by the backend.
   requestOtp: (email: string, captchaToken: string) => Promise<void>;
-  //finish email code login
+  // Completes OTP login by exchanging the backend custom token with Firebase.
   confirmOtp: (email: string, code: string) => Promise<void>;
-  //login with Google
+  // Starts Firebase Google sign-in and then creates the backend session.
   googleSignIn: () => Promise<void>;
-  //end the session
+  // Clears the backend session cookie when possible and signs out Firebase locally.
   logout: () => Promise<void>;
 }
 
-//create react context object for auth
-//A context lets you pass data through the component tree
-// without manually passing props through every level.
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-//AuthProvider is the component that actually owns auth state
-// and then shares it with the rest of the app through React Context.
-// accepts all fields from AuthContextConfig plus children
 export const AuthProvider: React.FC<
   React.PropsWithChildren<AuthContextConfig>
-> = ({
-  auth,
-  endpoints,
-  onSession,
-  onLogout,
-  allowAutoLink = true,
-  keepClientSignedIn = true,
-  sessionTtlMs,
-  sessionRefreshIntervalMs,
-  csrfToken,
-  children,
-}) => {
-  //auth state
+> = ({ auth, onSession, onLogout, children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<IdTokenResult["claims"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  //avoids setting React state after the component unmounts
+  // Firebase callbacks may resolve after unmount; guard React state writes.
   const mounted = useRef(true);
 
-  //has firebase told us the initial auth state yet
-  //useRef is used so it doesn't re-render component
+  // Loading should flip once, after Firebase's first auth-state callback.
   const hasResolvedInitialAuth = useRef(false);
 
-  //derive roles from firebase custom claims
   const role = (claims?.role as AuthRole) ?? undefined;
 
-  //resolve the CSRF token value (supports static string or getter)
-  const resolveCsrfToken = useCallback((): string | undefined => {
-    if (!csrfToken) return undefined;
-    return typeof csrfToken === "function" ? csrfToken() : csrfToken;
-  }, [csrfToken]);
+  const authRoutes = useMemo(() => {
+    return {
+      startOtp: `${DEFAULT_AUTH_BASE_URL}/otp/start`,
+      verifyOtp: `${DEFAULT_AUTH_BASE_URL}/otp/verify`,
+      login: `${DEFAULT_AUTH_BASE_URL}/login`,
+      logout: `${DEFAULT_AUTH_BASE_URL}/logout`,
+    };
+  }, []);
 
-  // POST helper for auth endpoints.
-  // `credentials: "include"` ensures cookies are sent and stored (needed for sessions).
-  // Includes X-CSRF-Token header when a csrfToken is configured.
+  // Auth endpoints set/read HttpOnly cookies, so every request includes credentials.
   const postJson = useCallback(
     async (url: string, body?: unknown) => {
       const headers: Record<string, string> = {
         "content-type": "application/json",
       };
-
-      const csrf = resolveCsrfToken();
-      if (csrf) {
-        headers["x-csrf-token"] = csrf;
-      }
 
       const res = await fetch(url, {
         method: "POST",
@@ -165,13 +113,10 @@ export const AuthProvider: React.FC<
 
       return undefined;
     },
-    [resolveCsrfToken],
+    [],
   );
 
-  /**
-   * Used by login/logout actions so the UI can show a spinner
-   * and clear the previous error before starting a new attempt.
-   */
+  // Centralizes action state so auth buttons do not each invent spinner/error rules.
   const runAuthAction = useCallback(async <T,>(action: () => Promise<T>) => {
     setError(null);
     setBusy(true);
@@ -185,18 +130,13 @@ export const AuthProvider: React.FC<
     }
   }, []);
 
-  /**
-   * Firebase proves who the user is.
-   * The backend then uses that Firebase ID token to create its own session cookie.
-   */
-  // Firebase user -> Firebase ID token -> backend login endpoint -> backend session cookie
+  // Trust handoff: Firebase proves identity; the backend decides whether to mint a session.
   const createBackendSession = useCallback(
     async (firebaseUser: User, shouldEmitSession = true) => {
       const idToken = await firebaseUser.getIdToken(true);
 
-      await postJson(endpoints.login, {
+      await postJson(authRoutes.login, {
         idToken,
-        ttlMs: sessionTtlMs,
       });
 
       if (shouldEmitSession) {
@@ -205,27 +145,17 @@ export const AuthProvider: React.FC<
 
       return idToken;
     },
-    [endpoints.login, onSession, postJson, sessionTtlMs],
+    [authRoutes.login, onSession, postJson],
   );
 
-  //If keepClientSignedIn is false, it signs out of Firebase client auth
-  // and leaves only the backend cookie session.
   const finishSignIn = useCallback(
     async (firebaseUser: User) => {
       await createBackendSession(firebaseUser, true);
-
-      if (!keepClientSignedIn) {
-        await auth?.signOut();
-      }
     },
-    [auth, createBackendSession, keepClientSignedIn],
+    [createBackendSession],
   );
 
-  /**
-   * Sync Firebase auth state into React.
-   * - `onAuthStateChanged`: tracks the current user
-   * - `onIdTokenChanged`: keeps claims (e.g. roles) up to date
-   */
+  // Keep client UI state aligned with Firebase, including custom claims changes.
   useEffect(() => {
     mounted.current = true;
 
@@ -245,7 +175,6 @@ export const AuthProvider: React.FC<
       }
     };
 
-    //this updates user
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (!mounted.current) return;
 
@@ -253,7 +182,6 @@ export const AuthProvider: React.FC<
       finishInitialLoad();
     });
 
-    //this updates claims
     const unsubscribeToken = onIdTokenChanged(auth, async (firebaseUser) => {
       if (!mounted.current) return;
 
@@ -282,42 +210,40 @@ export const AuthProvider: React.FC<
     };
   }, [auth]);
 
-  //request OTP
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
     async (email, captchaToken) =>
       runAuthAction(async () => {
-        const cleanEmail = email.trim();
-        const cleanCaptchaToken = captchaToken.trim();
+        const emailValue = email.trim();
+        const captchaTokenValue = captchaToken.trim();
 
-        if (!cleanEmail) throw new Error("email_required");
-        if (!cleanCaptchaToken) throw new Error("captcha_required");
+        if (!emailValue) throw new Error("email_required");
+        if (!captchaTokenValue) throw new Error("captcha_required");
 
-        await postJson(endpoints.startOtp, {
-          email: cleanEmail,
-          captchaToken: cleanCaptchaToken,
+        await postJson(authRoutes.startOtp, {
+          email: emailValue,
+          captchaToken: captchaTokenValue,
         });
       }),
-    [endpoints.startOtp, postJson, runAuthAction],
+    [authRoutes.startOtp, postJson, runAuthAction],
   );
 
-  //confirm OTP
   const confirmOtp = useCallback<AuthContextValue["confirmOtp"]>(
     async (email, code) =>
       runAuthAction(async () => {
         if (!auth) throw new Error("auth_not_initialized");
 
-        const cleanEmail = email.trim();
-        const cleanCode = code.trim();
+        const emailValue = email.trim();
+        const codeValue = code.trim();
 
-        if (!cleanEmail || !cleanCode) {
+        if (!emailValue || !codeValue) {
           throw new Error("invalid_otp_payload");
         }
 
         try {
-          // return firebase custom token
-          const data = (await postJson(endpoints.verifyOtp, {
-            email: cleanEmail,
-            code: cleanCode,
+          // The backend returns a short-lived Firebase custom token after OTP success.
+          const data = (await postJson(authRoutes.verifyOtp, {
+            email: emailValue,
+            code: codeValue,
           })) as { customToken?: string } | undefined;
 
           if (!data?.customToken) {
@@ -338,7 +264,7 @@ export const AuthProvider: React.FC<
           throw err;
         }
       }),
-    [auth, endpoints.verifyOtp, finishSignIn, postJson, runAuthAction],
+    [auth, authRoutes.verifyOtp, finishSignIn, postJson, runAuthAction],
   );
 
   const googleSignIn = useCallback<AuthContextValue["googleSignIn"]>(
@@ -348,14 +274,6 @@ export const AuthProvider: React.FC<
 
         try {
           const provider = new GoogleAuthProvider();
-
-          /**
-           * `allowAutoLink` is kept here as a business-rule switch.
-           * Firebase still owns the actual provider behavior.
-           */
-          if (!allowAutoLink && auth.currentUser) {
-            throw new Error("auto_link_disabled");
-          }
 
           const result = await signInWithPopup(auth, provider);
 
@@ -368,14 +286,10 @@ export const AuthProvider: React.FC<
           throw err;
         }
       }),
-    [allowAutoLink, auth, finishSignIn, runAuthAction],
+    [auth, finishSignIn, runAuthAction],
   );
 
-  /**
-   * Get current firebase user
-   * Create fresh backend session using a fresh firebase token
-   * then reload claims
-   */
+  // Best-effort renewal for sliding sessions; callers must still handle null/expiry.
   const refreshIdToken = useCallback<
     AuthContextValue["refreshIdToken"]
   >(async () => {
@@ -397,53 +311,29 @@ export const AuthProvider: React.FC<
     }
   }, [auth, createBackendSession]);
 
-  /**
-   * Pick a safe refresh interval.
-   * Defaults to half the session TTL, then clamps it between 1 minute and 12 hours.
-   */
-  const sessionRefreshMs = useMemo(() => {
-    const preferredInterval =
-      sessionRefreshIntervalMs ??
-      (sessionTtlMs ? Math.floor(sessionTtlMs / 2) : undefined);
-
-    if (!preferredInterval || preferredInterval <= 0) {
-      return undefined;
-    }
-
-    return Math.max(
-      ONE_MINUTE_MS,
-      Math.min(preferredInterval, TWELVE_HOURS_MS),
-    );
-  }, [sessionRefreshIntervalMs, sessionTtlMs]);
-
-  /**
-   * Keep the backend session and Firebase claims fresh while the user is signed in.
-   */
+  // Renew the backend cookie while Firebase says a user is signed in.
   useEffect(() => {
-    if (!user || !sessionRefreshMs) return undefined;
+    if (!user) return undefined;
 
     const refreshTimer = window.setInterval(() => {
       refreshIdToken().catch(() => {
-        // Refresh is best-effort; the next timer tick or user action can recover.
+        // Protected calls remain the source of truth if background refresh fails.
       });
-    }, sessionRefreshMs);
+    }, SESSION_REFRESH_INTERVAL_MS);
 
     return () => {
       window.clearInterval(refreshTimer);
     };
-  }, [refreshIdToken, sessionRefreshMs, user]);
+  }, [refreshIdToken, user]);
 
-  /**
-   * Refresh as soon as the tab becomes active again.
-   * This avoids waiting for the next interval after the app has been in the background.
-   */
+  // Background tabs can miss timers; refresh promptly when the user returns.
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
 
     const refreshWhenTabIsVisible = () => {
       if (!document.hidden) {
         refreshIdToken().catch(() => {
-          // Same as the interval refresh: useful, but not fatal.
+          // Non-fatal; the next protected request still has to handle auth failure.
         });
       }
     };
@@ -455,35 +345,19 @@ export const AuthProvider: React.FC<
     };
   }, [refreshIdToken]);
 
-  /**
-   * Call backend logout endpoint
-   * sign out of firebase
-   * clear local user/claims
-   */
+  // Logout must clean up the browser even if the network or backend is unavailable.
   const logout = useCallback<AuthContextValue["logout"]>(
     async () =>
       runAuthAction(async () => {
-        const idToken = await auth?.currentUser?.getIdToken().catch(() => "");
-
-        const headers: Record<string, string> = {};
-        if (idToken) {
-          headers["authorization"] = `Bearer ${idToken}`;
-        }
-        const csrf = resolveCsrfToken();
-        if (csrf) {
-          headers["x-csrf-token"] = csrf;
-        }
-
-        await fetch(endpoints.logout, {
+        await fetch(authRoutes.logout, {
           method: "POST",
           credentials: "include",
-          headers,
         }).catch(() => {
-          // We still sign out locally even if the backend logout fails.
+          // Local sign-out below is still required.
         });
 
         await auth?.signOut().catch(() => {
-          // Local cleanup below still runs.
+          // React state cleanup below is the final local fallback.
         });
 
         if (mounted.current) {
@@ -494,10 +368,9 @@ export const AuthProvider: React.FC<
 
         onLogout?.();
       }),
-    [auth, endpoints.logout, onLogout, resolveCsrfToken, runAuthAction],
+    [auth, authRoutes.logout, onLogout, runAuthAction],
   );
 
-  //builds the context value - state & actions into one object
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -527,13 +400,9 @@ export const AuthProvider: React.FC<
     ],
   );
 
-  //This is where everything becomes available to child components.
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-/**
- * useAuth means: “give this component access to the auth context.”
- */
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
 
@@ -547,15 +416,5 @@ export function useAuth(): AuthContextValue {
 /**
  * Example wiring:
  *
- * const base = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "/api/auth";
- *
- * <AuthProvider
- *   auth={clientAuth}
- *   endpoints={{
- *     startOtp: `${base}/otp/start`,
- *     verifyOtp: `${base}/otp/verify`,
- *     login: `${base}/login`,
- *     logout: `${base}/logout`,
- *   }}
- * />
+ * <AuthProvider auth={clientAuth} />
  */

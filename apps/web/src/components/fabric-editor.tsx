@@ -29,7 +29,6 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
-import { getPublicApiBaseUrl } from "../config/env";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";
 import { useAuth } from "@cottonbro/auth-react";
@@ -1181,7 +1180,7 @@ export default function FabricEditor() {
     }
   };
 
-  const apiBaseUrl = getPublicApiBaseUrl()?.trim() || "/api";
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "/api";
 
   // Remove background from selected image using NestJS API (which proxies to Python)
   const removeBackground = async () => {

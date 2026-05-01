@@ -17,8 +17,6 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   captcha_required: "Please complete the captcha verification.",
   invalid_otp_payload: "Please enter both your email and verification code.",
   auth_not_initialized: "Authentication is not ready. Please refresh the page.",
-  auto_link_disabled:
-    "You are already signed in. Sign out first to use a different account.",
 
   /* ── OTP flow ────────────────────────────────────────────── */
   missing_custom_token: "Sign-in failed. Please request a new code.",
