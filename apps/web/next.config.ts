@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+const isCi = process.env.CI === "true";
 const apiUrl =
-  process.env.API_BASE_URL || (isDev ? "http://localhost:3001" : "");
+  process.env.API_BASE_URL || (isDev || isCi ? "http://localhost:3001" : "");
 
 if (!apiUrl) {
   throw new Error("Missing API_BASE_URL");
