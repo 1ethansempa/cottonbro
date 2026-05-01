@@ -24,7 +24,7 @@ export function ProfitCalculator() {
   const totalProfit = profitPerItem * salesQuantity;
 
   return (
-    <div className="bg-white px-8 py-12 md:p-16 shadow-[0_30px_100px_-20px_rgba(0,0,0,0.08)] mx-auto w-full max-w-[900px]">
+    <div className="bg-white px-6 py-12 sm:px-8 md:p-16 shadow-[0_30px_100px_-20px_rgba(0,0,0,0.08)] mx-auto w-full max-w-[900px]">
       <div className="text-center mb-16">
         <h3 className="text-3xl md:text-4xl font-black text-black tracking-tighter uppercase mb-4">
           PROFIT CALCULATOR
@@ -134,9 +134,9 @@ export function ProfitCalculator() {
             <p className="text-[10px] font-bold text-gray-400 tracking-[0.3em] uppercase">
               TOTAL PROFIT
             </p>
-            <div className="text-[#e60000] font-black tracking-tighter flex items-end justify-center gap-2">
-              <span className="text-2xl pb-2">UGX</span>
-              <span className="text-[64px] leading-none">
+            <div className="text-[#e60000] font-black tracking-tighter flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1">
+              <span className="text-xl sm:text-2xl">UGX</span>
+              <span className="text-[clamp(2.75rem,15vw,4rem)] leading-none">
                 {totalProfit.toLocaleString()}
               </span>
             </div>

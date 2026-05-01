@@ -7,6 +7,7 @@ on:
     paths:
       - "apps/web/**"
       - "packages/frontend/**"
+      - "packages/core/utils/**"
       - "apps/web/Dockerfile"
       - ".github/workflows/deploy-web-qa.yml"
       - "pnpm-lock.yaml"
@@ -73,8 +74,6 @@ jobs:
           echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest --secret=web-firebase-auth-domain)" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret=web-firebase-project-id)" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_FIREBASE_APP_ID=$(gcloud secrets versions access latest --secret=web-firebase-app-id)" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$(gcloud secrets versions access latest --secret=web-firebase-messaging-sender-id)" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$(gcloud secrets versions access latest --secret=web-firebase-storage-bucket)" >> "$GITHUB_ENV"
 
       - name: Configure Docker auth for Artifact Registry
         run: |
@@ -87,14 +86,11 @@ jobs:
           docker build \
             --build-arg APP_ENV=qa \
             --build-arg NEXT_PUBLIC_APP_ENV=qa \
-            --build-arg NEXT_PUBLIC_AUTH_BASE_URL=${{ secrets.QA_WEB_AUTH_BASE_URL }} \
-            --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
+            --build-arg API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
             --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="$NEXT_PUBLIC_FIREBASE_API_KEY" \
             --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
             --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
             --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="$NEXT_PUBLIC_FIREBASE_APP_ID" \
-            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" \
-            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" \
             --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.QA_WEB_TURNSTILE_SITE_KEY }} \
             -f "$DOCKERFILE" \
             -t "$IMAGE" \
@@ -117,14 +113,11 @@ jobs:
             --set-env-vars NODE_ENV=production \
             --set-env-vars APP_ENV=qa \
             --set-env-vars NEXT_PUBLIC_APP_ENV=qa \
-            --set-env-vars NEXT_PUBLIC_AUTH_BASE_URL=${{ secrets.QA_WEB_AUTH_BASE_URL }} \
-            --set-env-vars NEXT_PUBLIC_API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
+            --set-env-vars API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
             --set-env-vars NEXT_PUBLIC_FIREBASE_API_KEY="$NEXT_PUBLIC_FIREBASE_API_KEY" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_APP_ID="$NEXT_PUBLIC_FIREBASE_APP_ID" \
-            --set-env-vars NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" \
-            --set-env-vars NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" \
             --set-env-vars NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.QA_WEB_TURNSTILE_SITE_KEY }}
 
       - name: Show service URL

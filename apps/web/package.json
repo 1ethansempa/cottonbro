@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@cottonbro/auth-react": "workspace:*",
+    "@cottonbro/utils": "workspace:*",
     "@cottonbro/ui": "workspace:*",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",

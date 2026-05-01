@@ -47,8 +47,8 @@ export default function LandingPage() {
         </div>
       </div>
       <div className="space-y-1">
-        <div className="flex justify-between items-start">
-          <h3 className="text-[11px] md:text-xs font-black tracking-[0.15em] text-black uppercase max-w-[65%] leading-tight">
+        <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start">
+          <h3 className="text-[11px] md:text-xs font-black tracking-[0.15em] text-black uppercase leading-tight sm:max-w-[65%]">
             {item.name}
           </h3>
           <span className="text-[10px] md:text-xs font-medium text-gray-500 tracking-wide whitespace-nowrap">
@@ -78,7 +78,7 @@ export default function LandingPage() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="max-w-xl"
           >
-            <h1 className="text-[56px] md:text-[80px] lg:text-[96px] font-bold tracking-[-0.04em] text-black leading-[0.88] uppercase mb-8">
+            <h1 className="text-[56px] md:text-[64px] lg:text-[96px] font-bold tracking-[-0.04em] text-black leading-[0.88] uppercase mb-8">
               TURN YOUR<br />
               IDEAS INTO<br />
               A BRAND.
@@ -126,7 +126,7 @@ export default function LandingPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-x-5 gap-y-10">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-x-5 gap-y-10">
           {latestDrops.map((item) => (
             <ProductCard key={item.id} item={item} />
           ))}
@@ -141,7 +141,7 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-x-5 gap-y-10">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-x-5 gap-y-10">
           {stillInterested.map((item) => (
             <ProductCard key={item.id} item={item as typeof latestDrops[0]} faded />
           ))}
@@ -149,7 +149,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════ FROM VISION TO REALITY ═══════ */}
-      <section className="bg-[#111] text-white flex flex-col lg:flex-row items-stretch min-h-[700px]">
+      <section className="bg-[#111] text-white flex flex-col lg:flex-row items-stretch lg:min-h-[700px]">
         {/* Left: Steps */}
         <div className="flex-1 px-8 md:px-[8%] py-20 lg:py-28 flex flex-col justify-center">
           <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] leading-[0.88] uppercase mb-4 text-white">
@@ -183,12 +183,12 @@ export default function LandingPage() {
         </div>
 
         {/* Right: Image + Testimonial */}
-        <div className="flex-1 relative min-h-[500px] lg:min-h-full overflow-hidden">
+        <div className="flex-1 relative min-h-[360px] md:min-h-[420px] lg:min-h-full overflow-hidden">
           <div className="absolute inset-0 opacity-40">
             <Image src="/studio-lights.png" alt="Studio Space" fill className="object-cover" />
           </div>
 
-          <div className="absolute bottom-10 right-10 z-10 bg-white p-6 max-w-[300px] shadow-2xl border-l-4 border-[#e60000]">
+          <div className="absolute bottom-8 left-6 right-6 z-10 bg-white p-6 shadow-2xl border-l-4 border-[#e60000] sm:left-auto sm:right-10 sm:max-w-[300px]">
             <p className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase mb-2">SUCCESS STORY</p>
             <p className="text-black font-semibold text-sm leading-relaxed italic">
               &quot;The quality is unmatched. My customers love the heavyweight tees.&quot;
