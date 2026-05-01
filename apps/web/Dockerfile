@@ -60,7 +60,7 @@ ARG NEXT_PUBLIC_FIREBASE_API_KEY=""
 ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=""
 ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID=""
 ARG NEXT_PUBLIC_FIREBASE_APP_ID=""
-ARG NEXT_PUBLIC_API_BASE_URL=""
+ARG API_BASE_URL=""
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=""
 
 # Convert build arguments into environment variables inside the container.
@@ -72,16 +72,16 @@ ENV NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
 ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
 ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
 ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
-ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV API_BASE_URL=${API_BASE_URL}
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
 
 # Copy the actual Next.js web application source code.
 # This happens after dependency installation to preserve Docker cache layers.
 COPY apps/web ./apps/web
 
-# Build shared frontend packages that the web app depends on.
+# Build shared packages that the web app depends on.
 # These produce compiled outputs used by the Next.js build.
-RUN pnpm --filter @cottonbro/ui build && pnpm --filter @cottonbro/auth-react build
+RUN pnpm --filter @cottonbro/utils build && pnpm --filter @cottonbro/ui build && pnpm --filter @cottonbro/auth-react build
 
 # Build the Next.js application.
 # next build compiles the app into the .next directory.

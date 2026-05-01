@@ -1180,7 +1180,7 @@ export default function FabricEditor() {
     }
   };
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "/api";
+  const apiBaseUrl = "/api";
 
   // Remove background from selected image using NestJS API (which proxies to Python)
   const removeBackground = async () => {

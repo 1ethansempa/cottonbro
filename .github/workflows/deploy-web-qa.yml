@@ -7,6 +7,7 @@ on:
     paths:
       - "apps/web/**"
       - "packages/frontend/**"
+      - "packages/core/utils/**"
       - "apps/web/Dockerfile"
       - ".github/workflows/deploy-web-qa.yml"
       - "pnpm-lock.yaml"
@@ -85,7 +86,7 @@ jobs:
           docker build \
             --build-arg APP_ENV=qa \
             --build-arg NEXT_PUBLIC_APP_ENV=qa \
-            --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
+            --build-arg API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
             --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="$NEXT_PUBLIC_FIREBASE_API_KEY" \
             --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
             --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
@@ -113,7 +114,6 @@ jobs:
             --set-env-vars APP_ENV=qa \
             --set-env-vars NEXT_PUBLIC_APP_ENV=qa \
             --set-env-vars API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
-            --set-env-vars NEXT_PUBLIC_API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }} \
             --set-env-vars NEXT_PUBLIC_FIREBASE_API_KEY="$NEXT_PUBLIC_FIREBASE_API_KEY" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \

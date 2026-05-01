@@ -51,7 +51,7 @@ function buildProxyHeaders(request: Request) {
 
 //copies cookies from the backend API response onto the Next response
 // that goes back to the browser.
-// e.g Browser -> Next /api/auth/login -> Backend /v1/auth/login
+// e.g Browser -> Next /api/auth/login -> Backend ${API_BASE_URL}/auth/login
 // The backend creates the session cookie but the browser did not call the
 // backend directly. It called Next. So Next must copy that Set-Cookie header
 // onto its own response.
