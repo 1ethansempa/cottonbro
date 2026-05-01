@@ -47,9 +47,9 @@ function LoginView() {
   const redirect = searchParams?.get("redirect") || "/";
   const isAuthenticated = Boolean(user);
   const primaryButtonClass =
-    "w-full rounded-none border border-black bg-black px-8 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
+    "w-full rounded-none border border-black bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
   const secondaryButtonClass =
-    "w-full rounded-none border border-gray-300 bg-white px-8 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:border-black hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
+    "w-full rounded-none border border-gray-300 bg-white px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:border-black hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer [&_svg]:shrink-0";
 
   function validateEmail(value: string) {
     const normalizedEmail = normalizeEmail(value);
@@ -195,7 +195,7 @@ function LoginView() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-white p-6 font-sans text-black relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-white px-3 py-6 sm:p-6 font-sans text-black relative overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -215,7 +215,7 @@ function LoginView() {
           </Link>
         </div>
 
-        <div className="bg-white p-10 relative overflow-hidden border border-gray-200">
+        <div className="bg-white px-5 py-8 sm:p-10 relative overflow-hidden border border-gray-200">
           <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
             Sign In / Sign Up
           </h1>
@@ -296,9 +296,9 @@ function LoginView() {
               </div>
 
               {turnstileConfigured && (
-                <div className="mb-4 w-full">
+                <div className="mb-4 flex h-[65px] w-full justify-center overflow-hidden">
                   <div
-                    className="cf-turnstile w-full"
+                    className="cf-turnstile w-[300px] shrink-0 origin-top scale-[0.86] min-[360px]:scale-95 sm:scale-100"
                     data-sitekey={
                       process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""
                     }

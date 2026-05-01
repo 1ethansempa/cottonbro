@@ -86,33 +86,40 @@ function renderOtpHtml(code: string) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;700;900&display=swap" rel="stylesheet">
 </head>
-<body style="margin: 0; padding: 0; background-color: #000000; font-family: 'Urbanist', Arial, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #000000; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: 'Urbanist', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #000000; border: 1px solid #333333; border-radius: 24px; overflow: hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border: 1px solid #e5e5e5; border-collapse: collapse;">
           <tr>
-            <td style="padding: 40px 0 32px 0; text-align: center;">
-              <h1 style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; color: #ffffff;">
+            <td style="padding: 22px 28px; border-bottom: 1px solid #e5e5e5;">
+              <h1 style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; text-transform: uppercase; color: #000000;">
                 COTTON BRO
               </h1>
             </td>
           </tr>
           <tr>
-            <td style="padding: 0 40px 48px 40px; text-align: center;">
-              <h2 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 700; color: #A1A1AA; letter-spacing: 1px; text-transform: uppercase;">
-                One-Time Password
+            <td style="padding: 44px 28px 36px 28px;">
+              <p style="margin: 0 0 18px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #737373;">
+                Create your brand. Design. Launch. Get paid.
+              </p>
+              <h2 style="margin: 0; max-width: 430px; font-size: 48px; font-weight: 900; letter-spacing: -0.04em; line-height: 0.9; text-transform: uppercase; color: #000000;">
+                Enter your<br>studio code.
               </h2>
-              <p style="margin: 0 0 32px 0; font-size: 14px; color: #ffffff; line-height: 1.6;">
-                Enter this code to sign in to your creative studio.
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #111111; padding: 34px 28px 38px 28px;">
+              <p style="margin: 0 0 18px 0; font-size: 10px; font-weight: 900; letter-spacing: 0.3em; line-height: 1.5; text-transform: uppercase; color: #a3a3a3;">
+                One-time password
               </p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center">
-                    <table cellpadding="0" cellspacing="0">
+                  <td>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #333333; border-collapse: collapse;">
                       <tr>
-                        <td style="background-color: #111111; border: 1px solid #333333; border-radius: 16px; padding: 24px 48px;">
-                          <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #93C5FD; font-family: monospace;">
+                        <td align="center" style="background-color: #000000; padding: 26px 20px;">
+                          <span style="font-size: 38px; font-weight: 900; letter-spacing: 0.24em; line-height: 1; color: #ffffff; font-family: 'Courier New', Courier, monospace;">
                             ${code}
                           </span>
                         </td>
@@ -121,14 +128,41 @@ function renderOtpHtml(code: string) {
                   </td>
                 </tr>
               </table>
-              <p style="margin: 32px 0 0 0; font-size: 12px; color: #6B7280;">
-                This code expires in 10 minutes.
+              <p style="margin: 22px 0 0 0; font-size: 13px; font-weight: 500; color: #d4d4d4; line-height: 1.7;">
+                Enter this code to sign in and keep building your next drop.
               </p>
             </td>
           </tr>
+          <tr>
+            <td style="background-color: #e60000; padding: 16px 28px;">
+              <p style="margin: 0; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #ffffff;">
+                This code expires in 10 minutes
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px; border-top: 1px solid #e5e5e5;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding: 0 0 18px 0; border-bottom: 1px solid #e5e5e5;">
+                    <p style="margin: 0; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #000000;">
+                      Design. Create. Sell. Earn.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 18px 0 0 0;">
+                    <p style="margin: 0; font-size: 12px; font-weight: 500; line-height: 1.7; color: #737373;">
+                      If you didn't request this, you can ignore this email. Your account stays protected.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
         </table>
-        <p style="margin-top: 32px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #404040;">
-          COTTONBRO.COM • BUILT FOR CREATORS
+        <p style="margin: 28px 0 0 0; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #a3a3a3;">
+          Cottonbro.com &bull; Built for creators
         </p>
       </td>
     </tr>
