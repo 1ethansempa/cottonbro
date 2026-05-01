@@ -69,7 +69,7 @@ jobs:
         # GitHub mints an OIDC token, Google trusts it via WIF, and impersonates the GCP service account.
         # no need to store json key in github
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           # email of the GCP service account that GitHub will impersonate
