@@ -35,7 +35,6 @@ jobs:
 
       - name: Run linting
         run: pnpm lint
-
         # if any test fails, workflow fails
       - name: Run tests
         run: pnpm test
