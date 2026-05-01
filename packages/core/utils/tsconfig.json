@@ -18,6 +18,6 @@
     "baseUrl": ".",
     "types": ["node"]
   },
-  "include": ["src/index.ts", "src/edge.ts", "src/node.ts", "src/**/*.ts"],
+  "include": ["src/index.ts", "src/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

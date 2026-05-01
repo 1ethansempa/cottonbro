@@ -15,7 +15,7 @@ Cottonbro lets creators design merch (tees, beanies, crop tops, etc.), render th
 | **Animation** | Framer Motion | 12.23 |
 | **Backend API** | NestJS | 11.1 |
 | **Python Services** | FastAPI | 0.115 |
-| **Runtime** | Node.js 22.x / Python 3.11 |
+| **Runtime** | Node.js 24.x / Python 3.11 |
 | **Authentication** | Firebase Admin SDK | 11.10 |
 | **Email** | Nodemailer + Zoho SMTP | 7.0 |
 | **Captcha** | Cloudflare Turnstile | — |
@@ -29,12 +29,20 @@ Cottonbro lets creators design merch (tees, beanies, crop tops, etc.), render th
 ### Authentication Architecture
 
 ```
-Frontend (Firebase Client) 
-    ↓ Bearer Token (ID Token)
-NestJS API (AuthGuard verifies token)
+Frontend (Firebase Client)
+    ↓ same-origin /api/auth/* requests
+Next.js app route proxy
+    ↓ server-side API_BASE_URL
+NestJS API (mints + verifies HttpOnly __session cookie)
     ↓ X-API-Key header
 Python Services (API key middleware)
 ```
+
+The browser never receives the real backend API base URL for auth. The web app
+calls `/api/auth/*`, Next.js forwards to `${API_BASE_URL}/auth/*` server-side,
+and the API sets the `__session` cookie through `Set-Cookie`. Browser JavaScript
+does not read the session cookie; future same-origin requests send it
+automatically and the proxy forwards it to the API.
 
 ### Design System
 
@@ -66,6 +74,67 @@ Python Services (API key middleware)
 - **CI/CD**: GitHub Actions (tests run before deploy)
 - **Auth Federation**: Workload Identity Federation (keyless)
 - **Secrets**: GCP Secret Manager
+
+---
+
+## Architecture
+
+### Deployment Topology
+
+```text
+                   ┌─────────────────────────────┐
+                   │   Users (Uganda / EA / EU)  │
+                   └──────────────┬──────────────┘
+                                  │
+                                  ▼
+                   ┌─────────────────────────────┐
+                   │ Cloudflare CDN / Edge Cache │
+                   │ - cache images              │
+                   │ - cache static assets       │
+                   │ - optional HTML caching     │
+                   └──────────────┬──────────────┘
+                                  │
+                                  ▼
+                ┌──────────────────────────────────────┐
+                │ Next.js Frontend on Cloud Run        │
+                │ region: europe-west1 (Belgium)       │
+                │ - SSR / ISR / app routes             │
+                │ - calls API                          │
+                └──────────────┬───────────────────────┘
+                               │
+                               ▼
+                ┌──────────────────────────────────────┐
+                │ NestJS API on Cloud Run              │
+                │ region: europe-west1 (Belgium)       │
+                │ - auth                               │
+                │ - products / cart / orders           │
+                │ - payments / admin                   │
+                │ - generates signed upload URLs       │
+                └───────────┬───────────────┬──────────┘
+                            │               │
+                            │               ▼
+                            │     ┌──────────────────────┐
+                            │     │ Cloudflare R2        │
+                            │     │ - product images     │
+                            │     │ - uploads/media      │
+                            │     └──────────────────────┘
+                            │
+                            ▼
+              ┌────────────────────────────────────────────┐
+              │ PostgreSQL                                 │
+              │ Option A: Neon (recommended now)           │
+              │ Option B: Cloud SQL (boring upgrade path)  │
+              │ Option C: DO droplet (ops-heavy)           │
+              └────────────────────────────────────────────┘
+```
+
+### Notes
+
+- Cloudflare is the edge layer for static assets, image caching, and optional cached HTML responses.
+- The Next.js frontend and NestJS API are both hosted on Cloud Run in `europe-west1`.
+- The API is responsible for auth, commerce flows, admin operations, and signed upload URL generation.
+- Product and upload media are stored in Cloudflare R2.
+- PostgreSQL is expected to run on Neon initially, with Cloud SQL as the low-friction managed migration path.
 
 ---
 
@@ -129,16 +198,29 @@ cottonbro/
 
 ```bash
 # Web (QA env)
-docker build -f apps/web/Dockerfile --build-arg APP_ENV=qa -t cottonbro-web:qa .
-docker run --rm -p 5173:5173 -e APP_ENV=qa cottonbro-web:qa
+docker build -f apps/web/Dockerfile \
+  --build-arg APP_ENV=qa \
+  --build-arg NEXT_PUBLIC_APP_ENV=qa \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=https://qa-api.example.com \
+  --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key \
+  --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com \
+  --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id \
+  --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=your-firebase-app-id \
+  --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-turnstile-site-key \
+  -t cottonbro-web:qa .
+docker run --rm -p 5173:5173 \
+  -e PORT=5173 \
+  -e APP_ENV=qa \
+  -e API_BASE_URL=https://qa-api.example.com/v1 \
+  cottonbro-web:qa
 
 # API (QA env)
 docker build -f apps/api/Dockerfile --build-arg APP_ENV=qa -t cottonbro-api:qa .
-docker run --rm -p 3001:3001 -e APP_ENV=qa cottonbro-api:qa
+docker run --rm -p 3001:8080 -e APP_ENV=qa cottonbro-api:qa
 
 # Python Services
 docker build -f apps/python-services/Dockerfile -t cottonbro-python:qa apps/python-services
-docker run --rm -p 8000:8000 -e PYTHON_API_KEY=your-key cottonbro-python:qa
+docker run --rm -p 8000:8080 -e PORT=8080 -e PYTHON_API_KEY=your-key cottonbro-python:qa
 ```
 
 ---
@@ -160,20 +242,43 @@ Tests must pass before deployment. See `.github/workflows/` for details.
 
 ## Environment Setup
 
-1. Copy env templates:
+1. Install prerequisites:
    ```bash
-   cp apps/api/.env.example apps/api/.env.local
-   cp apps/web/.env.qa.local.example apps/web/.env.qa.local
+   corepack enable
+   node --version   # should be v24.x
+   pnpm --version
    ```
 
-2. Fill in required secrets (Firebase, Turnstile, SMTP)
+2. Copy env templates:
+   ```bash
+   cp apps/api/.env.example apps/api/.env.local
+   ```
 
-3. Install dependencies:
+3. Create `apps/web/.env.qa.local` with the required public web vars:
+   ```env
+   APP_ENV=qa
+   NEXT_PUBLIC_APP_ENV=qa
+   NEXT_PUBLIC_FIREBASE_API_KEY=
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+   NEXT_PUBLIC_FIREBASE_APP_ID=
+   API_BASE_URL=
+   NEXT_PUBLIC_API_BASE_URL=
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+   ```
+
+   `API_BASE_URL` is server-only and should include the API version prefix
+   (for example, `http://localhost:3001/v1`). Auth routes are proxied through
+   `/api/auth/*` and then forwarded to `${API_BASE_URL}/auth/*`.
+
+4. Fill in required secrets (Firebase, Turnstile, SMTP)
+
+5. Install dependencies:
    ```bash
    pnpm install
    ```
 
-4. Start development:
+6. Start development:
    ```bash
    pnpm dev
    ```

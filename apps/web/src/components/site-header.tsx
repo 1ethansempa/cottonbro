@@ -3,14 +3,44 @@
 import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@cottonbro/auth-react";
 
 interface SiteHeaderProps {
     theme?: "light" | "dark";
+    disableLinks?: boolean;
 }
 
-export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
+function MaybeLink({
+    disabled,
+    href,
+    className,
+    onClick,
+    children,
+}: {
+    disabled?: boolean;
+    href: string;
+    className?: string;
+    onClick?: () => void;
+    children: ReactNode;
+}) {
+    if (disabled) {
+        return (
+            <span aria-disabled="true" className={`${className ?? ""} pointer-events-none cursor-default`}>
+                {children}
+            </span>
+        );
+    }
+
+    return (
+        <Link href={href} onClick={onClick} className={className}>
+            {children}
+        </Link>
+    );
+}
+
+export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const { user, logout, busy } = useAuth();
@@ -30,36 +60,42 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
     }
 
     const nav = [
-        { href: "/#features", label: "Features" },
-        { href: "/#how", label: "How it works" },
-        { href: "/#pricing", label: "Pricing" },
-        { href: "/#faq", label: "FAQ" },
+        { href: "#", label: "Home" },
+        { href: "#", label: "Products" },
+        { href: "#", label: "Design" },
     ];
 
     return (
         <>
-            <header className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-colors duration-300 ${theme === "light"
-                ? "bg-white/80 border-black/5"
-                : "bg-black/80 border-white/5"
-                }`}>
+            <header
+                className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-colors duration-300 ${theme === "light"
+                        ? "bg-white/80 border-black/5"
+                        : "bg-black/80 border-white/5"
+                    }`}
+            >
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                     <div className="flex items-center gap-12">
-                        <Link href="/" className="flex items-center gap-2">
-                            <Logo size="md" color={theme === "light" ? "black" : "white"} fontClassName="font-bold tracking-tight" />
-                        </Link>
+                        <MaybeLink disabled={disableLinks} href="#" className="flex items-center gap-2">
+                            <Logo
+                                size="md"
+                                color={theme === "light" ? "black" : "white"}
+                                fontClassName="font-bold tracking-tight"
+                            />
+                        </MaybeLink>
 
                         <nav className="hidden md:flex items-center gap-8">
-                            {['Features', 'How it works', 'Pricing'].map((item) => (
-                                <Link
-                                    key={item}
-                                    href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                            {nav.map((item) => (
+                                <MaybeLink
+                                    key={item.label}
+                                    disabled={disableLinks}
+                                    href={item.href}
                                     className={`text-sm font-medium transition-colors tracking-wide uppercase ${theme === "light"
-                                        ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
-                                        : "text-gray-400 hover:text-cyan hover:underline underline-offset-4"
+                                            ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
+                                            : "text-gray-400 hover:text-white hover:underline underline-offset-4"
                                         }`}
                                 >
-                                    {item}
-                                </Link>
+                                    {item.label}
+                                </MaybeLink>
                             ))}
                         </nav>
                     </div>
@@ -67,32 +103,35 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                     <div className="hidden md:flex items-center gap-6">
                         {!isAuthenticated ? (
                             <>
-                                <Link
-                                    href="/auth/login"
+                                <MaybeLink
+                                    disabled={disableLinks}
+                                    href="#"
                                     className={`text-sm font-semibold transition px-2 tracking-wide ${theme === "light"
-                                        ? "text-black hover:opacity-70"
-                                        : "text-white hover:text-cyan"
+                                            ? "text-black hover:opacity-70"
+                                            : "text-white hover:text-gray-300"
                                         }`}
                                 >
                                     Login
-                                </Link>
-                                <Link href="/auth/login">
-                                    <button className={`rounded-full px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
-                                        ? "bg-black text-white hover:bg-gray-900"
-                                        : "bg-cyan text-black hover:bg-cyan-bold shadow-[0_0_15px_rgba(34,211,238,0.3)]"
-                                        }`}>
+                                </MaybeLink>
+                                <MaybeLink disabled={disableLinks} href="#">
+                                    <button
+                                        className={`rounded-none px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
+                                                ? "bg-black text-white hover:bg-gray-900"
+                                                : "bg-white text-black hover:bg-gray-100"
+                                            }`}
+                                    >
                                         Sign Up
                                     </button>
-                                </Link>
+                                </MaybeLink>
                             </>
                         ) : (
                             <button
                                 type="button"
                                 onClick={handleLogout}
                                 disabled={loggingOut || busy}
-                                className={`rounded-full border px-5 py-2 text-sm font-medium transition disabled:opacity-60 tracking-wide cursor-pointer ${theme === "light"
-                                    ? "border-black/10 bg-black/5 text-gray-600 hover:text-black hover:bg-black/10"
-                                    : "border-white/10 bg-white/5 text-secondary hover:text-white hover:bg-white/10"
+                                className={`rounded-none border px-5 py-2 text-sm font-medium transition disabled:opacity-60 tracking-wide cursor-pointer ${theme === "light"
+                                        ? "border-black/10 bg-black/5 text-gray-600 hover:text-black hover:bg-black/10"
+                                        : "border-white/10 bg-white/5 text-secondary hover:text-white hover:bg-white/10"
                                     }`}
                             >
                                 {loggingOut ? "Logging out…" : "Log out"}
@@ -107,13 +146,18 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                     >
                         <div className="space-y-1.5">
                             <div className="space-y-1.5">
-                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
-                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
-                                <span className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}></span>
+                                <span
+                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
+                                ></span>
+                                <span
+                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
+                                ></span>
+                                <span
+                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
+                                ></span>
                             </div>
                         </div>
                     </button>
-
                 </div>
             </header>
 
@@ -137,36 +181,41 @@ export function SiteHeader({ theme = "dark" }: SiteHeaderProps) {
                         </div>
 
                         <nav className="flex flex-col gap-8 items-center text-center">
-                            {['The Lab', 'Process', 'Pricing'].map((item) => (
-                                <Link
-                                    key={item}
-                                    href={`/#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                            {nav.map((item) => (
+                                <MaybeLink
+                                    key={item.label}
+                                    disabled={disableLinks}
+                                    href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="text-4xl font-extrabold tracking-tight text-white hover:text-cyan transition-all"
+                                    className="text-4xl font-extrabold tracking-tight text-white hover:text-gray-300 transition-all"
                                 >
-                                    {item}
-                                </Link>
+                                    {item.label}
+                                </MaybeLink>
                             ))}
                             {!isAuthenticated ? (
                                 <>
-                                    <Link
-                                        href="/auth/login"
+                                    <MaybeLink
+                                        disabled={disableLinks}
+                                        href="#"
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="text-2xl font-bold text-secondary hover:text-white mt-8"
                                     >
                                         Enter Studio
-                                    </Link>
-                                    <Link
-                                        href="/auth/login"
+                                    </MaybeLink>
+                                    <MaybeLink
+                                        disabled={disableLinks}
+                                        href="#"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="rounded-full bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-cyan mt-4 tracking-wide hover:bg-cyan hover:shadow-cyan/50"
+                                        className="rounded-none bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-white mt-4 tracking-wide hover:bg-gray-100 hover:scale-[1.02]"
                                     >
                                         Open Studio
-                                    </Link>
+                                    </MaybeLink>
                                 </>
                             ) : (
                                 <button
-                                    onClick={() => { handleLogout(); }}
+                                    onClick={() => {
+                                        handleLogout();
+                                    }}
                                     className="text-2xl font-bold text-secondary hover:text-white mt-8 uppercase cursor-pointer"
                                 >
                                     Log Out

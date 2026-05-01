@@ -1,0 +1,17 @@
+.git
+**/.git
+node_modules
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/coverage
+**/.cache
+.DS_Store
+*.log
+.env*
+.idea
+.vscode
+.pnpm-store
+**/tmp
+**/.DS_Store

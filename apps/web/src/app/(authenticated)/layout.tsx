@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { clientAuth } from "@/lib/firebase-client";
+import { getClientAuth } from "@/lib/firebase-client";
 import { useRouter } from "next/navigation";
 
 export default function AuthenticatedLayout({
@@ -15,6 +15,12 @@ export default function AuthenticatedLayout({
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    const clientAuth = getClientAuth();
+    if (!clientAuth) {
+      setAuthReady(true);
+      return;
+    }
+
     // Listen directly to Firebase auth state changes
     // This fires once auth state is restored from IndexedDB
     const unsubscribe = onAuthStateChanged(clientAuth, (firebaseUser) => {
@@ -37,7 +43,7 @@ export default function AuthenticatedLayout({
   if (!authReady) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -46,7 +52,7 @@ export default function AuthenticatedLayout({
   if (!user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

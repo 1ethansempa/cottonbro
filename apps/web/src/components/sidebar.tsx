@@ -56,9 +56,9 @@ export default function Sidebar({
           "block rounded-md px-3 py-2 text-sm font-medium tracking-wide",
           "transition-colors duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
           active
-            ? "text-cyan bg-cyan/10 ring-1 ring-cyan/20"
-            : "text-gray-400 hover:text-cyan hover:bg-white/5 hover:ring-1 hover:ring-white/5",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/30",
+            ? "text-white bg-white/10 ring-1 ring-white/20"
+            : "text-gray-400 hover:text-white hover:bg-white/5 hover:ring-1 hover:ring-white/5",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
         ].join(" ")}
       >
         {label}
@@ -112,8 +112,8 @@ export default function Sidebar({
                   onClick={onLogout}
                   disabled={busy}
                   className="w-full text-left block rounded-md px-3 py-2 text-sm font-medium tracking-wide text-gray-400
-                             hover:text-cyan hover:bg-white/5 hover:ring-1 hover:ring-white/5
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                             hover:text-white hover:bg-white/5 hover:ring-1 hover:ring-white/5
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Logout
                 </button>

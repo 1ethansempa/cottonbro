@@ -1,42 +1,70 @@
-# ---------- Base image: Node 22 + pnpm ----------
-FROM node:22-slim AS base
+# ---------- Base image: Node 24 + pnpm ----------
 
+# Start from the official lightweight Node.js 24 image.
+# "slim" removes unnecessary packages to keep the container smaller.
+FROM node:24-slim AS base
+
+# Set production mode so Node frameworks disable dev features,
+# reduce logging, and enable optimizations.
 ENV NODE_ENV=production
+
+# Set the working directory inside the container.
+# All following commands run relative to /app.
 WORKDIR /app
 
-# Enable pnpm via corepack (Node 22 ships with corepack)
+# Enable pnpm via Node's built-in package manager wrapper (corepack).
+# Node 24 includes corepack which manages package manager versions.
+# This ensures the container always uses pnpm v10.11.1.
 RUN corepack enable && corepack prepare pnpm@10.11.1 --activate
 
+
 # ---------- Dependencies stage ----------
+
+# Start a new stage for installing dependencies.
+# This allows Docker to cache dependency layers separately
+# from the application source code.
 FROM base AS deps
 
-# Root-level files needed for workspace & tsconfig
+# Copy root-level monorepo files required for dependency resolution.
+# These define the workspace structure and TypeScript configuration.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.json tsconfig.types.json ./
 
-# Workspace packages (for @cottonbro/ui, @cottonbro/auth-react, etc.)
+# Copy shared workspace packages (UI components, auth libraries, etc.)
+# so pnpm can resolve internal workspace dependencies.
 COPY packages ./packages
 
-# App package manifest so pnpm can resolve @cottonbro/web
+# Copy the web app's package.json so pnpm knows what dependencies
+# @cottonbro/web requires without copying the entire source code yet.
 COPY apps/web/package.json ./apps/web/package.json
 
-# Install deps for @cottonbro/web (and its deps)
-RUN pnpm install --filter @cottonbro/web... --prod=false
+# Download all dependencies for @cottonbro/web and its dependency graph.
+# pnpm fetch stores them in the pnpm store without installing yet.
+RUN pnpm fetch --filter @cottonbro/web... --prod=false
+
+# Install dependencies using the lockfile only.
+# --offline ensures no network requests are made during install.
+# --frozen-lockfile guarantees the lockfile is not modified.
+RUN pnpm install --filter @cottonbro/web... --offline --prod=false --frozen-lockfile
+
 
 # ---------- Build stage ----------
+
+# Build stage compiles the application after dependencies are ready.
 FROM deps AS build
 
+# Build-time arguments passed from the build command.
+# These allow injecting environment variables during the build process.
 ARG APP_ENV=prod
 ARG NEXT_PUBLIC_APP_ENV=""
 ARG NEXT_PUBLIC_FIREBASE_API_KEY=""
 ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=""
 ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID=""
 ARG NEXT_PUBLIC_FIREBASE_APP_ID=""
-ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=""
-ARG NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=""
-ARG NEXT_PUBLIC_AUTH_BASE_URL=""
-ARG NEXT_PUBLIC_API_BASE_URL=""
+ARG API_BASE_URL=""
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=""
 
+# Convert build arguments into environment variables inside the container.
+# Next.js reads NEXT_PUBLIC_* variables during the build step.
 ENV APP_ENV=${APP_ENV}
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}
@@ -44,64 +72,61 @@ ENV NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
 ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
 ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
 ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
-ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
-ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
-ENV NEXT_PUBLIC_AUTH_BASE_URL=${NEXT_PUBLIC_AUTH_BASE_URL}
-ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV API_BASE_URL=${API_BASE_URL}
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
 
-# Copy only the web app sources (Next, config, assets, env files)
+# Copy the actual Next.js web application source code.
+# This happens after dependency installation to preserve Docker cache layers.
 COPY apps/web ./apps/web
 
-# Generate the env file expected by env-cmd (e.g., .env.qa.local) using build args.
-RUN ENV_FILE="/app/apps/web/.env.${APP_ENV}.local"; \
-    mkdir -p "$(dirname "$ENV_FILE")"; \
-    { \
-      echo "APP_ENV=${APP_ENV}"; \
-      echo "NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV:-$APP_ENV}"; \
-      echo "NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}"; \
-      echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"; \
-      echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"; \
-      echo "NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}"; \
-      echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}"; \
-      echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}"; \
-      echo "NEXT_PUBLIC_AUTH_BASE_URL=${NEXT_PUBLIC_AUTH_BASE_URL}"; \
-      echo "NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}"; \
-      echo "NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}"; \
-    } > "$ENV_FILE"; \
-    cp "$ENV_FILE" "/app/.env.${APP_ENV}.local"
+# Build shared packages that the web app depends on.
+# These produce compiled outputs used by the Next.js build.
+RUN pnpm --filter @cottonbro/utils build && pnpm --filter @cottonbro/ui build && pnpm --filter @cottonbro/auth-react build
 
-# Build shared frontend packages so their dist outputs exist for Next build
-RUN pnpm --filter @cottonbro/ui build && pnpm --filter @cottonbro/auth-react build
+# Build the Next.js application.
+# next build compiles the app into the .next directory.
+RUN pnpm --filter @cottonbro/web exec next build
 
-# Build QA or Prod based on APP_ENV (Next will emit .next/standalone)
-RUN if [ "$APP_ENV" = "qa" ]; then \
-      pnpm --filter @cottonbro/web build:qa; \
-    else \
-      pnpm --filter @cottonbro/web build:prod; \
-    fi
 
 # ---------- Runtime stage ----------
-FROM node:22-slim AS runner
 
+# Final runtime container with only the minimal files needed to run.
+# This keeps the production image smaller and more secure.
+FROM node:24-slim AS runner
+
+# Set production environment again for safety.
 ENV NODE_ENV=production
+
+# Working directory for the running application.
 WORKDIR /app
 
-# Create non-root user first
+# Create a non-root user for security.
+# Running containers as root increases security risks.
 RUN addgroup --system app && adduser --system --ingroup app app
 
-# Default envs (Cloud Run can override)
+# Default runtime environment variables.
+# Platforms like Cloud Run can override these.
 ENV PORT=5173
 ENV APP_ENV=prod
 
-# Copy standalone server output & public assets
+# Copy the standalone Next.js server output.
+# The standalone build contains a minimal Node server
+# plus only the dependencies needed to run it.
 COPY --from=build --chown=app:app /app/apps/web/.next/standalone ./
+
+# Copy static assets generated by Next.js.
 COPY --from=build --chown=app:app /app/apps/web/.next/static ./apps/web/.next/static
+
+# Copy public assets (images, fonts, etc.).
 COPY --from=build --chown=app:app /app/apps/web/public ./apps/web/public
 
-# Now drop to non-root
+# Drop privileges and run as the non-root user.
 USER app
 
+# Document that the container listens on port 5173.
+# This does not publish the port but informs tools and developers.
 EXPOSE 5173
 
+# Start the Next.js standalone server.
+# server.js is generated by Next.js when using standalone output mode.
 CMD ["node", "apps/web/server.js"]

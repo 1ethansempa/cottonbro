@@ -12,23 +12,29 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      # downloads repo code onto runner
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
+      # downloads pnpm into runner environment
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
+      # set up node in runner environment
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
+        # install node 22
+        # cache: 'pnpm' speeds up installs, reuses previously installed dependencies
+        # uses lockfile as cache key
         with:
           node-version: 22
-          cache: 'pnpm'
-
+          cache: "pnpm"
+        # install dependencies exactly like in lock file
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run linting
         run: pnpm lint
-
+        # if any test fails, workflow fails
       - name: Run tests
         run: pnpm test

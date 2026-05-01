@@ -12,17 +12,9 @@ import {
   signInOrCreateUser,
   mintCustomToken,
 } from "@cottonbro/auth-server";
-import { ConfigService } from "../common/config/config.service.js";
 import { MailService } from "../common/mail/mail.service.js";
 
-const DEFAULT_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
-const MAX_TTL_MS = DEFAULT_TTL_MS; // cap at 14d
-const MIN_TTL_MS = 5 * 60 * 1000; // Firebase requires >= 5 minutes
-
-function clampTtlMs(ttlMs?: number) {
-  if (!ttlMs || ttlMs <= 0) return DEFAULT_TTL_MS;
-  return Math.min(Math.max(ttlMs, MIN_TTL_MS), MAX_TTL_MS);
-}
+const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 type TurnstileVerifyResponse = {
   success: boolean;
@@ -35,10 +27,7 @@ type TurnstileVerifyResponse = {
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly mail: MailService
-  ) {}
+  constructor(private readonly mail: MailService) {}
 
   /** Starts an OTP flow: generate & email the code */
   async startOtp(email: string, captchaToken: string, remoteIp?: string) {
@@ -75,17 +64,14 @@ export class AuthService {
   }
 
   /** Exchanges a Firebase ID token for an HttpOnly session cookie (max 14d) */
-  async createSessionCookie(
-    idToken: string,
-    ttlMs: number | undefined,
-    res: Response
-  ) {
+  async createSessionCookie(idToken: string, res: Response) {
     if (!idToken) throw new BadRequestException("Missing ID token");
-    const expiresIn = clampTtlMs(ttlMs);
 
     let cookie: string;
     try {
-      cookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+      cookie = await adminAuth.createSessionCookie(idToken, {
+        expiresIn: SESSION_TTL_MS,
+      });
     } catch (err) {
       console.error("createSessionCookie error:", err);
       throw new UnauthorizedException("Invalid ID token");
@@ -99,7 +85,7 @@ export class AuthService {
       httpOnly: true,
       secure,
       sameSite: "lax",
-      maxAge: expiresIn,
+      maxAge: SESSION_TTL_MS,
       domain: process.env.COOKIE_DOMAIN || undefined, // e.g., .cottonbro.com
       path: "/",
     });
@@ -126,10 +112,12 @@ export class AuthService {
     if (!token) {
       throw new BadRequestException("Captcha token is required");
     }
-    const secret = this.config.TURNSTILE_SECRET;
+    const secret = process.env.TURNSTILE_SECRET?.trim();
     if (!secret) {
       console.error("Turnstile secret is not configured");
-      throw new InternalServerErrorException("Captcha verification unavailable");
+      throw new InternalServerErrorException(
+        "Captcha verification unavailable"
+      );
     }
 
     const params = new URLSearchParams();

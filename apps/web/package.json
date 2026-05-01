@@ -10,19 +10,17 @@
     "build:prod": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next build",
     "start:qa": "cross-env APP_ENV=qa env-cmd -f .env.qa.local next start -p 5173",
     "start:prod": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next start -p 5173",
-    "dev": "cross-env APP_ENV=qa env-cmd -f .env.qa.local next dev -p 5173",
-    "build": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next build",
-    "start": "cross-env APP_ENV=prod env-cmd -f .env.prod.local next start -p 5173",
+    "dev": "cross-env APP_ENV=local env-cmd -f .env.local next dev -p 5173",
+    "build": "cross-env APP_ENV=local env-cmd -f .env.local next build",
+    "start": "cross-env APP_ENV=local env-cmd -f .env.local next start -p 5173",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "firebase:login": "firebase login",
-    "deploy:qa": "pnpm build:qa && firebase deploy --only hosting --project qa",
-    "deploy:prod": "pnpm build:prod && firebase deploy --only hosting --project prod"
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@cottonbro/auth-react": "workspace:*",
+    "@cottonbro/utils": "workspace:*",
     "@cottonbro/ui": "workspace:*",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
@@ -32,6 +30,7 @@
     "fabric": "^6.9.1",
     "firebase": "^11.10.0",
     "framer-motion": "^12.23.22",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.562.0",
     "nanoid": "^5.1.6",
     "next": "^15.5.9",
@@ -53,10 +52,10 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
-    "zod": "^4.1.12"
+    "zod": "^4.3.6"
   },
   "engines": {
-    "node": "22.x",
+    "node": "24.x",
     "pnpm": ">=10.11.1"
   }
 }

@@ -1,10 +1,16 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+const isCi = process.env.CI === "true";
+const apiUrl =
+  process.env.API_BASE_URL || (isDev || isCi ? "http://localhost:3001" : "");
+
+if (!apiUrl) {
+  throw new Error("Missing API_BASE_URL");
+}
 
 const connectSrc = [
   "'self'",
-  "https://cottonbro-api-491077850913.europe-west1.run.app",
   "https://*.googleapis.com",
   "https://www.googleapis.com",
   "https://fonts.gstatic.com",
@@ -13,18 +19,14 @@ const connectSrc = [
   "https://*.google.com",
 ];
 
-if (isDev) {
-  connectSrc.push("http://localhost:3001");
-}
-
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: https: https://staticimgly.com",
+  "img-src 'self' data:",
   `connect-src ${connectSrc.join(" ")}`,
   "font-src 'self' https://fonts.gstatic.com data:",
-  "frame-src 'self' https://*.firebaseapp.com https://www.gstatic.com https://challenges.cloudflare.com",
+  "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
 ].join("; ");
 
@@ -51,7 +53,7 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    value: "camera=(), microphone=(), geolocation=(self)",
   },
 ];
 
@@ -66,19 +68,11 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    // Use env var to override API URL, otherwise use local in dev, deployed in prod
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      (isDev
-        ? "http://localhost:3001"
-        : "https://cottonbro-api-491077850913.europe-west1.run.app");
-
     return [
       // Proxy API requests through Next.js so cookies work on same origin
-      // NestJS uses /v1/ global prefix
       {
         source: "/api/:path*",
-        destination: `${apiUrl}/v1/:path*`,
+        destination: `${apiUrl}/:path*`,
       },
     ];
   },

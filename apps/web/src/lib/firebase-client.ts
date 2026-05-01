@@ -1,18 +1,58 @@
-import { initializeApp, getApps } from "firebase/app";
+import { getApps, initializeApp } from "firebase/app";
 import {
+  type Auth,
   getAuth,
   setPersistence,
   browserLocalPersistence,
 } from "firebase/auth";
-import { publicEnv } from "@/config/env";
 
-const config = {
-  apiKey: publicEnv.FIREBASE_API_KEY,
-  authDomain: publicEnv.FIREBASE_AUTH_DOMAIN,
-  projectId: publicEnv.FIREBASE_PROJECT_ID,
-};
+let cachedAuth: Auth | null = null;
+let persistenceConfigured = false;
 
-export const clientApp = getApps()[0] ?? initializeApp(config);
-export const clientAuth = getAuth(clientApp);
+function getFirebaseConfig() {
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
+  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim();
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim();
 
-setPersistence(clientAuth, browserLocalPersistence).catch(() => {});
+  if (!apiKey || !authDomain || !projectId) {
+    return null;
+  }
+
+  return {
+    apiKey,
+    authDomain,
+    projectId,
+    ...(appId ? { appId } : {}),
+  };
+}
+
+export function getClientAuth() {
+  if (cachedAuth) {
+    return cachedAuth;
+  }
+
+  const firebaseConfig = getFirebaseConfig();
+  if (!firebaseConfig) {
+    return null;
+  }
+
+  const clientApp =
+    getApps()[0] ??
+    initializeApp({
+      ...firebaseConfig,
+    });
+
+  cachedAuth = getAuth(clientApp);
+
+  if (!persistenceConfigured && typeof window !== "undefined") {
+    persistenceConfigured = true;
+    setPersistence(cachedAuth, browserLocalPersistence).catch((err) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Failed to configure Firebase auth persistence", err);
+      }
+    });
+  }
+
+  return cachedAuth;
+}

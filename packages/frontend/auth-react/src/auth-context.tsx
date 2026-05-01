@@ -7,331 +7,376 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { Auth as FirebaseAuth, User, IdTokenResult } from "firebase/auth";
+import type { Auth as FirebaseAuth, IdTokenResult, User } from "firebase/auth";
 import {
   GoogleAuthProvider,
-  signInWithPopup,
-  signInWithCustomToken,
-  onIdTokenChanged,
   onAuthStateChanged,
+  onIdTokenChanged,
+  signInWithCustomToken,
+  signInWithPopup,
 } from "firebase/auth";
+import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
-const MIN_REFRESH_INTERVAL_MS = 60 * 1000;
-const MAX_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
-
-/**
- * Central auth wiring: wraps Firebase, handles OTP + Google sign-in, exchanges ID
- * tokens for backend session cookies, and keeps claims fresh via periodic refresh.
- */
-
-// Types
+const DEFAULT_AUTH_BASE_URL = "/api/auth";
+const SESSION_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 export type AuthRole = "User" | "Admin" | string | undefined;
 
-export interface Endpoints {
-  startOtp: string; // POST { email }
-  verifyOtp: string; // POST { email, code } -> { customToken }
-  login: string; // POST { idToken, ttlMs? }
-  logout: string; // POST
-}
-
 export interface AuthContextConfig {
-  auth: FirebaseAuth;
-  endpoints: Endpoints;
+  // Firebase client auth instance; pass null until the browser-only SDK is ready.
+  auth: FirebaseAuth | null;
+  // Called after the backend has accepted the Firebase ID token and set its cookie.
   onSession?: (args: { idToken: string; user: User }) => void;
+  // Called after local cleanup has run, even if backend logout was best-effort.
   onLogout?: () => void;
-  allowAutoLink?: boolean;
-  keepClientSignedIn?: boolean;
-  /** Optional: override ttlMs sent on login (e.g., 7d for admin) */
-  sessionTtlMs?: number;
-  /** Optional: how often to refresh ID token + session cookie (ms) */
-  sessionRefreshIntervalMs?: number;
 }
 
 export interface AuthContextValue {
+  // Firebase client state; server authorization must not rely on this alone.
   user: User | null;
+  // True until Firebase has reported the first client auth state.
   loading: boolean;
+  // True while an explicit login/logout action is in flight.
+  busy: boolean;
+  // User-safe error text. Raw backend/Firebase errors are normalized first.
+  error: string | null;
+  // Claims are UI hints only; protected APIs must verify authorization server-side.
   claims: IdTokenResult["claims"] | null;
   role: AuthRole;
+  // Refreshes the Firebase ID token and asks the backend to renew the cookie.
   refreshIdToken: () => Promise<string | null>;
+  // Starts the email OTP flow. Captcha must be verified by the backend.
   requestOtp: (email: string, captchaToken: string) => Promise<void>;
+  // Completes OTP login by exchanging the backend custom token with Firebase.
   confirmOtp: (email: string, code: string) => Promise<void>;
+  // Starts Firebase Google sign-in and then creates the backend session.
   googleSignIn: () => Promise<void>;
+  // Clears the backend session cookie when possible and signs out Firebase locally.
   logout: () => Promise<void>;
-  error: string | null;
-  busy: boolean;
 }
 
-// Context
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Provider
 export const AuthProvider: React.FC<
   React.PropsWithChildren<AuthContextConfig>
-> = ({
-  auth,
-  endpoints,
-  onSession,
-  onLogout,
-  allowAutoLink = true,
-  keepClientSignedIn = true,
-  sessionTtlMs,
-  sessionRefreshIntervalMs,
-  children,
-}) => {
+> = ({ auth, onSession, onLogout, children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<IdTokenResult["claims"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const mounted = useRef(true);
-  const hasResolvedAuth = useRef(false);
 
-  // Derived role from custom claims
+  // Firebase callbacks may resolve after unmount; guard React state writes.
+  const mounted = useRef(true);
+
+  // Loading should flip once, after Firebase's first auth-state callback.
+  const hasResolvedInitialAuth = useRef(false);
+
   const role = (claims?.role as AuthRole) ?? undefined;
 
-  // Lifecycle: track mount + sync auth state/claims
+  const authRoutes = useMemo(() => {
+    return {
+      startOtp: `${DEFAULT_AUTH_BASE_URL}/otp/start`,
+      verifyOtp: `${DEFAULT_AUTH_BASE_URL}/otp/verify`,
+      login: `${DEFAULT_AUTH_BASE_URL}/login`,
+      logout: `${DEFAULT_AUTH_BASE_URL}/logout`,
+    };
+  }, []);
+
+  // Auth endpoints set/read HttpOnly cookies, so every request includes credentials.
+  const postJson = useCallback(
+    async (url: string, body?: unknown) => {
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify(body ?? {}),
+      });
+
+      if (!res.ok) {
+        const raw = await res.text().catch(() => "");
+        throw new Error(
+          sanitizeBackendError(raw) ||
+            `Request failed with status ${res.status}`,
+        );
+      }
+
+      const contentType = res.headers.get("content-type");
+
+      if (contentType?.includes("application/json")) {
+        return res.json();
+      }
+
+      return undefined;
+    },
+    [],
+  );
+
+  // Centralizes action state so auth buttons do not each invent spinner/error rules.
+  const runAuthAction = useCallback(async <T,>(action: () => Promise<T>) => {
+    setError(null);
+    setBusy(true);
+
+    try {
+      return await action();
+    } finally {
+      if (mounted.current) {
+        setBusy(false);
+      }
+    }
+  }, []);
+
+  // Trust handoff: Firebase proves identity; the backend decides whether to mint a session.
+  const createBackendSession = useCallback(
+    async (firebaseUser: User, shouldEmitSession = true) => {
+      const idToken = await firebaseUser.getIdToken(true);
+
+      await postJson(authRoutes.login, {
+        idToken,
+      });
+
+      if (shouldEmitSession) {
+        onSession?.({ idToken, user: firebaseUser });
+      }
+
+      return idToken;
+    },
+    [authRoutes.login, onSession, postJson],
+  );
+
+  const finishSignIn = useCallback(
+    async (firebaseUser: User) => {
+      await createBackendSession(firebaseUser, true);
+    },
+    [createBackendSession],
+  );
+
+  // Keep client UI state aligned with Firebase, including custom claims changes.
   useEffect(() => {
     mounted.current = true;
 
-    const unsubAuth = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      if (!hasResolvedAuth.current) {
-        hasResolvedAuth.current = true;
-        if (mounted.current) setLoading(false);
+    if (!auth) {
+      hasResolvedInitialAuth.current = true;
+      setLoading(false);
+
+      return () => {
+        mounted.current = false;
+      };
+    }
+
+    const finishInitialLoad = () => {
+      if (!hasResolvedInitialAuth.current) {
+        hasResolvedInitialAuth.current = true;
+        setLoading(false);
       }
+    };
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (!mounted.current) return;
+
+      setUser(firebaseUser);
+      finishInitialLoad();
     });
-    const unsubToken = onIdTokenChanged(auth, async (u) => {
-      if (!u) {
+
+    const unsubscribeToken = onIdTokenChanged(auth, async (firebaseUser) => {
+      if (!mounted.current) return;
+
+      if (!firebaseUser) {
         setClaims(null);
         return;
       }
+
       try {
-        const res = await u.getIdTokenResult();
-        if (mounted.current) setClaims(res.claims);
+        const tokenInfo = await firebaseUser.getIdTokenResult();
+
+        if (mounted.current) {
+          setClaims(tokenInfo.claims);
+        }
       } catch {
-        // ignore
+        if (mounted.current) {
+          setClaims(null);
+        }
       }
     });
 
     return () => {
       mounted.current = false;
-      unsubAuth();
-      unsubToken();
+      unsubscribeAuth();
+      unsubscribeToken();
     };
   }, [auth]);
 
-  // Helpers
-
-  // POST JSON with cookies + surfaced errors.
-  const postJson = useCallback(async (url: string, body: unknown) => {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(body ?? {}),
-    });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(text || `Request failed: ${res.status}`);
-    }
-
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      return res.json();
-    }
-
-    return undefined;
-  }, []);
-
-  // Wrap async actions with busy/error bookkeeping.
-  const runWithBusy = useCallback(
-    async <T,>(fn: () => Promise<T>): Promise<T> => {
-      setError(null);
-      setBusy(true);
-      try {
-        return await fn();
-      } finally {
-        if (mounted.current) setBusy(false);
-      }
-    },
-    []
-  );
-
-  // Mint/refresh the backend session cookie from a Firebase ID token.
-  const syncSessionCookie = useCallback(
-    async (u: User, emitSessionEvent = true) => {
-      const idToken = await u.getIdToken(true);
-      await postJson(endpoints.login, { idToken, ttlMs: sessionTtlMs });
-      if (emitSessionEvent) onSession?.({ idToken, user: u });
-      return idToken;
-    },
-    [endpoints.login, onSession, postJson, sessionTtlMs]
-  );
-
-  // Exchange Firebase ID token for our session cookie, optionally sign out client.
-  const establishSession = useCallback(
-    async (u: User) => {
-      await syncSessionCookie(u, true);
-      if (!keepClientSignedIn) {
-        await auth.signOut();
-      }
-    },
-    [syncSessionCookie, keepClientSignedIn, auth]
-  );
-
-  // Public actions
-
-  // Kick off OTP flow.
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
     async (email, captchaToken) =>
-      runWithBusy(async () => {
-        const e = email.trim();
-        const token = captchaToken?.trim();
-        if (!e) throw new Error("email_required");
-        if (!token) throw new Error("captcha_required");
-        await postJson(endpoints.startOtp, { email: e, captchaToken: token });
+      runAuthAction(async () => {
+        const emailValue = email.trim();
+        const captchaTokenValue = captchaToken.trim();
+
+        if (!emailValue) throw new Error("email_required");
+        if (!captchaTokenValue) throw new Error("captcha_required");
+
+        await postJson(authRoutes.startOtp, {
+          email: emailValue,
+          captchaToken: captchaTokenValue,
+        });
       }),
-    [endpoints.startOtp, postJson, runWithBusy]
+    [authRoutes.startOtp, postJson, runAuthAction],
   );
 
-  // Verify OTP -> sign in -> mint cookie.
   const confirmOtp = useCallback<AuthContextValue["confirmOtp"]>(
     async (email, code) =>
-      runWithBusy(async () => {
+      runAuthAction(async () => {
+        if (!auth) throw new Error("auth_not_initialized");
+
+        const emailValue = email.trim();
+        const codeValue = code.trim();
+
+        if (!emailValue || !codeValue) {
+          throw new Error("invalid_otp_payload");
+        }
+
         try {
-          const e = email.trim();
-          const c = code.trim();
-          if (!e || !c) throw new Error("invalid_otp_payload");
+          // The backend returns a short-lived Firebase custom token after OTP success.
+          const data = (await postJson(authRoutes.verifyOtp, {
+            email: emailValue,
+            code: codeValue,
+          })) as { customToken?: string } | undefined;
 
-          const data = (await postJson(endpoints.verifyOtp, {
-            email: e,
-            code: c,
-          })) as { customToken: string } | undefined;
-
-          if (!data?.customToken) throw new Error("missing_custom_token");
-
-          const cred = await signInWithCustomToken(auth, data.customToken);
-          await establishSession(cred.user);
-        } catch (err: any) {
-          if (mounted.current) {
-            setError(err?.message ?? "otp_verify_failed");
+          if (!data?.customToken) {
+            throw new Error("missing_custom_token");
           }
+
+          const credential = await signInWithCustomToken(
+            auth,
+            data.customToken,
+          );
+
+          await finishSignIn(credential.user);
+        } catch (err: unknown) {
+          if (mounted.current) {
+            setError(toUserMessage(err));
+          }
+
           throw err;
         }
       }),
-    [auth, endpoints.verifyOtp, establishSession, postJson, runWithBusy]
+    [auth, authRoutes.verifyOtp, finishSignIn, postJson, runAuthAction],
   );
 
-  // Google OAuth; links existing OTP account when allowed.
   const googleSignIn = useCallback<AuthContextValue["googleSignIn"]>(
     async () =>
-      runWithBusy(async () => {
+      runAuthAction(async () => {
+        if (!auth) throw new Error("auth_not_initialized");
+
         try {
           const provider = new GoogleAuthProvider();
 
-          // When auto-linking and already signed in, treat popup as "link".
-          if (allowAutoLink && auth.currentUser) {
-            const result = await signInWithPopup(auth, provider);
-            await establishSession(result.user);
-            return;
+          const result = await signInWithPopup(auth, provider);
+
+          await finishSignIn(result.user);
+        } catch (err: unknown) {
+          if (mounted.current) {
+            setError(toUserMessage(err));
           }
 
-          const result = await signInWithPopup(auth, provider);
-          await establishSession(result.user);
-        } catch (e: any) {
-          if (e?.code === "auth/account-exists-with-different-credential") {
-            setError(
-              "Account exists with a different sign-in method. Sign in with email, then add Google."
-            );
-          } else {
-            setError(e?.message ?? "google_signin_failed");
-          }
-          throw e;
+          throw err;
         }
       }),
-    [allowAutoLink, auth, establishSession, runWithBusy]
+    [auth, finishSignIn, runAuthAction],
   );
 
-  // Refresh Firebase token + claims + cookie.
+  // Best-effort renewal for sliding sessions; callers must still handle null/expiry.
   const refreshIdToken = useCallback<
     AuthContextValue["refreshIdToken"]
   >(async () => {
+    const currentUser = auth?.currentUser;
+
+    if (!currentUser) return null;
+
     try {
-      if (!auth.currentUser) return null;
-      const token = await syncSessionCookie(auth.currentUser, false);
-      const info = await auth.currentUser.getIdTokenResult();
-      if (mounted.current) setClaims(info.claims);
-      return token;
+      const idToken = await createBackendSession(currentUser, false);
+      const tokenInfo = await currentUser.getIdTokenResult();
+
+      if (mounted.current) {
+        setClaims(tokenInfo.claims);
+      }
+
+      return idToken;
     } catch {
       return null;
     }
-  }, [auth, syncSessionCookie]);
+  }, [auth, createBackendSession]);
 
-  // Periodic refresh to keep cookie + claims warm.
+  // Renew the backend cookie while Firebase says a user is signed in.
   useEffect(() => {
-    const baseInterval =
-      typeof sessionRefreshIntervalMs === "number"
-        ? sessionRefreshIntervalMs
-        : sessionTtlMs
-          ? Math.floor(sessionTtlMs / 2)
-          : undefined;
-    const intervalMs =
-      baseInterval && baseInterval > 0
-        ? Math.max(
-            MIN_REFRESH_INTERVAL_MS,
-            Math.min(baseInterval, MAX_REFRESH_INTERVAL_MS)
-          )
-        : undefined;
-    if (!user || !intervalMs) return undefined;
+    if (!user) return undefined;
 
-    const id = setInterval(() => {
-      refreshIdToken().catch(() => {});
-    }, intervalMs);
-    return () => clearInterval(id);
-  }, [refreshIdToken, sessionRefreshIntervalMs, sessionTtlMs, user]);
+    const refreshTimer = window.setInterval(() => {
+      refreshIdToken().catch(() => {
+        // Protected calls remain the source of truth if background refresh fails.
+      });
+    }, SESSION_REFRESH_INTERVAL_MS);
 
-  // Also refresh on tab focus.
+    return () => {
+      window.clearInterval(refreshTimer);
+    };
+  }, [refreshIdToken, user]);
+
+  // Background tabs can miss timers; refresh promptly when the user returns.
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
-    const handler = () => {
+
+    const refreshWhenTabIsVisible = () => {
       if (!document.hidden) {
-        refreshIdToken().catch(() => {});
+        refreshIdToken().catch(() => {
+          // Non-fatal; the next protected request still has to handle auth failure.
+        });
       }
     };
-    document.addEventListener("visibilitychange", handler);
+
+    document.addEventListener("visibilitychange", refreshWhenTabIsVisible);
+
     return () => {
-      document.removeEventListener("visibilitychange", handler);
+      document.removeEventListener("visibilitychange", refreshWhenTabIsVisible);
     };
   }, [refreshIdToken]);
 
-  // Logout hits API cookie + Firebase client.
+  // Logout must clean up the browser even if the network or backend is unavailable.
   const logout = useCallback<AuthContextValue["logout"]>(
     async () =>
-      runWithBusy(async () => {
-        try {
-          await fetch(endpoints.logout, {
-            method: "POST",
-            credentials: "include",
-          }).catch(() => {});
-          await auth.signOut().catch(() => {});
-          setClaims(null);
-          setUser(null);
-          onLogout?.();
-        } finally {
-          // `runWithBusy` handles busy flag; keep behavior the same.
-        }
-      }),
-    [auth, endpoints.logout, onLogout, runWithBusy]
-  );
+      runAuthAction(async () => {
+        await fetch(authRoutes.logout, {
+          method: "POST",
+          credentials: "include",
+        }).catch(() => {
+          // Local sign-out below is still required.
+        });
 
-  // Memoized context payload
+        await auth?.signOut().catch(() => {
+          // React state cleanup below is the final local fallback.
+        });
+
+        if (mounted.current) {
+          setUser(null);
+          setClaims(null);
+          setError(null);
+        }
+
+        onLogout?.();
+      }),
+    [auth, authRoutes.logout, onLogout, runAuthAction],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       loading,
+      busy,
+      error,
       claims,
       role,
       refreshIdToken,
@@ -339,12 +384,12 @@ export const AuthProvider: React.FC<
       confirmOtp,
       googleSignIn,
       logout,
-      error,
-      busy,
     }),
     [
       user,
       loading,
+      busy,
+      error,
       claims,
       role,
       refreshIdToken,
@@ -352,31 +397,24 @@ export const AuthProvider: React.FC<
       confirmOtp,
       googleSignIn,
       logout,
-      error,
-      busy,
-    ]
+    ],
   );
 
-  // No JSX so the file stays .ts
-  return React.createElement(AuthContext.Provider, { value }, children as any);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Hook
-
 export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
-  return ctx;
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within <AuthProvider>");
+  }
+
+  return context;
 }
 
-// Example wiring:
-// const base = process.env.NEXT_PUBLIC_AUTH_BASE_URL ?? "/api/auth";
-// <AuthProvider
-//   auth={clientAuth}
-//   endpoints={{
-//     startOtp: `${base}/otp/start`,
-//     verifyOtp: `${base}/otp/verify`,
-//     login: `${base}/login`,
-//     logout: `${base}/logout`,
-//   }}
-// />
+/**
+ * Example wiring:
+ *
+ * <AuthProvider auth={clientAuth} />
+ */

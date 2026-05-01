@@ -5,7 +5,10 @@ Transparency/background removal service using rembg
 import base64
 import io
 from PIL import Image
-from rembg import remove
+from rembg import remove, new_session
+
+# Initialize session once at module load (uses pre-downloaded model)
+_session = new_session("u2net")
 
 
 async def remove_background(image_base64: str) -> str:
@@ -37,8 +40,12 @@ async def remove_background(image_base64: str) -> str:
     except Exception:
         raise ValueError("Could not decode image. Ensure it's a valid image format.")
     
-    # Remove background using rembg
-    output_image = remove(input_image)
+    # Remove background using rembg with pre-initialized session
+    output_image = remove(input_image, session=_session)
+    
+    # Ensure output is in RGBA mode for transparency
+    if output_image.mode != "RGBA":
+        output_image = output_image.convert("RGBA")
     
     # Convert output to base64 PNG
     output_buffer = io.BytesIO()

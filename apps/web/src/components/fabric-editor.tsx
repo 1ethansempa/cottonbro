@@ -26,9 +26,9 @@ import {
   Eye,
   Wand2,
   Loader2,
+  FolderOpen,
 } from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
-import { publicEnv } from "../config/env";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";
 import { useAuth } from "@cottonbro/auth-react";
@@ -184,7 +184,8 @@ const getOriginInArtboardSpace = (c: any, ab: any, obj: any) => {
 };
 
 const isTextObject = (obj: any) =>
-  obj && (obj.type === "textbox" || obj.type === "i-text" || obj.type === "text");
+  obj &&
+  (obj.type === "textbox" || obj.type === "i-text" || obj.type === "text");
 
 type Tool = "select" | "text" | "uploads";
 
@@ -192,6 +193,7 @@ export default function FabricEditor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const jsonInputRef = useRef<HTMLInputElement | null>(null);
   const { refreshIdToken } = useAuth();
 
   const fabricCanvasRef = useRef<any>(null);
@@ -218,7 +220,9 @@ export default function FabricEditor() {
   const [fontSize, setFontSize] = useState(42);
   const [bold, setBold] = useState(false);
   const [italic, setItalic] = useState(false);
-  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("left");
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">(
+    "left",
+  );
   const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [fontSearch, setFontSearch] = useState("");
@@ -254,23 +258,58 @@ export default function FabricEditor() {
 
   // --- Preload Fonts on Mount ---
   useEffect(() => {
-    TEXT_PRESETS.forEach(p => loadGoogleFont(p.fontFamily));
+    TEXT_PRESETS.forEach((p) => loadGoogleFont(p.fontFamily));
   }, []);
 
   // --- Export design as data URL for preview ---
   const getDesignDataUrl = (): string | null => {
     const c = fabricCanvasRef.current;
+    const ab = artboardRef.current;
     if (!c) return null;
 
-    // Export just the design content (no background)
-    return c.toDataURL({ format: 'png', multiplier: 2 });
-  };
+    // Store original states
+    const vpt = c.viewportTransform;
+    c.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
+    // Hide artboard and any excludeFromExport objects
+    const hiddenObjects: any[] = [];
+    c.getObjects().forEach((obj: any) => {
+      if (obj.id === "artboard" || obj.excludeFromExport) {
+        if (obj.visible !== false) {
+          obj.set("visible", false);
+          hiddenObjects.push(obj);
+        }
+      }
+    });
+
+    c.requestRenderAll();
+
+    // Get artboard bounds for cropping
+    const artboardRect = ab
+      ? getArtboardRect(c, ab)
+      : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+
+    // Export only the artboard region with transparent background
+    const dataUrl = c.toDataURL({
+      format: "png",
+      multiplier: 2,
+      left: artboardRect.left,
+      top: artboardRect.top,
+      width: artboardRect.width,
+      height: artboardRect.height,
+    });
+
+    // Restore hidden objects and viewport
+    hiddenObjects.forEach((obj) => obj.set("visible", true));
+    c.setViewportTransform(vpt);
+    c.requestRenderAll();
+
+    return dataUrl;
+  };
 
   // --- Editor Logic (now runs immediately) ---
 
   useEffect(() => {
-
     let disposed = false;
     let cleanup: undefined | (() => void);
     let fabricModule: any = null;
@@ -420,7 +459,6 @@ export default function FabricEditor() {
           setBold(obj.fontWeight === "bold");
           setItalic(obj.fontStyle === "italic");
           if (obj.textAlign) setTextAlign(obj.textAlign);
-
         }
       };
 
@@ -456,7 +494,7 @@ export default function FabricEditor() {
             "lockScalingX",
             "lockScalingY",
             "lockRotation",
-          ])
+          ]),
         );
 
         historyRef.current.push(json);
@@ -600,11 +638,11 @@ export default function FabricEditor() {
         if (activeObject && activeObject.isEditing) return;
 
         // Delete/Backspace to delete selected objects
-        if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (e.key === "Delete" || e.key === "Backspace") {
           const active = c.getActiveObjects();
           if (active.length > 0) {
             active.forEach((obj: any) => {
-              if (obj.id !== 'artboard' && obj.id !== 'product-bg') {
+              if (obj.id !== "artboard" && obj.id !== "product-bg") {
                 c.remove(obj);
               }
             });
@@ -615,7 +653,7 @@ export default function FabricEditor() {
         }
       };
 
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
 
       // Use ResizeObserver for robust responsiveness
       const resizeObserver = new ResizeObserver(() => {
@@ -633,7 +671,7 @@ export default function FabricEditor() {
 
       cleanup = () => {
         resizeObserver.disconnect();
-        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener("keydown", handleKeyDown);
         c.dispose();
         setCanvasReady(false);
         fabricCanvasRef.current = null;
@@ -653,12 +691,10 @@ export default function FabricEditor() {
     const preloadFonts = async () => {
       // Preload first 15 popular fonts for quick access
       const fontsToPreload = POPULAR_GOOGLE_FONTS.slice(0, 15);
-      await Promise.all(fontsToPreload.map(f => loadGoogleFont(f)));
+      await Promise.all(fontsToPreload.map((f) => loadGoogleFont(f)));
     };
     preloadFonts();
   }, []);
-
-
 
   // --- Artboard Setup Effect ---
   useEffect(() => {
@@ -667,7 +703,9 @@ export default function FabricEditor() {
     if (!c) return;
 
     // Use white artboard as default design canvas
-    let ab = artboardRef.current || c.getObjects().find((o: any) => o.id === "artboard");
+    let ab =
+      artboardRef.current ||
+      c.getObjects().find((o: any) => o.id === "artboard");
     if (ab) {
       const vpCenter = c.getVpCenter();
       ab.set({
@@ -680,7 +718,7 @@ export default function FabricEditor() {
         originX: "center",
         originY: "center",
         left: vpCenter.x,
-        top: vpCenter.y
+        top: vpCenter.y,
       });
       ab.setCoords();
       artboardRef.current = ab;
@@ -688,9 +726,11 @@ export default function FabricEditor() {
     c.requestRenderAll();
   }, [canvasReady]);
 
-
   // --- Helper Functions (Same as before) ---
-  const addTextAtPoint = async (point: { x: number; y: number }, sub: string = "Heading") => {
+  const addTextAtPoint = async (
+    point: { x: number; y: number },
+    sub: string = "Heading",
+  ) => {
     const c = fabricCanvasRef.current;
     if (!c) return;
 
@@ -721,7 +761,7 @@ export default function FabricEditor() {
     c.__saveHistory && c.__saveHistory();
   };
 
-  const applyTextPreset = async (preset: typeof TEXT_PRESETS[number]) => {
+  const applyTextPreset = async (preset: (typeof TEXT_PRESETS)[number]) => {
     const c = fabricCanvasRef.current;
     if (!c) return;
 
@@ -763,7 +803,6 @@ export default function FabricEditor() {
     c.requestRenderAll();
   };
 
-
   const exportJson = () => {
     const c = fabricCanvasRef.current;
     if (!c) return;
@@ -785,12 +824,12 @@ export default function FabricEditor() {
       "visible",
     ]);
 
-    // Filter for JSON export 
+    // Filter for JSON export
     designIntent.objects = designIntent.objects.filter(
       (obj: any) =>
         obj.visible !== false &&
         !obj.excludeFromExport &&
-        obj.id !== "artboard"
+        obj.id !== "artboard",
     );
 
     // 2. Normalized for Print (Artboard Relative)
@@ -805,7 +844,7 @@ export default function FabricEditor() {
         (obj: any) =>
           obj.visible !== false &&
           !obj.excludeFromExport &&
-          obj.id !== "artboard"
+          obj.id !== "artboard",
       );
 
     const normalizedObjects = filteredObjects.map((obj: any) => {
@@ -859,17 +898,196 @@ export default function FabricEditor() {
       };
     });
 
-
     // Restore viewport
     c.setViewportTransform(vpt);
 
     const payload = {
       design: designIntent,
-      printData: normalizedObjects
+      printData: normalizedObjects,
     };
 
     console.log("Export Payload:", payload);
     setExportedJson(JSON.stringify(payload, null, 2));
+  };
+
+  // --- Import Design from JSON File ---
+  const importDesign = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const jsonData = event.target?.result as string;
+        const parsed = JSON.parse(jsonData);
+
+        const c = fabricCanvasRef.current;
+        if (!c) return;
+
+        // Use the design (Fabric.js format) from the exported payload
+        const designData = parsed.design || parsed;
+
+        // Clear current canvas objects (except artboard)
+        const objectsToRemove = c
+          .getObjects()
+          .filter((obj: any) => obj.id !== "artboard");
+        objectsToRemove.forEach((obj: any) => c.remove(obj));
+
+        // Load the design
+        await c.loadFromJSON(designData);
+
+        // Re-setup artboard if needed
+        const existingArtboard = c
+          .getObjects()
+          .find((obj: any) => obj.id === "artboard");
+        if (!existingArtboard && artboardRef.current) {
+          c.add(artboardRef.current);
+          c.sendObjectToBack(artboardRef.current);
+        }
+
+        c.requestRenderAll();
+        console.log("Design loaded successfully");
+      } catch (error) {
+        console.error("Failed to load design:", error);
+        alert("Failed to load design file. Please check the file format.");
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  };
+
+  // --- Export Design as SVG ---
+  const exportSvg = () => {
+    const c = fabricCanvasRef.current;
+    if (!c) return;
+
+    // Store original viewport
+    const vpt = c.viewportTransform;
+    c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    // Get artboard rect for cropping
+    const ab = artboardRef.current;
+    const artboardRect = ab
+      ? getArtboardRect(c, ab)
+      : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+
+    // Temporarily hide artboard and non-visible objects
+    const hiddenObjects: any[] = [];
+    c.getObjects().forEach((obj: any) => {
+      if (
+        obj.id === "artboard" ||
+        obj.visible === false ||
+        obj.excludeFromExport
+      ) {
+        if (obj.visible !== false) {
+          obj.set("visible", false);
+          hiddenObjects.push(obj);
+        }
+      }
+    });
+
+    c.requestRenderAll();
+
+    // Generate SVG with viewBox matching artboard
+    const svgString = c.toSVG({
+      viewBox: {
+        x: artboardRect.left,
+        y: artboardRect.top,
+        width: artboardRect.width,
+        height: artboardRect.height,
+      },
+      width: `${artboardRect.width}px`,
+      height: `${artboardRect.height}px`,
+    });
+
+    // Restore hidden objects
+    hiddenObjects.forEach((obj) => obj.set("visible", true));
+    c.setViewportTransform(vpt);
+    c.requestRenderAll();
+
+    // Download SVG file
+    const blob = new Blob([svgString], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cottonbro-design-${Date.now()}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // --- Export Design as PDF (Print-Safe) ---
+  const exportPdf = async () => {
+    const c = fabricCanvasRef.current;
+    if (!c) return;
+
+    // Dynamic import jspdf
+    const { jsPDF } = await import("jspdf");
+
+    // Store original viewport
+    const vpt = c.viewportTransform;
+    c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    // Get artboard rect
+    const ab = artboardRef.current;
+    const artboardRect = ab
+      ? getArtboardRect(c, ab)
+      : { left: 0, top: 0, width: ARTBOARD.w, height: ARTBOARD.h };
+
+    // Temporarily hide artboard
+    const hiddenObjects: any[] = [];
+    c.getObjects().forEach((obj: any) => {
+      if (
+        obj.id === "artboard" ||
+        obj.visible === false ||
+        obj.excludeFromExport
+      ) {
+        if (obj.visible !== false) {
+          obj.set("visible", false);
+          hiddenObjects.push(obj);
+        }
+      }
+    });
+
+    c.requestRenderAll();
+
+    // Calculate high-DPI dimensions (300 DPI for print)
+    const DPI = 300;
+    const SCREEN_DPI = 72;
+    const scale = DPI / SCREEN_DPI;
+
+    // Create high-resolution data URL
+    const dataUrl = c.toDataURL({
+      format: "png",
+      multiplier: scale * 2, // Extra scaling for quality
+      left: artboardRect.left,
+      top: artboardRect.top,
+      width: artboardRect.width,
+      height: artboardRect.height,
+    });
+
+    // Restore hidden objects and viewport
+    hiddenObjects.forEach((obj) => obj.set("visible", true));
+    c.setViewportTransform(vpt);
+    c.requestRenderAll();
+
+    // Create PDF - dimensions in mm (artboard is in pixels, convert roughly)
+    // Assuming 500px artboard = ~6 inches = ~152mm for a roughly 6"x6" print area
+    const mmWidth = (artboardRect.width / 72) * 25.4;
+    const mmHeight = (artboardRect.height / 72) * 25.4;
+
+    const pdf = new jsPDF({
+      orientation: mmWidth > mmHeight ? "landscape" : "portrait",
+      unit: "mm",
+      format: [mmWidth, mmHeight],
+    });
+
+    // Add image to PDF
+    pdf.addImage(dataUrl, "PNG", 0, 0, mmWidth, mmHeight);
+
+    // Download
+    pdf.save(`cottonbro-design-${Date.now()}.pdf`);
   };
 
   const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -896,11 +1114,11 @@ export default function FabricEditor() {
           img.set({
             left: vpCenter.x,
             top: vpCenter.y,
-            originX: 'center',
-            originY: 'center',
+            originX: "center",
+            originY: "center",
             scaleX: 0.3,
             scaleY: 0.3,
-            id: imageId
+            id: imageId,
           } as any);
 
           c.add(img);
@@ -909,11 +1127,14 @@ export default function FabricEditor() {
           c.__saveHistory && c.__saveHistory();
 
           // Track the upload
-          setUploadedImages(prev => [...prev, {
-            id: imageId,
-            src: data,
-            name: file.name
-          }]);
+          setUploadedImages((prev) => [
+            ...prev,
+            {
+              id: imageId,
+              src: data,
+              name: file.name,
+            },
+          ]);
         } catch (err) {
           console.error("Failed to load image:", err);
         }
@@ -944,10 +1165,10 @@ export default function FabricEditor() {
       img.set({
         left: vpCenter.x,
         top: vpCenter.y,
-        originX: 'center',
-        originY: 'center',
+        originX: "center",
+        originY: "center",
         scaleX: 0.3,
-        scaleY: 0.3
+        scaleY: 0.3,
       } as any);
 
       c.add(img);
@@ -959,23 +1180,23 @@ export default function FabricEditor() {
     }
   };
 
-  const apiBaseUrl = publicEnv.API_BASE_URL?.trim() || "/api";
+  const apiBaseUrl = "/api";
 
   // Remove background from selected image using NestJS API (which proxies to Python)
   const removeBackground = async () => {
     const selected = fabricCanvasRef.current?.getActiveObject();
-    if (!selected || selected.type !== 'image') return;
+    if (!selected || selected.type !== "image") return;
 
     setIsRemovingBg(true);
     try {
       // Get image data as base64
       const imgElement = (selected as any).getElement();
-      const tempCanvas = document.createElement('canvas');
+      const tempCanvas = document.createElement("canvas");
       tempCanvas.width = imgElement.naturalWidth || imgElement.width;
       tempCanvas.height = imgElement.naturalHeight || imgElement.height;
-      const ctx = tempCanvas.getContext('2d');
+      const ctx = tempCanvas.getContext("2d");
       ctx?.drawImage(imgElement, 0, 0);
-      const base64 = tempCanvas.toDataURL('image/png');
+      const base64 = tempCanvas.toDataURL("image/png");
 
       // Call NestJS API directly using env var
       const idToken = await refreshIdToken();
@@ -983,7 +1204,7 @@ export default function FabricEditor() {
         throw new Error("missing_id_token");
       }
 
-      const response = await fetch(`${apiBaseUrl}/v1/images/remove-background`, {
+      const response = await fetch(`${apiBaseUrl}/images/remove-background`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -997,9 +1218,9 @@ export default function FabricEditor() {
       const result = await response.json();
 
       // Replace image source with transparent version
-      const { FabricImage } = await import('fabric');
+      const { FabricImage } = await import("fabric");
       const newImg = await FabricImage.fromURL(result.image_base64);
-      if (!newImg) throw new Error('Failed to load result image');
+      if (!newImg) throw new Error("Failed to load result image");
 
       // Copy properties from old image
       newImg.set({
@@ -1019,8 +1240,8 @@ export default function FabricEditor() {
       c.requestRenderAll();
       c.__saveHistory && c.__saveHistory();
     } catch (err) {
-      console.error('Background removal failed:', err);
-      alert('Background removal failed. Please make sure you are logged in.');
+      console.error("Background removal failed:", err);
+      alert("Background removal failed. Please make sure you are logged in.");
     } finally {
       setIsRemovingBg(false);
     }
@@ -1031,13 +1252,16 @@ export default function FabricEditor() {
   // --- Render ---
 
   return (
-    <div className="flex h-screen w-full bg-[#09090b] text-white font-urbanist overflow-hidden selection:bg-cyan selection:text-black">
+    <div className="flex h-screen w-full bg-page text-primary font-urbanist overflow-hidden selection:bg-gray-200 selection:text-black">
       {/* Left Sidebar - Tools */}
-      <aside className="w-20 border-r border-white/5 flex flex-col items-center py-6 gap-6 bg-[#0c0c0e] z-30 shadow-2xl">
-        <Link href="/" className="mb-2 p-2 bg-cyan text-black rounded-lg font-bold text-lg hover:scale-110 transition-transform cursor-pointer" title="Back to Home">
+      <aside className="w-20 border-r border-gray-200 flex flex-col items-center py-6 gap-6 bg-white z-30 shadow-sm">
+        <Link
+          href="/"
+          className="mb-2 p-2 bg-black text-white rounded-lg font-bold text-lg hover:scale-110 transition-transform cursor-pointer"
+          title="Back to Home"
+        >
           CB
         </Link>
-
 
         <ToolButton
           active={activeTool === "text"}
@@ -1055,8 +1279,8 @@ export default function FabricEditor() {
 
       {/* Sub-Sidebar (Drawer) - Hidden when in Select mode */}
       {activeTool !== "select" && (
-        <div className="w-80 border-r border-white/10 bg-[#0c0c0e] flex flex-col z-20 shadow-2xl">
-          <div className="h-16 px-6 font-bold text-sm tracking-wider uppercase text-zinc-400 flex items-center border-b border-white/5">
+        <div className="w-80 border-r border-gray-200 bg-white flex flex-col z-20 shadow-xl">
+          <div className="h-14 px-6 font-bold text-sm tracking-wider uppercase text-secondary flex items-center border-b border-gray-100">
             {activeTool === "text" ? "Add Text" : "Your Uploads"}
           </div>
 
@@ -1069,10 +1293,12 @@ export default function FabricEditor() {
                       isAddingTextRef.current = true;
                       fabricCanvasRef.current.defaultCursor = "text";
                     }}
-                    className="p-4 bg-zinc-900/50 rounded-2xl border border-white/5 hover:border-cyan/50 hover:bg-zinc-900 transition-all flex flex-col items-center gap-2 group"
+                    className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-black hover:bg-white transition-all flex flex-col items-center gap-2 group"
                   >
-                    <Type className="w-6 h-6 text-zinc-400 group-hover:text-white" />
-                    <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Click Canvas</span>
+                    <Type className="w-6 h-6 text-black" />
+                    <span className="text-xs font-bold text-black">
+                      Click Canvas
+                    </span>
                   </button>
                   <button
                     onClick={() => {
@@ -1081,32 +1307,41 @@ export default function FabricEditor() {
                         const center = ab.getCenterPoint();
                         addTextAtPoint({ x: center.x, y: center.y });
                       } else {
-                        addTextAtPoint({ x: ARTBOARD.w / 2, y: ARTBOARD.h / 2 });
+                        addTextAtPoint({
+                          x: ARTBOARD.w / 2,
+                          y: ARTBOARD.h / 2,
+                        });
                       }
                     }}
-                    className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800 transition-all flex flex-col items-center gap-2 group"
+                    className="p-4 bg-white rounded-lg border border-gray-200 hover:border-black hover:bg-gray-50 transition-all flex flex-col items-center gap-2 group"
                   >
-                    <Plus className="w-6 h-6 text-zinc-400 group-hover:text-white" />
-                    <span className="text-xs font-bold text-zinc-400 group-hover:text-white">Quick Add</span>
+                    <Plus className="w-6 h-6 text-black" />
+                    <span className="text-xs font-bold text-black">
+                      Quick Add
+                    </span>
                   </button>
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Presets</h3>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">
+                    Presets
+                  </h3>
                   <div className="space-y-3">
-                    {TEXT_PRESETS.map(preset => (
+                    {TEXT_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
                         onClick={() => applyTextPreset(preset)}
-                        className="w-full text-left p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
+                        className="w-full text-left p-3 rounded-lg bg-white border border-gray-200 hover:border-black transition-all group shadow-sm"
                       >
                         <span
                           style={{ fontFamily: preset.fontFamily }}
-                          className="text-xl text-white block mb-1 group-hover:scale-105 transition-transform origin-left"
+                          className="text-xl text-black block mb-1 group-hover:scale-105 transition-transform origin-left"
                         >
                           {preset.name}
                         </span>
-                        <span className="text-xs text-zinc-500">{preset.description}</span>
+                        <span className="text-xs text-secondary">
+                          {preset.description}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -1125,11 +1360,15 @@ export default function FabricEditor() {
                 </button>
 
                 <div>
-                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Your Gallery</h3>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">
+                    Your Gallery
+                  </h3>
                   {uploadedImages.length === 0 ? (
-                    <div className="text-center py-10 border-2 border-dashed border-zinc-800 rounded-xl px-4">
-                      <CloudUpload className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                      <p className="text-zinc-500 text-sm italic">No uploads yet. Your uploaded images will appear here.</p>
+                    <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl px-4 bg-gray-50/50">
+                      <CloudUpload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-400 text-sm italic">
+                        No uploads yet. Your uploaded images will appear here.
+                      </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
@@ -1137,11 +1376,15 @@ export default function FabricEditor() {
                         <button
                           key={img.id}
                           onClick={() => addUploadedImageToCanvas(img.src)}
-                          className="group relative aspect-square bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden hover:border-white/40 transition-all"
+                          className="group relative aspect-square bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:border-black transition-all"
                         >
-                          <img src={img.src} alt={img.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Plus className="w-6 h-6 text-white" />
+                          <img
+                            src={img.src}
+                            alt={img.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Plus className="w-8 h-8 text-black bg-white rounded-full p-1.5 shadow-xl" />
                           </div>
                         </button>
                       ))}
@@ -1150,42 +1393,48 @@ export default function FabricEditor() {
                 </div>
               </div>
             )}
-
-
           </div>
         </div>
       )}
 
-      {/* --- Main Area --- */}
-      <div className="flex-1 min-w-0 relative bg-[#09090b] flex flex-col">
+      {/* --- Main Area (Split View) --- */}
+      <div className="flex-1 min-w-0 relative bg-gray-50 flex flex-col">
         {/* Top Header */}
-        <header className="h-14 shrink-0 border-b border-white/5 flex items-center justify-between px-4 bg-[#09090b] z-20 gap-2">
+        <header className="h-14 shrink-0 border-b border-gray-200 flex items-center justify-between px-4 bg-white z-20 gap-2 shadow-sm">
           <div className="flex items-center gap-2 shrink-0">
             {/* History */}
-            <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1">
-              <button onClick={() => fabricCanvasRef.current?.__undo()} disabled={!canUndo} className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30">
+            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+              <button
+                onClick={() => fabricCanvasRef.current?.__undo()}
+                disabled={!canUndo}
+                className="p-1.5 text-gray-400 hover:text-black disabled:opacity-30"
+              >
                 <Undo2 className="w-4 h-4" />
               </button>
-              <button onClick={() => fabricCanvasRef.current?.__redo()} disabled={!canRedo} className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30">
+              <button
+                onClick={() => fabricCanvasRef.current?.__redo()}
+                disabled={!canRedo}
+                className="p-1.5 text-gray-400 hover:text-black disabled:opacity-30"
+              >
                 <Redo2 className="w-4 h-4" />
               </button>
             </div>
 
             {/* Zoom Controls */}
-            <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+            <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
               <button
                 onClick={() => handleZoomChange(zoom * 0.9)}
-                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white"
+                className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-black"
                 aria-label="Zoom out"
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="w-12 text-center text-xs font-mono text-zinc-400">
+              <span className="w-12 text-center text-xs font-mono text-gray-500">
                 {Math.round(zoom * 100)}%
               </span>
               <button
                 onClick={() => handleZoomChange(zoom * 1.1)}
-                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white"
+                className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-black"
                 aria-label="Zoom in"
               >
                 <Plus className="w-4 h-4" />
@@ -1195,14 +1444,20 @@ export default function FabricEditor() {
 
           <div className="flex items-center gap-3">
             <button
+              onClick={() => jsonInputRef.current?.click()}
+              className="bg-black text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-gray-800 transition-all flex items-center gap-2 shrink-0 border border-transparent shadow-sm hover:shadow-md"
+            >
+              <FolderOpen className="w-4 h-4" /> LOAD
+            </button>
+            <button
               onClick={exportJson}
-              className="bg-black text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-zinc-900 transition-all flex items-center gap-2 shrink-0 border border-white/10 hover:border-white/20"
+              className="bg-black text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-gray-800 transition-all flex items-center gap-2 shrink-0 border border-transparent shadow-sm hover:shadow-md"
             >
               <Download className="w-4 h-4" /> EXPORT
             </button>
             <button
               onClick={() => setShowPreview(true)}
-              className="bg-cyan text-black px-6 py-2 rounded-full font-black text-sm uppercase tracking-wider hover:bg-cyan-400 hover:scale-105 transition-all flex items-center gap-2 shrink-0 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+              className="bg-black text-white px-6 py-2 rounded-full font-black text-sm uppercase tracking-wider hover:bg-gray-900 hover:scale-105 transition-all flex items-center gap-2 shrink-0 shadow-lg"
             >
               <Eye className="w-4 h-4" /> Preview
             </button>
@@ -1212,22 +1467,17 @@ export default function FabricEditor() {
         {/* Canvas Wrapper */}
         <div
           ref={containerRef}
-          className="flex-1 relative overflow-hidden bg-[#09090b]"
+          className="flex-1 relative overflow-hidden bg-gray-100/50"
           style={{
-            backgroundImage: "radial-gradient(#1a1a1a 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(#e5e7eb 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         >
-          <canvas
-            ref={canvasElRef}
-            className="absolute inset-0"
-          />
+          <canvas ref={canvasElRef} className="absolute inset-0" />
 
           {/* Floating Context Toolbar - Fixed at top center of canvas */}
           {activeObj && (
-            <div
-              className="absolute left-1/2 top-4 -translate-x-1/2 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-xl shadow-2xl flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-            >
+            <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-2xl flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 p-2">
               <div className="flex items-center gap-2 p-2">
                 {/* --- Text Specific Tools --- */}
                 {isTextObject(activeObj) && (
@@ -1241,17 +1491,22 @@ export default function FabricEditor() {
                         if (editingTextObj && editingTextObj.isEditing) {
                           const start = editingTextObj.selectionStart;
                           const end = editingTextObj.selectionEnd;
-                          if (start !== end) editingTextObj.setSelectionStyles({ fill: val }, start, end);
+                          if (start !== end)
+                            editingTextObj.setSelectionStyles(
+                              { fill: val },
+                              start,
+                              end,
+                            );
                           else activeObj.set("fill", val);
                         } else {
                           activeObj.set("fill", val);
                         }
                         renderAndSave();
                       }}
-                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-zinc-600 p-0 hover:border-zinc-400"
+                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-gray-200 p-0 hover:border-black shadow-sm"
                       title="Text Color"
                     />
-                    <div className="w-px h-6 bg-zinc-700 mx-1" />
+                    <div className="w-px h-6 bg-gray-200 mx-1" />
 
                     <button
                       onMouseDown={(e) => e.preventDefault()}
@@ -1262,15 +1517,20 @@ export default function FabricEditor() {
                           // Apply to selection
                           const start = editingTextObj.selectionStart;
                           const end = editingTextObj.selectionEnd;
-                          const newWeight = val ? 'bold' : 'normal';
-                          if (start !== end) editingTextObj.setSelectionStyles({ fontWeight: newWeight }, start, end);
+                          const newWeight = val ? "bold" : "normal";
+                          if (start !== end)
+                            editingTextObj.setSelectionStyles(
+                              { fontWeight: newWeight },
+                              start,
+                              end,
+                            );
                           else editingTextObj.set("fontWeight", newWeight);
                         } else {
-                          activeObj.set("fontWeight", val ? 'bold' : 'normal');
+                          activeObj.set("fontWeight", val ? "bold" : "normal");
                         }
                         renderAndSave();
                       }}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${bold ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${bold ? "bg-black text-white shadow-md" : "hover:bg-gray-100 text-gray-500"}`}
                     >
                       <Bold className="w-4 h-4" />
                     </button>
@@ -1279,44 +1539,49 @@ export default function FabricEditor() {
                       onClick={() => {
                         const val = !italic;
                         setItalic(val);
-                        // logic for selection vs object 
+                        // logic for selection vs object
                         if (editingTextObj && editingTextObj.isEditing) {
                           const start = editingTextObj.selectionStart;
                           const end = editingTextObj.selectionEnd;
-                          const newStyle = val ? 'italic' : 'normal';
-                          if (start !== end) editingTextObj.setSelectionStyles({ fontStyle: newStyle }, start, end);
+                          const newStyle = val ? "italic" : "normal";
+                          if (start !== end)
+                            editingTextObj.setSelectionStyles(
+                              { fontStyle: newStyle },
+                              start,
+                              end,
+                            );
                           else editingTextObj.set("fontStyle", newStyle);
                         } else {
-                          activeObj.set("fontStyle", val ? 'italic' : 'normal');
+                          activeObj.set("fontStyle", val ? "italic" : "normal");
                         }
                         renderAndSave();
                       }}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${italic ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${italic ? "bg-white text-black" : "hover:bg-zinc-800 text-zinc-400"}`}
                     >
                       <Italic className="w-4 h-4" />
                     </button>
                     <button
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
-                        const isHollow = activeObj.fill === 'transparent';
+                        const isHollow = activeObj.fill === "transparent";
                         if (isHollow) {
                           // Turn off hollow - restore fill, remove stroke
                           activeObj.set({
-                            fill: fill || '#e2e8f0',
+                            fill: fill || "#e2e8f0",
                             stroke: undefined,
-                            strokeWidth: 0
+                            strokeWidth: 0,
                           });
                         } else {
                           // Turn on hollow - transparent fill, add stroke
                           activeObj.set({
-                            fill: 'transparent',
-                            stroke: fill || '#e2e8f0',
-                            strokeWidth: 2
+                            fill: "transparent",
+                            stroke: fill || "#e2e8f0",
+                            strokeWidth: 2,
                           });
                         }
                         renderAndSave();
                       }}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeObj.fill === 'transparent' ? 'bg-white text-black' : 'hover:bg-zinc-800 text-zinc-400'}`}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeObj.fill === "transparent" ? "bg-white text-black" : "hover:bg-zinc-800 text-zinc-400"}`}
                       title="Hollow Text"
                     >
                       <Circle className="w-4 h-4" />
@@ -1335,7 +1600,9 @@ export default function FabricEditor() {
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="w-8 text-center text-xs font-mono text-white">{fontSize}</span>
+                      <span className="w-8 text-center text-xs font-mono text-white">
+                        {fontSize}
+                      </span>
                       <button
                         onClick={() => {
                           const newSize = Math.min(200, fontSize + 2);
@@ -1355,19 +1622,28 @@ export default function FabricEditor() {
                         onClick={() => setFontDropdownOpen(!fontDropdownOpen)}
                         className="h-8 px-2 rounded-lg bg-zinc-800 border border-zinc-700 text-xs font-medium text-white flex items-center gap-1 hover:bg-zinc-700"
                       >
-                        Aa <span className="max-w-[60px] truncate">{fontFamily}</span>
+                        Aa{" "}
+                        <span className="max-w-[60px] truncate">
+                          {fontFamily}
+                        </span>
                       </button>
                       {/* Dropdown - click based */}
                       {fontDropdownOpen && (
                         <div className="absolute top-full left-0 mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-1 w-40 z-50">
-                          {POPULAR_GOOGLE_FONTS.slice(0, 15).map(f => (
-                            <button key={f} onClick={async () => {
-                              setFontFamily(f);
-                              await loadGoogleFont(f);
-                              activeObj.set("fontFamily", f);
-                              renderAndSave();
-                              setFontDropdownOpen(false);
-                            }} className="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded">{f}</button>
+                          {POPULAR_GOOGLE_FONTS.slice(0, 15).map((f) => (
+                            <button
+                              key={f}
+                              onClick={async () => {
+                                setFontFamily(f);
+                                await loadGoogleFont(f);
+                                activeObj.set("fontFamily", f);
+                                renderAndSave();
+                                setFontDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded"
+                            >
+                              {f}
+                            </button>
                           ))}
                           <div className="border-t border-zinc-700 mt-1 pt-1">
                             <button
@@ -1375,7 +1651,7 @@ export default function FabricEditor() {
                                 setFontDropdownOpen(false);
                                 setShowFontPicker(true);
                               }}
-                              className="w-full text-left px-2 py-1.5 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-zinc-800 rounded"
+                              className="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 rounded"
                             >
                               More fonts...
                             </button>
@@ -1388,7 +1664,7 @@ export default function FabricEditor() {
 
                     {/* Alignment */}
                     <div className="flex bg-zinc-800/50 rounded-lg border border-zinc-700/50 p-0.5 gap-0.5">
-                      {['left', 'center', 'right'].map((align) => (
+                      {["left", "center", "right"].map((align) => (
                         <button
                           key={align}
                           onMouseDown={(e) => e.preventDefault()}
@@ -1402,12 +1678,18 @@ export default function FabricEditor() {
                             }
                             renderAndSave();
                           }}
-                          className={`w-7 h-7 rounded flex items-center justify-center transition-all ${textAlign === align ? 'bg-zinc-600 text-white' : 'text-zinc-500 hover:text-white'}`}
+                          className={`w-7 h-7 rounded flex items-center justify-center transition-all ${textAlign === align ? "bg-zinc-600 text-white" : "text-zinc-500 hover:text-white"}`}
                           title={`Align ${align}`}
                         >
-                          {align === 'left' && <AlignLeft className="w-3.5 h-3.5" />}
-                          {align === 'center' && <AlignCenter className="w-3.5 h-3.5" />}
-                          {align === 'right' && <AlignRight className="w-3.5 h-3.5" />}
+                          {align === "left" && (
+                            <AlignLeft className="w-3.5 h-3.5" />
+                          )}
+                          {align === "center" && (
+                            <AlignCenter className="w-3.5 h-3.5" />
+                          )}
+                          {align === "right" && (
+                            <AlignRight className="w-3.5 h-3.5" />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -1428,7 +1710,7 @@ export default function FabricEditor() {
                     <button
                       onClick={removeBackground}
                       disabled={isRemovingBg}
-                      className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-cyan flex flex-col items-center gap-0.5 disabled:opacity-50"
+                      className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white flex flex-col items-center gap-0.5 disabled:opacity-50"
                       title="Remove Background (AI)"
                     >
                       {isRemovingBg ? (
@@ -1436,11 +1718,12 @@ export default function FabricEditor() {
                       ) : (
                         <Wand2 className="w-4 h-4" />
                       )}
-                      <span className="text-[9px] font-medium">{isRemovingBg ? "Working..." : "Remove BG"}</span>
+                      <span className="text-[9px] font-medium">
+                        {isRemovingBg ? "Working..." : "Remove BG"}
+                      </span>
                     </button>
                   </>
                 )}
-
 
                 <div className="w-px h-6 bg-zinc-700 mx-1" />
 
@@ -1493,7 +1776,7 @@ export default function FabricEditor() {
                         top: cloned.top + 20,
                         evented: true,
                       });
-                      if (cloned.type === 'activeSelection') {
+                      if (cloned.type === "activeSelection") {
                         // active selection needs special handling
                         cloned.canvas = c;
                         cloned.forEachObject((obj: any) => c.add(obj));
@@ -1511,7 +1794,6 @@ export default function FabricEditor() {
                 >
                   <Copy className="w-4 h-4" />
                 </button>
-
 
                 {/* Delete */}
                 <button
@@ -1531,7 +1813,7 @@ export default function FabricEditor() {
             </div>
           )}
         </div>
-      </div >
+      </div>
 
       <input
         type="file"
@@ -1539,6 +1821,15 @@ export default function FabricEditor() {
         className="hidden"
         accept="image/*"
         onChange={uploadImage}
+      />
+
+      {/* Hidden JSON file input for importing designs */}
+      <input
+        type="file"
+        ref={jsonInputRef}
+        className="hidden"
+        accept=".json,application/json"
+        onChange={importDesign}
       />
 
       {/* Preview Modal with Interactive Design Positioning */}
@@ -1562,7 +1853,7 @@ export default function FabricEditor() {
 
             // Export just the artboard area
             const dataUrl = c.toDataURL({
-              format: 'png',
+              format: "png",
               multiplier: 2,
               left: ab.left - ab.width / 2,
               top: ab.top - ab.height / 2,
@@ -1577,40 +1868,70 @@ export default function FabricEditor() {
       )}
 
       {/* Export JSON Modal */}
-      {
-        exportedJson && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <h3 className="text-white font-bold text-lg">Export Result</h3>
-                <button onClick={() => setExportedJson("")} className="text-zinc-400 hover:text-white transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-auto p-4 custom-scrollbar bg-[#0c0c0e]">
-                <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap break-all">
-                  {exportedJson}
-                </pre>
-              </div>
-              <div className="p-4 border-t border-zinc-800 flex justify-end gap-2 bg-zinc-900">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(exportedJson);
-                  }}
-                  className="px-4 py-2 bg-white text-black rounded-lg font-bold hover:bg-zinc-200 transition-colors"
-                >
-                  Copy to Clipboard
-                </button>
-              </div>
+      {exportedJson && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-black font-bold text-lg">Export Result</h3>
+              <button
+                onClick={() => setExportedJson("")}
+                className="text-gray-400 hover:text-black transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 custom-scrollbar bg-gray-50/50">
+              <pre className="text-xs font-mono text-emerald-600 whitespace-pre-wrap break-all bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                {exportedJson}
+              </pre>
+            </div>
+            <div className="p-4 border-t border-gray-100 flex justify-end gap-2 bg-white">
+              <button
+                onClick={exportPdf}
+                className="px-4 py-2 bg-white border border-gray-200 text-black rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              >
+                Export PDF
+              </button>
+              <button
+                onClick={exportSvg}
+                className="px-4 py-2 bg-white border border-gray-200 text-black rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              >
+                Export SVG
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([exportedJson], {
+                    type: "application/json",
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `cottonbro-design-${Date.now()}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-4 py-2 bg-black text-white rounded-lg font-bold hover:bg-gray-800 transition-colors shadow-lg"
+              >
+                Download JSON
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(exportedJson);
+                }}
+                className="px-4 py-2 bg-gray-100 text-black rounded-lg font-bold hover:bg-gray-200 transition-colors"
+              >
+                Copy
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       {/* Font Picker Modal */}
       {showFontPicker && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between gap-4">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between gap-4">
               <input
                 type="text"
                 placeholder="Search fonts..."
@@ -1619,35 +1940,47 @@ export default function FabricEditor() {
                   setFontSearch(e.target.value);
                   setFontLoadCount(15); // Reset count on search
                 }}
-                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-black placeholder-gray-400 focus:outline-none focus:border-black transition-colors"
               />
-              <button onClick={() => { setShowFontPicker(false); setFontSearch(""); setFontLoadCount(15); }} className="text-zinc-400 hover:text-white transition-colors">
+              <button
+                onClick={() => {
+                  setShowFontPicker(false);
+                  setFontSearch("");
+                  setFontLoadCount(15);
+                }}
+                className="text-gray-400 hover:text-black transition-colors"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
             <div
               ref={fontListRef}
-              className="flex-1 overflow-auto p-4 custom-scrollbar bg-[#0c0c0e]"
+              className="flex-1 overflow-auto p-4 custom-scrollbar bg-gray-50/50"
               onScroll={(e) => {
                 const target = e.target as HTMLDivElement;
-                if (target.scrollHeight - target.scrollTop - target.clientHeight < 100) {
-                  setFontLoadCount(prev => Math.min(prev + 15, POPULAR_GOOGLE_FONTS.length));
+                if (
+                  target.scrollHeight - target.scrollTop - target.clientHeight <
+                  100
+                ) {
+                  setFontLoadCount((prev) =>
+                    Math.min(prev + 15, POPULAR_GOOGLE_FONTS.length),
+                  );
                 }
               }}
             >
               {(() => {
-                const filteredFonts = POPULAR_GOOGLE_FONTS.filter(f =>
-                  f.toLowerCase().includes(fontSearch.toLowerCase())
+                const filteredFonts = POPULAR_GOOGLE_FONTS.filter((f) =>
+                  f.toLowerCase().includes(fontSearch.toLowerCase()),
                 );
                 const displayFonts = filteredFonts.slice(0, fontLoadCount);
 
                 // Load fonts as they appear
-                displayFonts.forEach(f => loadGoogleFont(f));
+                displayFonts.forEach((f) => loadGoogleFont(f));
 
                 return (
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {displayFonts.map(f => (
+                      {displayFonts.map((f) => (
                         <button
                           key={f}
                           onClick={async () => {
@@ -1661,25 +1994,34 @@ export default function FabricEditor() {
                             setFontSearch("");
                             setFontLoadCount(15);
                           }}
-                          className={`p-3 rounded-lg border text-left transition-all ${fontFamily === f
-                            ? 'border-white bg-zinc-800'
-                            : 'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800'
-                            }`}
+                          className={`p-3 rounded-lg border text-left transition-all ${
+                            fontFamily === f
+                              ? "border-black bg-black shadow-lg"
+                              : "border-gray-200 hover:border-gray-300 hover:bg-white bg-white shadow-sm"
+                          }`}
                         >
-                          <span className="text-white font-medium text-sm">{f}</span>
-                          <span className="block text-zinc-500 text-xs mt-1" style={{ fontFamily: f }}>
+                          <span
+                            className={`font-medium text-sm ${fontFamily === f ? "text-white" : "text-black"}`}
+                          >
+                            {f}
+                          </span>
+                          <span
+                            className={`block text-xs mt-1 ${fontFamily === f ? "text-gray-400" : "text-gray-500"}`}
+                            style={{ fontFamily: f }}
+                          >
                             Sample Text
                           </span>
                         </button>
                       ))}
                     </div>
                     {displayFonts.length < filteredFonts.length && (
-                      <div className="text-center py-4 text-zinc-500 text-sm">
-                        Scroll for more fonts ({displayFonts.length}/{filteredFonts.length})
+                      <div className="text-center py-4 text-gray-400 text-sm">
+                        Scroll for more fonts ({displayFonts.length}/
+                        {filteredFonts.length})
                       </div>
                     )}
                     {filteredFonts.length === 0 && (
-                      <div className="text-center py-8 text-zinc-500">
+                      <div className="text-center py-8 text-gray-500">
                         No fonts found matching &ldquo;{fontSearch}&rdquo;
                       </div>
                     )}
@@ -1690,8 +2032,7 @@ export default function FabricEditor() {
           </div>
         </div>
       )}
-
-    </div >
+    </div>
   );
 }
 
@@ -1708,13 +2049,14 @@ const ToolButton = ({
 }) => (
   <button
     onClick={onClick}
-    className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${active
-      ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-110"
-      : "text-zinc-500 hover:text-white hover:bg-white/10"
-      }`}
+    className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+      active
+        ? "bg-black text-white shadow-xl scale-110"
+        : "text-gray-400 hover:text-black hover:bg-gray-100"
+    }`}
   >
     {icon}
-    <span className="absolute left-14 bg-zinc-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+    <span className="absolute left-14 bg-black text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg font-bold">
       {label}
     </span>
   </button>
