@@ -74,7 +74,12 @@ jobs:
           echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest --secret=web-firebase-auth-domain)" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret=web-firebase-project-id)" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_FIREBASE_APP_ID=$(gcloud secrets versions access latest --secret=web-firebase-app-id)" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_ASSETS_BASE_URL=$(gcloud secrets versions access latest --secret=web-assets-url)" >> "$GITHUB_ENV"
+          NEXT_PUBLIC_ASSETS_BASE_URL="$(gcloud secrets versions access latest --secret=web-assets-url)"
+          if [ -z "$NEXT_PUBLIC_ASSETS_BASE_URL" ]; then
+            echo "::error::Secret Manager secret web-assets-url is empty"
+            exit 1
+          fi
+          echo "NEXT_PUBLIC_ASSETS_BASE_URL=$NEXT_PUBLIC_ASSETS_BASE_URL" >> "$GITHUB_ENV"
 
       - name: Configure Docker auth for Artifact Registry
         run: |
