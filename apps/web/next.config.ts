@@ -31,7 +31,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.crisp.chat",
   `img-src 'self' data: ${assetsUrl.origin}`,
   `connect-src ${connectSrc.join(" ")}`,
-  "font-src 'self' https://fonts.gstatic.com data:",
+  "font-src 'self' https://*.crisp.chat https://fonts.gstatic.com data:",
   "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
 ].join("; ");
