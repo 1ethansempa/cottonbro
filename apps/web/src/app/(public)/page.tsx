@@ -11,39 +11,128 @@ import { ProfitCalculator } from "@/components/home/ProfitCalculator";
 
 export default function LandingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const assetsBaseUrl = process.env.NEXT_PUBLIC_ASSETS_BASE_URL?.replace(
+    /\/+$/,
+    "",
+  );
+
+  if (!assetsBaseUrl) {
+    throw new Error("Missing NEXT_PUBLIC_ASSETS_BASE_URL");
+  }
 
   const latestDrops = [
-    { id: 1, name: "YURI TEE", price: "UGX 60,000", colors: 1, img: "/product-1.png", badge: null },
-    { id: 2, name: "OVERSIZED HEAVYWEIGHT", price: "UGX 90,000", colors: 4, img: "/product-2.png", badge: "SOLD OUT FAST" },
-    { id: 3, name: "PEACH MUSCLE T", price: "UGX 45,000", colors: 2, img: "/product-3.png", badge: null },
-    { id: 4, name: "CLASSIC POLO", price: "UGX 85,000", colors: 5, img: "/product-4.png", badge: null },
+    {
+      id: 1,
+      name: "YURI TEE",
+      price: "UGX 60,000",
+      colors: 1,
+      img: `${assetsBaseUrl}/site-images/product-1.png`,
+      badge: null,
+    },
+    {
+      id: 2,
+      name: "OVERSIZED HEAVYWEIGHT",
+      price: "UGX 90,000",
+      colors: 4,
+      img: `${assetsBaseUrl}/site-images/product-2.png`,
+      badge: "SOLD OUT FAST",
+    },
+    {
+      id: 3,
+      name: "PEACH MUSCLE T",
+      price: "UGX 45,000",
+      colors: 2,
+      img: `${assetsBaseUrl}/site-images/product-3.png`,
+      badge: null,
+    },
+    {
+      id: 4,
+      name: "CLASSIC POLO",
+      price: "UGX 85,000",
+      colors: 5,
+      img: `${assetsBaseUrl}/site-images/product-4.png`,
+      badge: null,
+    },
   ];
 
   const stillInterested = [
-    { id: 5, name: "YURI TEE", price: "UGX 60,000", colors: 3, img: "/product-5.png" },
-    { id: 6, name: "PREMIUM SOFT", price: "UGX 55,000", colors: 6, img: "/product-1.png" },
+    {
+      id: 5,
+      name: "YURI TEE",
+      price: "UGX 60,000",
+      colors: 3,
+      img: `${assetsBaseUrl}/site-images/product-5.png`,
+    },
+    {
+      id: 6,
+      name: "PREMIUM SOFT",
+      price: "UGX 55,000",
+      colors: 6,
+      img: `${assetsBaseUrl}/site-images/product-1.png`,
+    },
   ];
 
   const steps = [
-    { n: "01", title: "DESIGN", desc: "Create your products right here on our platform." },
-    { n: "02", title: "CREATE", desc: "Add your logos, text, patches and styling details." },
-    { n: "03", title: "SELL", desc: "Share your link or store. We print & fulfill every order." },
-    { n: "04", title: "EARN", desc: "You earn profit on every sale, straight to your bank account." },
+    {
+      n: "01",
+      title: "DESIGN",
+      desc: "Create your products right here on our platform.",
+    },
+    {
+      n: "02",
+      title: "CREATE",
+      desc: "Add your logos, text, patches and styling details.",
+    },
+    {
+      n: "03",
+      title: "SELL",
+      desc: "Share your link or store. We print & fulfill every order.",
+    },
+    {
+      n: "04",
+      title: "EARN",
+      desc: "You earn profit on every sale, straight to your bank account.",
+    },
   ];
 
   const faqs = [
-    { q: "HOW MUCH DOES IT COST TO START?", a: "It costs nothing to design. We handle the manufacturing and take a flat fee per item + base blank cost." },
-    { q: "HOW DO I GET PAID?", a: "Profits are deposited weekly directly into your registered mobile money or bank account." },
-    { q: "WHAT IF I DON'T HAVE A DESIGN?", a: "Our built-in studio has typography tools, royalty-free assets, and AI generation to help you get started." },
-    { q: "CAN I CANCEL MY STORE?", a: "Yes, you can close your store and withdraw your remaining balance at any time." },
+    {
+      q: "HOW MUCH DOES IT COST TO START?",
+      a: "It costs nothing to design. We handle the manufacturing and take a flat fee per item + base blank cost.",
+    },
+    {
+      q: "HOW DO I GET PAID?",
+      a: "Profits are deposited weekly directly into your registered mobile money or bank account.",
+    },
+    {
+      q: "WHAT IF I DON'T HAVE A DESIGN?",
+      a: "Our built-in studio has typography tools, royalty-free assets, and AI generation to help you get started.",
+    },
+    {
+      q: "CAN I CANCEL MY STORE?",
+      a: "Yes, you can close your store and withdraw your remaining balance at any time.",
+    },
   ];
 
   // Shared product card renderer
-  const ProductCard = ({ item, faded = false }: { item: typeof latestDrops[0]; faded?: boolean }) => (
-    <div className={`group cursor-pointer ${faded ? "opacity-80 hover:opacity-100 transition-opacity duration-300" : ""}`}>
+  const ProductCard = ({
+    item,
+    faded = false,
+  }: {
+    item: (typeof latestDrops)[0];
+    faded?: boolean;
+  }) => (
+    <div
+      className={`group cursor-pointer ${faded ? "opacity-80 hover:opacity-100 transition-opacity duration-300" : ""}`}
+    >
       <div className="relative aspect-square bg-[#f5f5f5] mb-4 overflow-hidden flex items-center justify-center p-6">
         <div className="relative w-full h-full mix-blend-multiply transition-transform duration-700 group-hover:scale-105">
-          <Image src={item.img} alt={item.name} fill className="object-contain" />
+          <Image
+            src={item.img}
+            alt={item.name}
+            fill
+            className="object-contain"
+          />
         </div>
       </div>
       <div className="space-y-1">
@@ -56,9 +145,13 @@ export default function LandingPage() {
           </span>
         </div>
         {item.badge ? (
-          <p className="text-[10px] font-bold text-[#e60000] tracking-[0.15em] uppercase">{item.badge}</p>
+          <p className="text-[10px] font-bold text-[#e60000] tracking-[0.15em] uppercase">
+            {item.badge}
+          </p>
         ) : (
-          <p className="text-[10px] font-medium text-gray-400 tracking-[0.1em] uppercase">{item.colors} COLOR{item.colors > 1 ? "S" : ""}</p>
+          <p className="text-[10px] font-medium text-gray-400 tracking-[0.1em] uppercase">
+            {item.colors} COLOR{item.colors > 1 ? "S" : ""}
+          </p>
         )}
       </div>
     </div>
@@ -79,9 +172,10 @@ export default function LandingPage() {
             className="max-w-xl"
           >
             <h1 className="text-[56px] md:text-[64px] lg:text-[96px] font-bold tracking-[-0.04em] text-black leading-[0.88] uppercase mb-8">
-              TURN YOUR<br />
-              IDEAS INTO<br />
-              A BRAND.
+              TURN YOUR
+              <br />
+              IDEAS INTO
+              <br />A BRAND.
             </h1>
 
             <p className="text-sm text-gray-500 font-medium tracking-[0.15em] uppercase mb-10">
@@ -89,10 +183,16 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-row items-center gap-3">
-              <button type="button" className="bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default">
+              <button
+                type="button"
+                className="bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default"
+              >
                 START DESIGNING
               </button>
-              <button type="button" className="border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default">
+              <button
+                type="button"
+                className="border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default"
+              >
                 SHOP NOW
               </button>
             </div>
@@ -102,7 +202,7 @@ export default function LandingPage() {
         {/* Right: Image */}
         <div className="flex-1 relative min-h-[450px] md:min-h-full bg-gray-100 overflow-hidden">
           <Image
-            src="/hero-new-2.png"
+            src={`${assetsBaseUrl}/site-images/hero-new-2.png`}
             alt="Model wearing brand tee"
             fill
             className="object-cover object-top"
@@ -120,8 +220,13 @@ export default function LandingPage() {
       <div id="drops" />
       <section className="py-20 px-6 md:px-[6%]">
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
-          <h2 className="text-xl font-black tracking-[-0.02em] uppercase text-black">LATEST DROPS</h2>
-          <span aria-disabled="true" className="text-[10px] font-bold text-gray-400 tracking-[0.15em] uppercase cursor-default">
+          <h2 className="text-xl font-black tracking-[-0.02em] uppercase text-black">
+            LATEST DROPS
+          </h2>
+          <span
+            aria-disabled="true"
+            className="text-[10px] font-bold text-gray-400 tracking-[0.15em] uppercase cursor-default"
+          >
             VIEW ALL →
           </span>
         </div>
@@ -137,13 +242,18 @@ export default function LandingPage() {
       <section className="pt-8 pb-20 px-6 md:px-[6%] border-t border-gray-100">
         <div className="mb-8 border-b border-gray-200 pb-4">
           <h2 className="text-xl tracking-[-0.02em] uppercase text-black">
-            <span className="font-black">STILL</span> <span className="font-light">INTERESTED?</span>
+            <span className="font-black">STILL</span>{" "}
+            <span className="font-light">INTERESTED?</span>
           </h2>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-x-5 gap-y-10">
           {stillInterested.map((item) => (
-            <ProductCard key={item.id} item={item as typeof latestDrops[0]} faded />
+            <ProductCard
+              key={item.id}
+              item={item as (typeof latestDrops)[0]}
+              faded
+            />
           ))}
         </div>
       </section>
@@ -153,7 +263,9 @@ export default function LandingPage() {
         {/* Left: Steps */}
         <div className="flex-1 px-8 md:px-[8%] py-20 lg:py-28 flex flex-col justify-center">
           <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] leading-[0.88] uppercase mb-4 text-white">
-            FROM VISION<br />TO REALITY.
+            FROM VISION
+            <br />
+            TO REALITY.
           </h2>
           <p className="text-[10px] font-bold tracking-[0.3em] text-gray-400 uppercase mb-16">
             We handle the logistics. You earn the profit.
@@ -172,7 +284,9 @@ export default function LandingPage() {
                   {step.n}
                 </span>
                 <div className="pt-2 space-y-1">
-                  <h4 className="text-sm font-black tracking-[0.2em] uppercase">{step.title}</h4>
+                  <h4 className="text-sm font-black tracking-[0.2em] uppercase">
+                    {step.title}
+                  </h4>
                   <p className="text-xs text-gray-400 font-medium leading-relaxed">
                     {step.desc}
                   </p>
@@ -185,13 +299,21 @@ export default function LandingPage() {
         {/* Right: Image + Testimonial */}
         <div className="flex-1 relative min-h-[360px] md:min-h-[420px] lg:min-h-full overflow-hidden">
           <div className="absolute inset-0 opacity-40">
-            <Image src="/studio-lights.png" alt="Studio Space" fill className="object-cover" />
+            <Image
+              src={`${assetsBaseUrl}/site-images/studio-lights.png`}
+              alt="Studio Space"
+              fill
+              className="object-cover"
+            />
           </div>
 
           <div className="absolute bottom-8 left-6 right-6 z-10 bg-white p-6 shadow-2xl border-l-4 border-[#e60000] sm:left-auto sm:right-10 sm:max-w-[300px]">
-            <p className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase mb-2">SUCCESS STORY</p>
+            <p className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase mb-2">
+              SUCCESS STORY
+            </p>
             <p className="text-black font-semibold text-sm leading-relaxed italic">
-              &quot;The quality is unmatched. My customers love the heavyweight tees.&quot;
+              &quot;The quality is unmatched. My customers love the heavyweight
+              tees.&quot;
             </p>
           </div>
         </div>
@@ -202,12 +324,19 @@ export default function LandingPage() {
         {/* Left: 4K Textile */}
         <div className="flex-1 flex flex-col relative overflow-hidden">
           <div className="absolute inset-0 z-0 opacity-50">
-            <Image src="/textile-4k.png" alt="Fabric" fill className="object-cover brightness-[0.5]" />
+            <Image
+              src={`${assetsBaseUrl}/site-images/textile-4k.png`}
+              alt="Fabric"
+              fill
+              className="object-cover brightness-[0.5]"
+            />
           </div>
 
           <div className="relative z-10 flex-1 p-10 md:p-16 flex flex-col justify-end">
             <h2 className="text-4xl md:text-5xl font-black tracking-[-0.03em] uppercase mb-3 text-white leading-[0.95]">
-              4K TEXTILE<br />SIMULATION
+              4K TEXTILE
+              <br />
+              SIMULATION
             </h2>
             <p className="text-xs font-medium text-gray-400 leading-relaxed max-w-[260px]">
               Experience textures of physical swatch before buying a sample.
@@ -224,17 +353,27 @@ export default function LandingPage() {
         {/* Right: Creative Space */}
         <div className="flex-1 flex flex-col relative overflow-hidden bg-[#e5e5e5] text-black">
           <div className="absolute inset-0 opacity-30">
-            <Image src="/studio-new.png" alt="Creative Space" fill className="object-cover grayscale" />
+            <Image
+              src={`${assetsBaseUrl}/site-images/studio-new.png`}
+              alt="Creative Space"
+              fill
+              className="object-cover grayscale"
+            />
           </div>
 
           <div className="relative z-10 flex-1 p-10 md:p-16 flex flex-col justify-center items-center text-center">
             <h2 className="text-4xl md:text-5xl font-black tracking-[-0.03em] uppercase mb-3 leading-[0.95]">
-              YOUR CREATIVE<br />SPACE.
+              YOUR CREATIVE
+              <br />
+              SPACE.
             </h2>
             <p className="text-[10px] font-bold text-gray-600 tracking-[0.2em] uppercase mb-10 max-w-[240px]">
               The best ideas start here. We give you the tools.
             </p>
-            <button type="button" className="bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-default shadow-lg border border-gray-200">
+            <button
+              type="button"
+              className="bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-default shadow-lg border border-gray-200"
+            >
               START DESIGNING
             </button>
           </div>
@@ -242,15 +381,25 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════ 10K PRICING ═══════ */}
-      <section id="calculator" className="pt-28 pb-16 px-6 flex flex-col items-center justify-center bg-white">
+      <section
+        id="calculator"
+        className="pt-28 pb-16 px-6 flex flex-col items-center justify-center bg-white"
+      >
         <div className="mb-14 text-center">
           <h2 className="text-[80px] md:text-[110px] font-black tracking-[-0.04em] text-black leading-none mb-2">
-            <span className="text-3xl md:text-4xl font-black tracking-normal align-middle text-gray-500">UGX</span> 10k
+            <span className="text-3xl md:text-4xl font-black tracking-normal align-middle text-gray-500">
+              UGX
+            </span>{" "}
+            10k
           </h2>
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 max-w-sm mx-auto mb-10">
-            UGX 10K platform fee + base blank cost per item sold. You set the price & keep the profit.
+            UGX 10K platform fee + base blank cost per item sold. You set the
+            price & keep the profit.
           </p>
-          <button type="button" className="bg-black text-white px-10 py-5 text-[10px] font-black tracking-[0.2em] uppercase rounded-none hover:opacity-80 transition-all cursor-default shadow-xl">
+          <button
+            type="button"
+            className="bg-black text-white px-10 py-5 text-[10px] font-black tracking-[0.2em] uppercase rounded-none hover:opacity-80 transition-all cursor-default shadow-xl"
+          >
             START YOUR BRAND TODAY
           </button>
         </div>
@@ -275,13 +424,17 @@ export default function LandingPage() {
               <div
                 key={idx}
                 className="border-b border-gray-200 cursor-pointer group"
-                onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                onClick={() =>
+                  setOpenFaqIndex(openFaqIndex === idx ? null : idx)
+                }
               >
                 <div className="py-6 flex justify-between items-center group-hover:bg-gray-50/50 transition-colors">
                   <h3 className="text-xs font-bold tracking-[0.15em] text-black uppercase pr-8">
                     {faq.q}
                   </h3>
-                  <span className={`text-lg font-bold text-black select-none transition-transform duration-300 ${openFaqIndex === idx ? "rotate-45" : "rotate-0"}`}>
+                  <span
+                    className={`text-lg font-bold text-black select-none transition-transform duration-300 ${openFaqIndex === idx ? "rotate-45" : "rotate-0"}`}
+                  >
                     +
                   </span>
                 </div>

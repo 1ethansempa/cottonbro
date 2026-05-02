@@ -1,13 +1,17 @@
 import type { NextConfig } from "next";
 
-const isDev = process.env.NODE_ENV !== "production";
-const isCi = process.env.CI === "true";
-const apiUrl =
-  process.env.API_BASE_URL || (isDev || isCi ? "http://localhost:3001" : "");
+const apiUrl = process.env.API_BASE_URL;
+const assetsBaseUrl = process.env.NEXT_PUBLIC_ASSETS_BASE_URL;
 
 if (!apiUrl) {
   throw new Error("Missing API_BASE_URL");
 }
+
+if (!assetsBaseUrl) {
+  throw new Error("Missing NEXT_PUBLIC_ASSETS_BASE_URL");
+}
+
+const assetsUrl = new URL(assetsBaseUrl);
 
 const connectSrc = [
   "'self'",
@@ -23,7 +27,7 @@ const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data:",
+  `img-src 'self' data: ${assetsUrl.origin}`,
   `connect-src ${connectSrc.join(" ")}`,
   "font-src 'self' https://fonts.gstatic.com data:",
   "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://challenges.cloudflare.com",
@@ -59,6 +63,16 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: assetsUrl.protocol.replace(":", "") as "http" | "https",
+        hostname: assetsUrl.hostname,
+        port: assetsUrl.port,
+        pathname: "/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {
