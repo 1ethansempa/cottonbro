@@ -2,10 +2,11 @@
 
 import { Logo } from "@cottonbro/ui";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@cottonbro/auth-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 
 interface SiteHeaderProps {
     theme?: "light" | "dark";
@@ -43,9 +44,17 @@ function MaybeLink({
 export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const { user, logout, busy } = useAuth();
 
-    // ...existing logout logic...
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
     const isAuthenticated = Boolean(user);
 
     async function handleLogout() {
@@ -60,106 +69,107 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
     }
 
     const nav = [
-        { href: "#", label: "Home" },
-        { href: "#", label: "Products" },
-        { href: "#", label: "Design" },
+        { href: "/#drops", label: "Drops" },
+        { href: "/#how-it-works", label: "How it works" },
+        { href: "/#calculator", label: "Pricing" },
     ];
+    const loginHref = "/auth/login";
+    const startHref = "/auth/login?redirect=%2Fdesign";
+    const navTextClass =
+        theme === "light"
+            ? "text-black/60 hover:text-black"
+            : "text-white/55 hover:text-white";
+    const floatingHeaderClass =
+        theme === "light"
+            ? "border border-black bg-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)]"
+            : "border border-white bg-black/90 shadow-[4px_4px_0_rgba(255,255,255,1)]";
+            
+    const staticHeaderClass =
+        theme === "light"
+            ? "border-b border-black/10 bg-white/85 shadow-[0_1px_0_rgba(0,0,0,0.04)]"
+            : "border-b border-white/10 bg-black/75 shadow-[0_1px_0_rgba(255,255,255,0.05)]";
+
+    const headerClass = isScrolled ? floatingHeaderClass : staticHeaderClass;
 
     return (
         <>
-            <header
-                className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-colors duration-300 ${theme === "light"
-                        ? "bg-white/80 border-black/5"
-                        : "bg-black/80 border-white/5"
-                    }`}
-            >
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-                    <div className="flex items-center gap-12">
-                        <MaybeLink disabled={disableLinks} href="#" className="flex items-center gap-2">
-                            <Logo
-                                size="md"
-                                color={theme === "light" ? "black" : "white"}
-                                fontClassName="font-bold tracking-tight"
-                            />
-                        </MaybeLink>
+            <div className={`fixed inset-x-0 top-0 z-50 flex justify-center pointer-events-none transition-all duration-300 ${isScrolled ? "px-4 pt-4 sm:px-6 sm:pt-6" : "px-0 pt-0"}`}>
+                <header
+                    className={`pointer-events-auto w-full transition-all duration-300 backdrop-blur-xl rounded-none ${isScrolled ? "max-w-6xl" : "max-w-full"} ${headerClass}`}
+                >
+                    <div className={`grid grid-cols-2 md:grid-cols-[1fr_auto_1fr] items-center transition-all duration-300 ${isScrolled ? "h-14 px-4 sm:h-16 sm:px-6" : "h-[72px] px-5 sm:px-6"}`}>
+                        <div className="flex items-center">
+                            <MaybeLink disabled={disableLinks} href="/" className="group flex items-center transition-transform duration-300 hover:scale-105">
+                                <div className="flex items-baseline text-xl font-black uppercase tracking-tighter leading-none">
+                                    <span className={theme === "light" ? "text-black" : "text-white"}>COTTON</span>
+                                    <span className="text-[#e60000]">BRO</span>
+                                    <span className="ml-1 h-2 w-2 rounded-full bg-[#e60000]"></span>
+                                </div>
+                            </MaybeLink>
+                        </div>
 
-                        <nav className="hidden md:flex items-center gap-8">
+                        <nav className="hidden items-center gap-1 md:flex sm:gap-2">
                             {nav.map((item) => (
                                 <MaybeLink
                                     key={item.label}
                                     disabled={disableLinks}
                                     href={item.href}
-                                    className={`text-sm font-medium transition-colors tracking-wide uppercase ${theme === "light"
-                                            ? "text-gray-900 hover:text-black hover:underline underline-offset-4"
-                                            : "text-gray-400 hover:text-white hover:underline underline-offset-4"
-                                        }`}
+                                    className={`relative rounded-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${theme === "light" ? "hover:bg-black text-black/60 hover:text-white" : "hover:bg-white text-white/55 hover:text-black"} `}
                                 >
                                     {item.label}
                                 </MaybeLink>
                             ))}
                         </nav>
-                    </div>
 
-                    <div className="hidden md:flex items-center gap-6">
-                        {!isAuthenticated ? (
-                            <>
-                                <MaybeLink
-                                    disabled={disableLinks}
-                                    href="#"
-                                    className={`text-sm font-semibold transition px-2 tracking-wide ${theme === "light"
-                                            ? "text-black hover:opacity-70"
-                                            : "text-white hover:text-gray-300"
+                        <div className="hidden items-center justify-end gap-3 md:flex">
+                            {!isAuthenticated ? (
+                                <>
+                                    <MaybeLink
+                                        disabled={disableLinks}
+                                        href={loginHref}
+                                        className={`rounded-none px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:opacity-80 ${navTextClass}`}
+                                    >
+                                        Login
+                                    </MaybeLink>
+                                    <MaybeLink
+                                        disabled={disableLinks}
+                                        href={startHref}
+                                        className={`inline-flex items-center gap-2 rounded-none px-6 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:opacity-80 ${theme === "light"
+                                                ? "bg-black text-white"
+                                                : "bg-white text-black"
+                                                }`}
+                                    >
+                                        Start Designing
+                                        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                                    </MaybeLink>
+                                </>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleLogout}
+                                    disabled={loggingOut || busy}
+                                    className={`cursor-pointer rounded-none border px-6 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-60 hover:opacity-80 ${theme === "light"
+                                            ? "border-black/20 bg-white text-black hover:border-black"
+                                            : "border-white/20 bg-black text-white hover:border-white"
                                         }`}
                                 >
-                                    Login
-                                </MaybeLink>
-                                <MaybeLink disabled={disableLinks} href="#">
-                                    <button
-                                        className={`rounded-none px-6 py-2 text-sm font-bold transition-all tracking-widest uppercase transform hover:opacity-70 cursor-pointer ${theme === "light"
-                                                ? "bg-black text-white hover:bg-gray-900"
-                                                : "bg-white text-black hover:bg-gray-100"
-                                            }`}
-                                    >
-                                        Sign Up
-                                    </button>
-                                </MaybeLink>
-                            </>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleLogout}
-                                disabled={loggingOut || busy}
-                                className={`rounded-none border px-5 py-2 text-sm font-medium transition disabled:opacity-60 tracking-wide cursor-pointer ${theme === "light"
-                                        ? "border-black/10 bg-black/5 text-gray-600 hover:text-black hover:bg-black/10"
-                                        : "border-white/10 bg-white/5 text-secondary hover:text-white hover:bg-white/10"
-                                    }`}
-                            >
-                                {loggingOut ? "Logging out…" : "Log out"}
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Mobile Menu Button */}
-                    <button
-                        className={`md:hidden p-2 group cursor-pointer ${theme === "light" ? "text-black" : "text-white"}`}
-                        onClick={() => setMobileMenuOpen(true)}
-                    >
-                        <div className="space-y-1.5">
-                            <div className="space-y-1.5">
-                                <span
-                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
-                                ></span>
-                                <span
-                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
-                                ></span>
-                                <span
-                                    className={`block w-6 h-0.5 transition-colors group-hover:bg-gray-500 ${theme === "light" ? "bg-black" : "bg-white"}`}
-                                ></span>
-                            </div>
+                                    {loggingOut ? "Logging out…" : "Log out"}
+                                </button>
+                            )}
                         </div>
-                    </button>
-                </div>
-            </header>
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            type="button"
+                            aria-label="Open menu"
+                            className={`justify-self-end rounded-none p-2 transition-colors hover:bg-black/5 md:hidden ${theme === "light" ? "text-black hover:text-black/60" : "text-white hover:text-white/70"}`}
+                            onClick={() => setMobileMenuOpen(true)}
+                        >
+                            <Menu className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
+                        </button>
+                    </div>
+                </header>
+            </div>
 
             {/* Mobile Menu Overlay - Portal/Outside Header */}
             <AnimatePresence>
@@ -173,21 +183,23 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
                         <div className="flex items-center justify-between mb-12">
                             <Logo size="md" color="white" />
                             <button
+                                type="button"
+                                aria-label="Close menu"
                                 onClick={() => setMobileMenuOpen(false)}
-                                className="p-2 text-secondary hover:text-white transition-colors cursor-pointer"
+                                className="p-2 text-white/60 hover:text-white transition-colors cursor-pointer"
                             >
-                                <span className="text-2xl">✕</span>
+                                <X className="h-7 w-7" aria-hidden="true" />
                             </button>
                         </div>
 
-                        <nav className="flex flex-col gap-8 items-center text-center">
+                        <nav className="flex flex-col gap-7 items-start">
                             {nav.map((item) => (
                                 <MaybeLink
                                     key={item.label}
                                     disabled={disableLinks}
                                     href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="text-4xl font-extrabold tracking-tight text-white hover:text-gray-300 transition-all"
+                                    className="text-4xl font-black uppercase tracking-[-0.02em] text-white hover:text-white/70 transition-all"
                                 >
                                     {item.label}
                                 </MaybeLink>
@@ -196,19 +208,20 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
                                 <>
                                     <MaybeLink
                                         disabled={disableLinks}
-                                        href="#"
+                                        href={loginHref}
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="text-2xl font-bold text-secondary hover:text-white mt-8"
+                                        className="mt-8 text-xl font-black uppercase tracking-[0.16em] text-white/55 hover:text-white"
                                     >
-                                        Enter Studio
+                                        Login
                                     </MaybeLink>
                                     <MaybeLink
                                         disabled={disableLinks}
-                                        href="#"
+                                        href={startHref}
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="rounded-none bg-white px-8 py-4 text-xl font-bold text-black shadow-glow-white mt-4 tracking-wide hover:bg-gray-100 hover:scale-[1.02]"
+                                        className="mt-2 inline-flex items-center gap-2 bg-white px-7 py-4 text-[11px] font-black uppercase tracking-[0.18em] text-black transition-all hover:bg-zinc-100"
                                     >
-                                        Open Studio
+                                        Start Designing
+                                        <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                                     </MaybeLink>
                                 </>
                             ) : (

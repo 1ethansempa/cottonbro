@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Marquee } from "@/components/home/Marquee";
@@ -23,7 +24,7 @@ export default function LandingPage() {
   const latestDrops = [
     {
       id: 1,
-      name: "YURI TEE",
+      name: "Yuri Tee",
       price: "UGX 60,000",
       colors: 1,
       img: `${assetsBaseUrl}/site-images/product-1.png`,
@@ -31,15 +32,15 @@ export default function LandingPage() {
     },
     {
       id: 2,
-      name: "OVERSIZED HEAVYWEIGHT",
+      name: "Oversized Heavyweight",
       price: "UGX 90,000",
       colors: 4,
       img: `${assetsBaseUrl}/site-images/product-2.png`,
-      badge: "SOLD OUT FAST",
+      badge: "SOLD OUT",
     },
     {
       id: 3,
-      name: "PEACH MUSCLE T",
+      name: "Peach Muscle T",
       price: "UGX 45,000",
       colors: 2,
       img: `${assetsBaseUrl}/site-images/product-3.png`,
@@ -47,7 +48,7 @@ export default function LandingPage() {
     },
     {
       id: 4,
-      name: "CLASSIC POLO",
+      name: "Classic Polo",
       price: "UGX 85,000",
       colors: 5,
       img: `${assetsBaseUrl}/site-images/product-4.png`,
@@ -58,14 +59,14 @@ export default function LandingPage() {
   const stillInterested = [
     {
       id: 5,
-      name: "YURI TEE",
+      name: "Yuri Tee",
       price: "UGX 60,000",
       colors: 3,
       img: `${assetsBaseUrl}/site-images/product-5.png`,
     },
     {
       id: 6,
-      name: "PREMIUM SOFT",
+      name: "Premium Soft",
       price: "UGX 55,000",
       colors: 6,
       img: `${assetsBaseUrl}/site-images/product-1.png`,
@@ -125,41 +126,38 @@ export default function LandingPage() {
     <div
       className={`group cursor-pointer ${faded ? "opacity-80 hover:opacity-100 transition-opacity duration-300" : ""}`}
     >
-      <div className="relative aspect-square bg-[#f5f5f5] mb-4 overflow-hidden flex items-center justify-center p-6">
+      <div className="relative aspect-[4/5] bg-[#e5e5e5] mb-2 overflow-hidden flex items-center justify-center">
         <div className="relative w-full h-full mix-blend-multiply transition-transform duration-700 group-hover:scale-105">
           <Image
             src={item.img}
             alt={item.name}
             fill
-            className="object-contain"
+            className="object-cover"
           />
         </div>
       </div>
-      <div className="space-y-1">
-        <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start">
-          <h3 className="text-[11px] md:text-xs font-black tracking-[0.15em] text-black uppercase leading-tight sm:max-w-[65%]">
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-baseline">
+          <h3 className="text-[13px] sm:text-sm font-medium text-black leading-tight truncate mr-2">
             {item.name}
           </h3>
-          <span className="text-[10px] md:text-xs font-medium text-gray-500 tracking-wide whitespace-nowrap">
+          <span className="text-[13px] sm:text-sm font-medium text-black whitespace-nowrap">
             {item.price}
           </span>
         </div>
-        {item.badge ? (
-          <p className="text-[10px] font-bold text-[#e60000] tracking-[0.15em] uppercase">
-            {item.badge}
-          </p>
-        ) : (
-          <p className="text-[10px] font-medium text-gray-400 tracking-[0.1em] uppercase">
-            {item.colors} COLOR{item.colors > 1 ? "S" : ""}
-          </p>
-        )}
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
+          <span className="text-[9px] font-bold text-black uppercase tracking-wider">
+            {item.badge || "APPAREL"}
+          </span>
+        </div>
       </div>
     </div>
   );
 
   return (
     <div className="font-sans bg-white text-black min-h-screen selection:bg-black selection:text-white">
-      <SiteHeader theme="light" disableLinks />
+      <SiteHeader theme="light" />
 
       {/* ═══════ HERO ═══════ */}
       <section className="relative w-full min-h-[90vh] flex flex-col md:flex-row items-stretch overflow-hidden bg-white">
@@ -178,22 +176,24 @@ export default function LandingPage() {
               <br />A BRAND.
             </h1>
 
-            <p className="text-sm text-gray-500 font-medium tracking-[0.15em] uppercase mb-10">
+            <p className="text-sm text-black/60 font-medium tracking-[0.15em] uppercase mb-10">
               Create your brand. Design. Launch. Get Paid.
             </p>
 
             <div className="flex flex-row items-center gap-3">
               <button
                 type="button"
-                className="bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default"
+                className="group inline-flex items-center justify-center bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer"
               >
                 START DESIGNING
+                <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
               </button>
               <button
                 type="button"
-                className="border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-default"
+                className="group inline-flex items-center justify-center border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer"
               >
                 SHOP NOW
+                <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
               </button>
             </div>
           </motion.div>
@@ -217,7 +217,7 @@ export default function LandingPage() {
 
       {/* ═══════ LATEST DROPS ═══════ */}
       {/* anchor for hero SHOP NOW button */}
-      <div id="drops" />
+      <div id="drops" className="scroll-mt-24" />
       <section className="py-20 px-6 md:px-[6%]">
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
           <h2 className="text-xl font-black tracking-[-0.02em] uppercase text-black">
@@ -225,7 +225,7 @@ export default function LandingPage() {
           </h2>
           <span
             aria-disabled="true"
-            className="text-[10px] font-bold text-gray-400 tracking-[0.15em] uppercase cursor-default"
+            className="text-[10px] font-bold text-black/60 tracking-[0.15em] uppercase cursor-default"
           >
             VIEW ALL →
           </span>
@@ -259,7 +259,10 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════ FROM VISION TO REALITY ═══════ */}
-      <section className="bg-[#111] text-white flex flex-col lg:flex-row items-stretch lg:min-h-[700px]">
+      <section
+        id="how-it-works"
+        className="bg-[#111] text-white flex flex-col lg:flex-row items-stretch lg:min-h-[700px] scroll-mt-24"
+      >
         {/* Left: Steps */}
         <div className="flex-1 px-8 md:px-[8%] py-20 lg:py-28 flex flex-col justify-center">
           <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] leading-[0.88] uppercase mb-4 text-white">
@@ -267,7 +270,7 @@ export default function LandingPage() {
             <br />
             TO REALITY.
           </h2>
-          <p className="text-[10px] font-bold tracking-[0.3em] text-gray-400 uppercase mb-16">
+          <p className="text-[10px] font-bold tracking-[0.3em] text-white/60 uppercase mb-16">
             We handle the logistics. You earn the profit.
           </p>
 
@@ -287,7 +290,7 @@ export default function LandingPage() {
                   <h4 className="text-sm font-black tracking-[0.2em] uppercase">
                     {step.title}
                   </h4>
-                  <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                  <p className="text-xs text-white/50 font-medium leading-relaxed">
                     {step.desc}
                   </p>
                 </div>
@@ -308,7 +311,7 @@ export default function LandingPage() {
           </div>
 
           <div className="absolute bottom-8 left-6 right-6 z-10 bg-white p-6 shadow-2xl border-l-4 border-[#e60000] sm:left-auto sm:right-10 sm:max-w-[300px]">
-            <p className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase mb-2">
+            <p className="text-[10px] font-bold text-black/60 tracking-[0.2em] uppercase mb-2">
               SUCCESS STORY
             </p>
             <p className="text-black font-semibold text-sm leading-relaxed italic">
@@ -338,7 +341,7 @@ export default function LandingPage() {
               <br />
               SIMULATION
             </h2>
-            <p className="text-xs font-medium text-gray-400 leading-relaxed max-w-[260px]">
+            <p className="text-xs font-medium text-white/60 leading-relaxed max-w-[260px]">
               Experience textures of physical swatch before buying a sample.
             </p>
           </div>
@@ -367,14 +370,15 @@ export default function LandingPage() {
               <br />
               SPACE.
             </h2>
-            <p className="text-[10px] font-bold text-gray-600 tracking-[0.2em] uppercase mb-10 max-w-[240px]">
+            <p className="text-[10px] font-bold text-black/60 tracking-[0.2em] uppercase mb-10 max-w-[240px]">
               The best ideas start here. We give you the tools.
             </p>
             <button
               type="button"
-              className="bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-default shadow-lg border border-gray-200"
+              className="group inline-flex items-center justify-center bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-pointer shadow-lg border border-gray-200"
             >
               START DESIGNING
+              <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -383,25 +387,19 @@ export default function LandingPage() {
       {/* ═══════ 10K PRICING ═══════ */}
       <section
         id="calculator"
-        className="pt-28 pb-16 px-6 flex flex-col items-center justify-center bg-white"
+        className="pt-28 pb-16 px-6 flex flex-col items-center justify-center bg-white scroll-mt-24"
       >
         <div className="mb-14 text-center">
           <h2 className="text-[80px] md:text-[110px] font-black tracking-[-0.04em] text-black leading-none mb-2">
-            <span className="text-3xl md:text-4xl font-black tracking-normal align-middle text-gray-500">
+            <span className="text-3xl md:text-4xl font-black tracking-normal align-middle text-black/40">
               UGX
             </span>{" "}
             10k
           </h2>
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 max-w-sm mx-auto mb-10">
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black/60 sm:max-w-sm max-w-md mx-auto">
             UGX 10K platform fee + base blank cost per item sold. You set the
             price & keep the profit.
           </p>
-          <button
-            type="button"
-            className="bg-black text-white px-10 py-5 text-[10px] font-black tracking-[0.2em] uppercase rounded-none hover:opacity-80 transition-all cursor-default shadow-xl"
-          >
-            START YOUR BRAND TODAY
-          </button>
         </div>
       </section>
 
@@ -447,7 +445,7 @@ export default function LandingPage() {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <div className="pb-6 text-sm font-medium text-gray-500 leading-relaxed max-w-xl">
+                      <div className="pb-6 text-sm font-medium text-black/70 leading-relaxed max-w-xl">
                         {faq.a}
                       </div>
                     </motion.div>
