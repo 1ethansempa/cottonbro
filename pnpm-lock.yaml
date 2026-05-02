@@ -148,6 +148,9 @@ importers:
       '@cottonbro/auth-react':
         specifier: workspace:*
         version: link:../../packages/frontend/auth-react
+      '@cottonbro/utils':
+        specifier: workspace:*
+        version: link:../../packages/core/utils
       '@cottonbro/ui':
         specifier: workspace:*
         version: link:../../packages/frontend/ui
