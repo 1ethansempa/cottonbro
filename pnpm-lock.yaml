@@ -154,6 +154,9 @@ importers:
       '@cottonbro/ui':
         specifier: workspace:*
         version: link:../../packages/frontend/ui
+      '@cottonbro/utils':
+        specifier: workspace:*
+        version: link:../../packages/core/utils
       '@react-three/drei':
         specifier: ^10.7.7
         version: 10.7.7(@react-three/fiber@9.4.0(@types/react@19.1.15)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(three@0.181.2))(@types/react@19.1.15)(@types/three@0.181.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(three@0.181.2)

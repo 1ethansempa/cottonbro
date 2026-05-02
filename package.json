@@ -20,7 +20,7 @@
   "author": "",
   "license": "Proprietary",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "24.x"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
