@@ -13,9 +13,13 @@ import { IS_PUBLIC_KEY } from "./public.decorator.js";
 import { USERS_REPOSITORY } from "./auth.service.js";
 import type { UsersRepositoryPort } from "./users.repository.js";
 
+const BEARER_TOKEN_MAX_AGE_SECONDS = 20 * 60;
+const TOKEN_CLOCK_SKEW_SECONDS = 60;
+
 type AuthClaims = {
   uid: string;
   email?: unknown;
+  iat?: unknown;
 };
 
 @Injectable()
@@ -49,6 +53,7 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException("Invalid bearer token");
       }
 
+      this.assertFreshBearerToken(decodedClaims);
       await this.assertAccountCanAccess(decodedClaims);
       request.user = decodedClaims;
       return true;
@@ -85,6 +90,22 @@ export class AuthGuard implements CanActivate {
 
     if (!user || user.status !== "active" || user.deletedAt) {
       throw new ForbiddenException("account_unavailable");
+    }
+  }
+
+  private assertFreshBearerToken(claims: AuthClaims) {
+    if (typeof claims.iat !== "number") {
+      throw new UnauthorizedException("Invalid bearer token");
+    }
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const tokenAgeSeconds = nowSeconds - claims.iat;
+
+    if (
+      tokenAgeSeconds > BEARER_TOKEN_MAX_AGE_SECONDS ||
+      tokenAgeSeconds < -TOKEN_CLOCK_SKEW_SECONDS
+    ) {
+      throw new UnauthorizedException("Bearer token expired");
     }
   }
 }

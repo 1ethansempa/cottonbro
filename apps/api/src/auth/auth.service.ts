@@ -24,10 +24,13 @@ import type {
   UserStatus,
 } from "./users.repository.js";
 
+// Firebase owns identity; our local users table owns account access.
+// Every token/session creation path must check local account status first.
 const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const DELETED_ACCOUNT_RESTORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export const USERS_REPOSITORY = Symbol("USERS_REPOSITORY");
 
+// Deleted accounts are handled separately because they can self-restore by email.
 const BLOCKED_STATUSES = new Set<UserStatus>(["suspended", "banned"]);
 
 /**
@@ -89,11 +92,14 @@ export class AuthService {
 
     const user = await this.usersRepository?.findByEmail(normalizedEmail);
     if (user?.status === "deleted") {
+      // Deleted users get the recovery path instead of a sign-in OTP.
       await this.sendAccountReinstatementEmail(user);
       return;
     }
 
     if (user && BLOCKED_STATUSES.has(user.status)) {
+      // Keep this silent so callers cannot probe whether an account exists
+      // or whether it is banned/suspended.
       return;
     }
 
@@ -125,6 +131,8 @@ export class AuthService {
     try {
       await verifyOtp(normalizedEmail, code);
       const firebaseUser = await signInOrCreateUser(normalizedEmail);
+      // The OTP proves email ownership; local status still decides whether
+      // this account is allowed to receive a Firebase custom token.
       await this.syncActiveUserForSession(firebaseUser);
       return await mintCustomToken(firebaseUser.uid);
     } catch (err: any) {
@@ -167,6 +175,8 @@ export class AuthService {
     try {
       const decoded = await adminAuth.verifyIdToken(idToken, true);
       const firebaseUser = await adminAuth.getUser(decoded.uid);
+      // Google sign-in lands here directly, so this check covers non-OTP
+      // logins before we mint a long-lived HttpOnly session.
       await this.syncActiveUserForSession(firebaseUser);
 
       cookie = await adminAuth.createSessionCookie(idToken, {
@@ -208,6 +218,8 @@ export class AuthService {
       throw new BadRequestException("Missing restore token");
     }
 
+    // We only store token hashes, so leaked database rows cannot be used
+    // as account-restore links.
     const restored = await this.usersRepository?.restoreDeletedUserByTokenHash(
       hashRestoreToken(tokenValue),
     );

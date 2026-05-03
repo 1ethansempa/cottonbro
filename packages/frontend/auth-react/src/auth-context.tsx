@@ -18,7 +18,7 @@ import {
 import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
 const DEFAULT_AUTH_BASE_URL = "/api/auth";
-const SESSION_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const BEARER_TOKEN_CACHE_TTL_MS = 20 * 60 * 1000;
 
 export type AuthRole = "User" | "Admin" | string | undefined;
 
@@ -43,7 +43,9 @@ export interface AuthContextValue {
   // Claims are UI hints only; protected APIs must verify authorization server-side.
   claims: IdTokenResult["claims"] | null;
   role: AuthRole;
-  // Refreshes the Firebase ID token and asks the backend to renew the cookie.
+  // Returns a Firebase ID token for endpoints that explicitly accept Bearer auth.
+  // The token is cached in memory for up to 20 minutes.
+  // This does not renew the backend session cookie.
   refreshIdToken: () => Promise<string | null>;
   // Starts the email OTP flow. Captcha must be verified by the backend.
   requestOtp: (email: string, captchaToken: string) => Promise<void>;
@@ -68,6 +70,11 @@ export const AuthProvider: React.FC<
 
   // Firebase callbacks may resolve after unmount; guard React state writes.
   const mounted = useRef(true);
+  const bearerTokenCache = useRef<{
+    token: string;
+    uid: string;
+    cachedAt: number;
+  } | null>(null);
 
   // Loading should flip once, after Firebase's first auth-state callback.
   const hasResolvedInitialAuth = useRef(false);
@@ -193,6 +200,7 @@ export const AuthProvider: React.FC<
       if (!mounted.current) return;
 
       if (!firebaseUser) {
+        bearerTokenCache.current = null;
         setClaims(null);
         return;
       }
@@ -296,7 +304,8 @@ export const AuthProvider: React.FC<
     [auth, finishSignIn, runAuthAction],
   );
 
-  // Best-effort renewal for sliding sessions; callers must still handle null/expiry.
+  // Some API calls need Firebase bearer auth directly. Keep the token in memory
+  // only, and refresh it once it is older than the backend's 20-minute policy.
   const refreshIdToken = useCallback<
     AuthContextValue["refreshIdToken"]
   >(async () => {
@@ -305,7 +314,21 @@ export const AuthProvider: React.FC<
     if (!currentUser) return null;
 
     try {
-      const idToken = await createBackendSession(currentUser, false);
+      const cached = bearerTokenCache.current;
+      if (
+        cached?.uid === currentUser.uid &&
+        Date.now() - cached.cachedAt < BEARER_TOKEN_CACHE_TTL_MS
+      ) {
+        return cached.token;
+      }
+
+      const idToken = await currentUser.getIdToken(true);
+      bearerTokenCache.current = {
+        token: idToken,
+        uid: currentUser.uid,
+        cachedAt: Date.now(),
+      };
+
       const tokenInfo = await currentUser.getIdTokenResult();
 
       if (mounted.current) {
@@ -316,41 +339,7 @@ export const AuthProvider: React.FC<
     } catch {
       return null;
     }
-  }, [auth, createBackendSession]);
-
-  // Renew the backend cookie while Firebase says a user is signed in.
-  useEffect(() => {
-    if (!user) return undefined;
-
-    const refreshTimer = window.setInterval(() => {
-      refreshIdToken().catch(() => {
-        // Protected calls remain the source of truth if background refresh fails.
-      });
-    }, SESSION_REFRESH_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(refreshTimer);
-    };
-  }, [refreshIdToken, user]);
-
-  // Background tabs can miss timers; refresh promptly when the user returns.
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-
-    const refreshWhenTabIsVisible = () => {
-      if (!document.hidden) {
-        refreshIdToken().catch(() => {
-          // Non-fatal; the next protected request still has to handle auth failure.
-        });
-      }
-    };
-
-    document.addEventListener("visibilitychange", refreshWhenTabIsVisible);
-
-    return () => {
-      document.removeEventListener("visibilitychange", refreshWhenTabIsVisible);
-    };
-  }, [refreshIdToken]);
+  }, [auth]);
 
   // Logout must clean up the browser even if the network or backend is unavailable.
   const logout = useCallback<AuthContextValue["logout"]>(
@@ -366,6 +355,8 @@ export const AuthProvider: React.FC<
         await auth?.signOut().catch(() => {
           // React state cleanup below is the final local fallback.
         });
+
+        bearerTokenCache.current = null;
 
         if (mounted.current) {
           setUser(null);

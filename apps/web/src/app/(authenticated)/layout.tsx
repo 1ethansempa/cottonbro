@@ -32,11 +32,44 @@ export default function AuthenticatedLayout({
   }, []);
 
   useEffect(() => {
-    // Only redirect after auth state is determined
-    if (authReady && !user) {
+    if (!authReady) return;
+
+    if (!user) {
       const currentPath = window.location.pathname;
       router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+      return;
     }
+
+    let cancelled = false;
+
+    const verifyBackendSession = async () => {
+      const clientAuth = getClientAuth();
+
+      try {
+        const response = await fetch("/api/auth/session", {
+          credentials: "include",
+        });
+
+        if (response.ok || cancelled) return;
+      } catch {
+        if (cancelled) return;
+      }
+
+      await clientAuth?.signOut().catch(() => {
+        // The backend session is gone; clear Firebase-only state as best effort.
+      });
+
+      if (!cancelled) {
+        const currentPath = window.location.pathname;
+        router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+      }
+    };
+
+    verifyBackendSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [authReady, user, router]);
 
   // Show loading until Firebase auth state is ready
