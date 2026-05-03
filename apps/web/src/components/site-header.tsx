@@ -71,7 +71,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
     const nav = [
         { href: "/#drops", label: "Drops" },
         { href: "/#how-it-works", label: "How it works" },
-        { href: "/#calculator", label: "Pricing" },
+        { href: "/#calculator", label: "Calculator" },
     ];
     const loginHref = "/auth/login";
     const startHref = "/auth/login?redirect=%2Fdesign";
