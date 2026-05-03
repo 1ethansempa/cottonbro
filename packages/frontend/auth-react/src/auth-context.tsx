@@ -15,6 +15,10 @@ import {
   signInWithCustomToken,
   signInWithPopup,
 } from "firebase/auth";
+import {
+  createNetworkRequest,
+  type NetworkRequest,
+} from "./network-request";
 import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
 const DEFAULT_AUTH_BASE_URL = "/api/auth";
@@ -47,6 +51,8 @@ export interface AuthContextValue {
   // The token is cached in memory for up to 20 minutes.
   // This does not renew the backend session cookie.
   refreshIdToken: () => Promise<string | null>;
+  // Network wrapper. Requests are protected by default unless protected=false.
+  networkRequest: NetworkRequest;
   // Starts the email OTP flow. Captcha must be verified by the backend.
   requestOtp: (email: string, captchaToken: string) => Promise<void>;
   // Completes OTP login by exchanging the backend custom token with Firebase.
@@ -341,6 +347,11 @@ export const AuthProvider: React.FC<
     }
   }, [auth]);
 
+  const networkRequest = useMemo(
+    () => createNetworkRequest(refreshIdToken),
+    [refreshIdToken],
+  );
+
   // Logout must clean up the browser even if the network or backend is unavailable.
   const logout = useCallback<AuthContextValue["logout"]>(
     async () =>
@@ -378,6 +389,7 @@ export const AuthProvider: React.FC<
       claims,
       role,
       refreshIdToken,
+      networkRequest,
       requestOtp,
       confirmOtp,
       googleSignIn,
@@ -391,6 +403,7 @@ export const AuthProvider: React.FC<
       claims,
       role,
       refreshIdToken,
+      networkRequest,
       requestOtp,
       confirmOtp,
       googleSignIn,

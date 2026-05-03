@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Logo } from "@cottonbro/ui";
+import { useAuth } from "@cottonbro/auth-react";
 
 type RestoreState = "loading" | "success" | "error";
 
 function RestoreAccountView() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token") ?? "";
+  const { networkRequest } = useAuth();
   const [state, setState] = useState<RestoreState>("loading");
 
   useEffect(() => {
@@ -23,9 +25,9 @@ function RestoreAccountView() {
       }
 
       try {
-        const res = await fetch("/api/auth/restore", {
+        const res = await networkRequest("/api/auth/restore", {
+          protected: false,
           method: "POST",
-          credentials: "include",
           headers: {
             "content-type": "application/json",
           },
@@ -51,7 +53,7 @@ function RestoreAccountView() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [networkRequest, token]);
 
   const content = {
     loading: {
