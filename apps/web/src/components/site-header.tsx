@@ -114,7 +114,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
                                     key={item.label}
                                     disabled={disableLinks}
                                     href={item.href}
-                                    className={`relative rounded-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${theme === "light" ? "hover:bg-black text-black/60 hover:text-white" : "hover:bg-white text-white/55 hover:text-black"} `}
+                                    className={`relative rounded-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 hover:underline underline-offset-4 ${theme === "light" ? "text-black/60 hover:text-black" : "text-white/55 hover:text-white"} `}
                                 >
                                     {item.label}
                                 </MaybeLink>
