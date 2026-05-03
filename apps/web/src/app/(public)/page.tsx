@@ -76,41 +76,41 @@ export default function LandingPage() {
   const steps = [
     {
       n: "01",
-      title: "DESIGN",
+      title: "Design",
       desc: "Create your products right here on our platform.",
     },
     {
       n: "02",
-      title: "CREATE",
+      title: "Create",
       desc: "Add your logos, text, patches and styling details.",
     },
     {
       n: "03",
-      title: "SELL",
+      title: "Sell",
       desc: "Share your link or store. We print & fulfill every order.",
     },
     {
       n: "04",
-      title: "EARN",
+      title: "Earn",
       desc: "You earn profit on every sale, straight to your bank account.",
     },
   ];
 
   const faqs = [
     {
-      q: "HOW MUCH DOES IT COST TO START?",
+      q: "How much does it cost to start?",
       a: "It costs nothing to design. We handle the manufacturing and take a flat fee per item + base blank cost.",
     },
     {
-      q: "HOW DO I GET PAID?",
+      q: "How do I get paid?",
       a: "Profits are deposited weekly directly into your registered mobile money or bank account.",
     },
     {
-      q: "WHAT IF I DON'T HAVE A DESIGN?",
+      q: "What if I don't have a design?",
       a: "Our built-in studio has typography tools, royalty-free assets, and AI generation to help you get started.",
     },
     {
-      q: "CAN I CANCEL MY STORE?",
+      q: "Can I cancel my store?",
       a: "Yes, you can close your store and withdraw your remaining balance at any time.",
     },
   ];
@@ -147,7 +147,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
-          <span className="text-[9px] font-bold text-black uppercase tracking-wider">
+          <span className="text-[9px] font-semibold text-black/70 tracking-wide">
             {item.badge || "APPAREL"}
           </span>
         </div>
@@ -169,30 +169,31 @@ export default function LandingPage() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="max-w-xl"
           >
-            <h1 className="text-[56px] md:text-[64px] lg:text-[96px] font-bold tracking-[-0.04em] text-black leading-[0.88] uppercase mb-8">
-              TURN YOUR
+            <h1 className="text-[54px] md:text-[64px] lg:text-[92px] font-bold text-black leading-[0.92] mb-8">
+              Turn your
               <br />
-              IDEAS INTO
-              <br />A BRAND.
+              ideas into
+              <br />a brand.
             </h1>
 
-            <p className="text-sm text-black/60 font-medium tracking-[0.15em] uppercase mb-10">
-              Create your brand. Design. Launch. Get Paid.
+            <p className="text-base text-black/60 font-medium leading-relaxed mb-10 max-w-md">
+              Create pieces people want to wear. Design your first drop, launch
+              your store, and earn from every sale.
             </p>
 
             <div className="flex flex-row items-center gap-3">
               <button
                 type="button"
-                className="group inline-flex items-center justify-center bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer"
+                className="group inline-flex items-center justify-center bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
-                START DESIGNING
+                Start designing
                 <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
               </button>
               <button
                 type="button"
-                className="group inline-flex items-center justify-center border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-[10px] font-bold tracking-[0.2em] uppercase transition-all cursor-pointer"
+                className="group inline-flex items-center justify-center border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
-                SHOP NOW
+                Shop now
                 <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
               </button>
             </div>
@@ -220,14 +221,14 @@ export default function LandingPage() {
       <div id="drops" className="scroll-mt-24" />
       <section className="py-20 px-6 md:px-[6%]">
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
-          <h2 className="text-xl font-black tracking-[-0.02em] uppercase text-black">
-            LATEST DROPS
+          <h2 className="text-2xl font-bold text-black">
+            Latest drops
           </h2>
           <span
             aria-disabled="true"
-            className="text-[10px] font-bold text-black/60 tracking-[0.15em] uppercase cursor-default"
+            className="text-xs font-semibold text-black/55 tracking-wide cursor-default"
           >
-            VIEW ALL →
+            View all →
           </span>
         </div>
 
@@ -241,9 +242,9 @@ export default function LandingPage() {
       {/* ═══════ STILL INTERESTED ═══════ */}
       <section className="pt-8 pb-20 px-6 md:px-[6%] border-t border-gray-100">
         <div className="mb-8 border-b border-gray-200 pb-4">
-          <h2 className="text-xl tracking-[-0.02em] uppercase text-black">
-            <span className="font-black">STILL</span>{" "}
-            <span className="font-light">INTERESTED?</span>
+          <h2 className="text-2xl text-black">
+            <span className="font-bold">Still</span>{" "}
+            <span className="font-normal">interested?</span>
           </h2>
         </div>
 
@@ -265,12 +266,12 @@ export default function LandingPage() {
       >
         {/* Left: Steps */}
         <div className="flex-1 px-8 md:px-[8%] py-20 lg:py-28 flex flex-col justify-center">
-          <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] leading-[0.88] uppercase mb-4 text-white">
-            FROM VISION
+          <h2 className="text-5xl md:text-6xl font-bold leading-[0.94] mb-4 text-white">
+            From vision
             <br />
-            TO REALITY.
+            to reality.
           </h2>
-          <p className="text-[10px] font-bold tracking-[0.3em] text-white/60 uppercase mb-16">
+          <p className="text-sm font-medium text-white/60 mb-16">
             We handle the logistics. You earn the profit.
           </p>
 
@@ -287,7 +288,7 @@ export default function LandingPage() {
                   {step.n}
                 </span>
                 <div className="pt-2 space-y-1">
-                  <h4 className="text-sm font-black tracking-[0.2em] uppercase">
+                  <h4 className="text-sm font-bold tracking-wide">
                     {step.title}
                   </h4>
                   <p className="text-xs text-white/50 font-medium leading-relaxed">
@@ -311,8 +312,8 @@ export default function LandingPage() {
           </div>
 
           <div className="absolute bottom-8 left-6 right-6 z-10 bg-white p-6 shadow-2xl border-l-4 border-[#e60000] sm:left-auto sm:right-10 sm:max-w-[300px]">
-            <p className="text-[10px] font-bold text-black/60 tracking-[0.2em] uppercase mb-2">
-              SUCCESS STORY
+            <p className="text-xs font-semibold text-black/55 tracking-wide mb-2">
+              Success story
             </p>
             <p className="text-black font-semibold text-sm leading-relaxed italic">
               &quot;The quality is unmatched. My customers love the heavyweight
@@ -336,10 +337,10 @@ export default function LandingPage() {
           </div>
 
           <div className="relative z-10 flex-1 p-10 md:p-16 flex flex-col justify-end">
-            <h2 className="text-4xl md:text-5xl font-black tracking-[-0.03em] uppercase mb-3 text-white leading-[0.95]">
-              4K TEXTILE
+            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-white leading-[0.98]">
+              4K textile
               <br />
-              SIMULATION
+              simulation
             </h2>
             <p className="text-xs font-medium text-white/60 leading-relaxed max-w-[260px]">
               Experience textures of physical swatch before buying a sample.
@@ -347,8 +348,8 @@ export default function LandingPage() {
           </div>
 
           <div className="relative z-10 bg-[#e60000] px-10 md:px-16 py-5">
-            <p className="text-[10px] font-black tracking-[0.2em] uppercase text-white">
-              THE FUTURE OF FASHION IS OWNED BY YOU
+            <p className="text-xs font-semibold tracking-wide text-white">
+              The future of fashion is owned by you
             </p>
           </div>
         </div>
@@ -365,38 +366,38 @@ export default function LandingPage() {
           </div>
 
           <div className="relative z-10 flex-1 p-10 md:p-16 flex flex-col justify-center items-center text-center">
-            <h2 className="text-4xl md:text-5xl font-black tracking-[-0.03em] uppercase mb-3 leading-[0.95]">
-              YOUR CREATIVE
+            <h2 className="text-4xl md:text-5xl font-bold mb-3 leading-[0.98]">
+              Your creative
               <br />
-              SPACE.
+              space.
             </h2>
-            <p className="text-[10px] font-bold text-black/60 tracking-[0.2em] uppercase mb-10 max-w-[240px]">
+            <p className="text-sm font-medium text-black/60 mb-10 max-w-[260px]">
               The best ideas start here. We give you the tools.
             </p>
             <button
               type="button"
-              className="group inline-flex items-center justify-center bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-[10px] font-black tracking-[0.2em] uppercase transition-all cursor-pointer shadow-lg border border-gray-200"
+              className="group inline-flex items-center justify-center bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-xs font-semibold tracking-wide transition-all cursor-pointer shadow-lg border border-gray-200"
             >
-              START DESIGNING
+              Start designing
               <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* ═══════ 10K PRICING ═══════ */}
+      {/* ═══════ 10K CALCULATOR ═══════ */}
       <section
         id="calculator"
         className="pt-28 pb-16 px-6 flex flex-col items-center justify-center bg-white scroll-mt-24"
       >
         <div className="mb-14 text-center">
-          <h2 className="text-[80px] md:text-[110px] font-black tracking-[-0.04em] text-black leading-none mb-2">
-            <span className="text-3xl md:text-4xl font-black tracking-normal align-middle text-black/40">
+          <h2 className="text-[80px] md:text-[110px] font-bold text-black leading-none mb-2">
+            <span className="text-3xl md:text-4xl font-bold tracking-normal align-middle text-black/40">
               UGX
             </span>{" "}
             10k
           </h2>
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black/60 sm:max-w-sm max-w-md mx-auto">
+          <p className="text-sm font-medium text-black/60 sm:max-w-sm max-w-md mx-auto leading-relaxed">
             UGX 10K platform fee + base blank cost per item sold. You set the
             price & keep the profit.
           </p>
@@ -412,8 +413,8 @@ export default function LandingPage() {
       <section className="py-20 px-6 md:px-[6%] bg-white border-t border-gray-100">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-2xl font-black tracking-[-0.02em] text-black uppercase">
-              HELP & SUPPORT
+            <h2 className="text-3xl font-bold text-black">
+              Help & support
             </h2>
           </div>
 
@@ -427,7 +428,7 @@ export default function LandingPage() {
                 }
               >
                 <div className="py-6 flex justify-between items-center group-hover:bg-gray-50/50 transition-colors">
-                  <h3 className="text-xs font-bold tracking-[0.15em] text-black uppercase pr-8">
+                  <h3 className="text-sm font-semibold tracking-wide text-black pr-8">
                     {faq.q}
                   </h3>
                   <span

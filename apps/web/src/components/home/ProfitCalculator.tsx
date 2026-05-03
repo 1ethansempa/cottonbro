@@ -129,7 +129,7 @@ export function ProfitCalculator() {
             <p className="text-[10px] font-bold text-black/60 tracking-[0.2em] uppercase">
               PROFIT PER ITEM
             </p>
-            <p className="text-xl font-black text-black tracking-widest">
+            <p className="mx-auto min-w-[13rem] text-xl font-black text-black tracking-widest tabular-nums">
               UGX <span className="text-3xl">{profitPerItem.toLocaleString()}</span>
             </p>
           </div>
@@ -142,9 +142,9 @@ export function ProfitCalculator() {
             <p className="text-[10px] font-bold text-black/60 tracking-[0.3em] uppercase">
               TOTAL PROFIT
             </p>
-            <div className="text-[#e60000] font-black tracking-tighter flex flex-col md:flex-row items-center justify-center gap-x-3 gap-y-1">
+            <div className="mx-auto flex w-full max-w-full flex-col items-center justify-center gap-y-1 px-2 text-center text-[#e60000] font-black tabular-nums">
               <span className="text-xl sm:text-2xl md:text-3xl">UGX</span>
-              <span className="text-[clamp(2.5rem,10vw,5rem)] leading-none text-center break-all sm:break-normal max-w-full">
+              <span className="block w-full max-w-full break-words text-[clamp(2.25rem,7vw,4.5rem)] leading-none [overflow-wrap:anywhere]">
                 {totalProfit.toLocaleString()}
               </span>
             </div>

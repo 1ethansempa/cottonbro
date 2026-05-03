@@ -28,6 +28,8 @@ const config = {
         "border-glow": "rgba(230, 0, 0, 0.1)",
       },
       fontFamily: {
+        sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+        "dm-sans": ["var(--font-dm-sans)", "system-ui", "sans-serif"],
         urbanist: ["var(--font-urbanist)", "sans-serif"],
         mono: [
           "ui-monospace",
