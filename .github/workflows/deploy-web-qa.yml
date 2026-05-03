@@ -70,10 +70,25 @@ jobs:
 
       - name: Load web Firebase config from Secret Manager
         run: |
-          echo "NEXT_PUBLIC_FIREBASE_API_KEY=$(gcloud secrets versions access latest --secret=web-firebase-api-key)" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest --secret=web-firebase-auth-domain)" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret=web-firebase-project-id)" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_FIREBASE_APP_ID=$(gcloud secrets versions access latest --secret=web-firebase-app-id)" >> "$GITHUB_ENV"
+          load_secret() {
+            env_name="$1"
+            secret_name="$2"
+            if ! value="$(gcloud secrets versions access latest --project="$GCP_PROJECT_ID" --secret="$secret_name")"; then
+              echo "::error::Unable to access Secret Manager secret $secret_name"
+              exit 1
+            fi
+            if [ -z "$value" ]; then
+              echo "::error::Secret Manager secret $secret_name is empty"
+              exit 1
+            fi
+            echo "$env_name=$value" >> "$GITHUB_ENV"
+          }
+
+          load_secret NEXT_PUBLIC_FIREBASE_API_KEY web-firebase-api-key
+          load_secret NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN web-firebase-auth-domain
+          load_secret NEXT_PUBLIC_FIREBASE_PROJECT_ID web-firebase-project-id
+          load_secret NEXT_PUBLIC_FIREBASE_APP_ID web-firebase-app-id
+          load_secret NEXT_PUBLIC_ASSETS_BASE_URL web-assets-url
 
       - name: Configure Docker auth for Artifact Registry
         run: |
@@ -91,6 +106,7 @@ jobs:
             --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
             --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
             --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="$NEXT_PUBLIC_FIREBASE_APP_ID" \
+            --build-arg NEXT_PUBLIC_ASSETS_BASE_URL="$NEXT_PUBLIC_ASSETS_BASE_URL" \
             --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.QA_WEB_TURNSTILE_SITE_KEY }} \
             -f "$DOCKERFILE" \
             -t "$IMAGE" \
@@ -118,6 +134,7 @@ jobs:
             --set-env-vars NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_APP_ID="$NEXT_PUBLIC_FIREBASE_APP_ID" \
+            --set-env-vars NEXT_PUBLIC_ASSETS_BASE_URL="$NEXT_PUBLIC_ASSETS_BASE_URL" \
             --set-env-vars NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.QA_WEB_TURNSTILE_SITE_KEY }}
 
       - name: Show service URL

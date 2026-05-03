@@ -9,6 +9,9 @@
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "engines": {
+    "node": "24.x"
+  },
   "dependencies": {
     "@cottonbro/auth-server": "workspace:*",
     "@cottonbro/utils": "workspace:*",
