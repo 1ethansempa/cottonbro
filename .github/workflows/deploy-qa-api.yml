@@ -125,6 +125,7 @@ jobs:
             --set-env-vars "^||^NODE_ENV=production||APP_ENV=qa||CORS_ORIGINS=${{ secrets.QA_API_CORS_ORIGINS }}" \
             --set-secrets FIREBASE_PROJECT_ID=api-firebase-project-id:latest \
             --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
+            --set-secrets DATABASE_URL=api-database-url:latest \
             --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest \
             --set-secrets SMTP_USER=api-smtp-user:latest \
             --set-secrets SMTP_PASS=api-smtp-pass:latest \
@@ -132,7 +133,8 @@ jobs:
             --set-secrets SMTP_PORT=api-smtp-port:latest \
             --set-secrets SMTP_FROM=api-smtp-user:latest \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
-            --set-secrets PYTHON_SERVICE_URL=python-service-url:latest
+            --set-secrets PYTHON_SERVICE_URL=python-service-url:latest \
+            --set-secrets WEB_BASE_URL=web-base-url:latest
 
         # Prints the service’s public URL
       - name: Show service URL

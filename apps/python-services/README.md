@@ -3,13 +3,14 @@
 FastAPI-based microservices for image processing tasks that Node.js struggles with.
 
 ## Requirements
-- Python 3.12 (onnxruntime doesn't support 3.14 yet)
+- Python 3.11 locally, or the Python version selected with pyenv.
+- The Docker image currently uses Python 3.11.
 
 ## Setup
 
 ```bash
 cd apps/python-services
-python3.12 -m venv venv
+python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```

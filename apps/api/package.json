@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env.local ./node_modules/@nestjs/cli/bin/nest.js start --watch",
     "build": "nest build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -15,6 +18,7 @@
   "dependencies": {
     "@cottonbro/auth-server": "workspace:*",
     "@cottonbro/utils": "workspace:*",
+    "@neondatabase/serverless": "^1.1.0",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
@@ -23,6 +27,7 @@
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.2",
     "express": "^5.1.0",
     "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
@@ -38,6 +43,7 @@
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
     "@types/nodemailer": "^7.0.4",
+    "drizzle-kit": "^0.31.10",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",

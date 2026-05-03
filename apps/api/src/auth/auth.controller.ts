@@ -16,6 +16,7 @@ import { AuthService } from "./auth.service.js";
 import { OtpStartDto } from "./dto/otp-start.dto.js";
 import { OtpVerifyDto } from "./dto/otp-verify.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
+import { RestoreAccountDto } from "./dto/restore-account.dto.js";
 import { Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "./auth.guard.js";
 import { Public } from "./public.decorator.js";
@@ -61,6 +62,14 @@ export class AuthController {
   @HttpCode(204)
   async logout(@Res({ passthrough: true }) res: Response) {
     await this.service.logoutAndRevoke(res);
+  }
+
+  @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post("restore")
+  @HttpCode(204)
+  async restoreAccount(@Body() dto: RestoreAccountDto): Promise<void> {
+    await this.service.restoreDeletedAccount(dto.token);
   }
 
   @UseGuards(AuthGuard)

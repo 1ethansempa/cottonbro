@@ -64,7 +64,7 @@ export class MailService implements OnModuleInit {
         from: `"Cotton Bro" <${this.fromAddress}>`,
         to: safeTo,
         subject: "Your login code",
-        text: `YOUR VERIFICATION CODE: ${code}\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, ignore this email.\n\n— COTTON BRO`,
+        text: `Your Cotton Bro login code is ${code}.\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, you can ignore this email.\n\n— Cotton Bro`,
         html: renderOtpHtml(code),
       });
 
@@ -76,6 +76,99 @@ export class MailService implements OnModuleInit {
       );
     }
   }
+
+  async sendAccountReinstatementEmail(
+    to: string,
+    restoreUrl: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    const safeTo = to.replace(/[\r\n]/g, "");
+    const expiryText = expiresAt.toLocaleDateString("en", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    try {
+      await this.transporter.sendMail({
+        from: `"Cotton Bro" <${this.fromAddress}>`,
+        to: safeTo,
+        subject: "Restore your Cotton Bro account",
+        text: `We received a request to sign in to a deleted Cotton Bro account.\n\nRestore your account here: ${restoreUrl}\n\nThis restore link is available until ${expiryText}.\n\nIf you didn't request this, you can ignore this email. Your account will remain deleted.\n\n— Cotton Bro`,
+        html: renderAccountReinstatementHtml(restoreUrl, expiryText),
+      });
+
+      console.log(`[MailService] Account reinstatement email sent to ${safeTo}`);
+    } catch (err) {
+      console.error(
+        "[MailService] Failed to send account reinstatement email:",
+        err,
+      );
+      throw new InternalServerErrorException(
+        "Failed to send account reinstatement email",
+      );
+    }
+  }
+}
+
+function renderAccountReinstatementHtml(restoreUrl: string, expiryText: string) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Urbanist:wght@500;700;900&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: 'DM Sans', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border: 1px solid #e5e5e5; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 22px 28px; border-bottom: 1px solid #e5e5e5;">
+              <h1 style="margin: 0; font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; text-transform: uppercase; color: #000000;">
+                COTTON BRO
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 44px 28px 36px 28px;">
+              <p style="margin: 0 0 18px 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #737373;">
+                Account restoration
+              </p>
+              <h2 style="margin: 0; max-width: 430px; font-family: 'Urbanist', Arial, sans-serif; font-size: 44px; font-weight: 700; letter-spacing: 0; line-height: 0.98; color: #000000;">
+                Restore your Cotton Bro account.
+              </h2>
+              <p style="margin: 24px 0 0 0; font-size: 14px; font-weight: 500; line-height: 1.7; color: #525252;">
+                We received a request to sign in to an account that was previously deleted. You can restore it yourself for 30 days after deletion.
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin-top: 28px;">
+                <tr>
+                  <td style="background-color: #000000;">
+                    <a href="${restoreUrl}" style="display: inline-block; padding: 17px 24px; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 700; letter-spacing: 0.04em;">
+                      Restore my account
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 18px 0 0 0; font-size: 12px; font-weight: 500; line-height: 1.7; color: #737373;">
+                This link is available until ${expiryText}.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #111111; padding: 24px 28px;">
+              <p style="margin: 0; font-size: 12px; font-weight: 500; line-height: 1.7; color: #d4d4d4;">
+                If you did not request this, you can ignore this email. Your account will remain deleted.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 function renderOtpHtml(code: string) {
@@ -84,33 +177,33 @@ function renderOtpHtml(code: string) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Urbanist:wght@500;700;900&display=swap" rel="stylesheet">
 </head>
-<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: 'Urbanist', Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: 'DM Sans', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 40px 20px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border: 1px solid #e5e5e5; border-collapse: collapse;">
           <tr>
             <td style="padding: 22px 28px; border-bottom: 1px solid #e5e5e5;">
-              <h1 style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; text-transform: uppercase; color: #000000;">
+              <h1 style="margin: 0; font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; text-transform: uppercase; color: #000000;">
                 COTTON BRO
               </h1>
             </td>
           </tr>
           <tr>
             <td style="padding: 44px 28px 36px 28px;">
-              <p style="margin: 0 0 18px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #737373;">
-                Create your brand. Design. Launch. Get paid.
+              <p style="margin: 0 0 18px 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #737373;">
+                Create pieces people want to wear.
               </p>
-              <h2 style="margin: 0; max-width: 430px; font-size: 48px; font-weight: 900; letter-spacing: -0.04em; line-height: 0.9; text-transform: uppercase; color: #000000;">
+              <h2 style="margin: 0; max-width: 430px; font-family: 'Urbanist', Arial, sans-serif; font-size: 48px; font-weight: 700; letter-spacing: 0; line-height: 0.94; color: #000000;">
                 Enter your<br>studio code.
               </h2>
             </td>
           </tr>
           <tr>
             <td style="background-color: #111111; padding: 34px 28px 38px 28px;">
-              <p style="margin: 0 0 18px 0; font-size: 10px; font-weight: 900; letter-spacing: 0.3em; line-height: 1.5; text-transform: uppercase; color: #a3a3a3;">
+              <p style="margin: 0 0 18px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #a3a3a3;">
                 One-time password
               </p>
               <table width="100%" cellpadding="0" cellspacing="0">
@@ -135,7 +228,7 @@ function renderOtpHtml(code: string) {
           </tr>
           <tr>
             <td style="background-color: #e60000; padding: 16px 28px;">
-              <p style="margin: 0; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #ffffff;">
+              <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #ffffff;">
                 This code expires in 10 minutes
               </p>
             </td>
@@ -145,8 +238,8 @@ function renderOtpHtml(code: string) {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding: 0 0 18px 0; border-bottom: 1px solid #e5e5e5;">
-                    <p style="margin: 0; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #000000;">
-                      Design. Create. Sell. Earn.
+                    <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #000000;">
+                      Design your first drop, launch your store, and earn from every sale.
                     </p>
                   </td>
                 </tr>
@@ -161,7 +254,7 @@ function renderOtpHtml(code: string) {
             </td>
           </tr>
         </table>
-        <p style="margin: 28px 0 0 0; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; line-height: 1.5; text-transform: uppercase; color: #a3a3a3;">
+        <p style="margin: 28px 0 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #a3a3a3;">
           Cottonbro.com &bull; Built for creators
         </p>
       </td>

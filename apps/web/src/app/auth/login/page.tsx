@@ -150,7 +150,7 @@ function LoginView() {
       await googleSignIn();
       window.location.replace(redirect);
     } catch (e) {
-      setStatus("Google sign-in failed. Please try again.");
+      setStatus(null);
     }
   }
 
@@ -171,7 +171,7 @@ function LoginView() {
     try {
       await requestOtp(emailValue, captchaToken);
       setSent(true);
-      setStatus("Code sent. Check your inbox.");
+      setStatus("Check your email for the next step.");
     } catch {
       setStatus("Could not send code. Please try again.");
     } finally {
@@ -190,7 +190,7 @@ function LoginView() {
       await confirmOtp(emailValue, codeValue);
       window.location.replace(redirect);
     } catch {
-      setStatus("Invalid code. Please try again.");
+      setStatus(null);
     }
   }
 

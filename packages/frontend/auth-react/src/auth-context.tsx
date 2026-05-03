@@ -150,9 +150,16 @@ export const AuthProvider: React.FC<
 
   const finishSignIn = useCallback(
     async (firebaseUser: User) => {
-      await createBackendSession(firebaseUser, true);
+      try {
+        await createBackendSession(firebaseUser, true);
+      } catch (err) {
+        await auth?.signOut().catch(() => {
+          // Backend refused the session; clear any Firebase-only login state.
+        });
+        throw err;
+      }
     },
-    [createBackendSession],
+    [auth, createBackendSession],
   );
 
   // Keep client UI state aligned with Firebase, including custom claims changes.

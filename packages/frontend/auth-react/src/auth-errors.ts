@@ -46,6 +46,12 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   "auth/custom-token-mismatch":
     "Sign-in token mismatch. Please request a new code.",
 
+  /* ── account status ─────────────────────────────────────── */
+  account_deleted:
+    "We sent you an email with instructions to restore your account.",
+  account_unavailable:
+    "We can’t sign in this account right now. Contact support.",
+
   /* ── session / logout ────────────────────────────────────── */
   logout_failed: "Could not sign you out. Please try again.",
 };
@@ -97,6 +103,21 @@ export function sanitizeBackendError(raw: string): string {
 
   // Cap length
   const trimmed = raw.trim().slice(0, MAX_MESSAGE_LENGTH);
+
+  try {
+    const parsed = JSON.parse(trimmed) as { message?: unknown };
+    if (typeof parsed.message === "string") {
+      return parsed.message.slice(0, MAX_MESSAGE_LENGTH);
+    }
+    if (
+      Array.isArray(parsed.message) &&
+      typeof parsed.message[0] === "string"
+    ) {
+      return parsed.message[0].slice(0, MAX_MESSAGE_LENGTH);
+    }
+  } catch {
+    // Non-JSON response bodies fall through to the plain text path.
+  }
 
   return trimmed || DEFAULT_MESSAGE;
 }
