@@ -194,10 +194,10 @@ function renderOtpHtml(code: string) {
           <tr>
             <td style="padding: 44px 28px 36px 28px;">
               <p style="margin: 0 0 18px 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #737373;">
-                Create pieces people want to wear.
+                Secure account access
               </p>
               <h2 style="margin: 0; max-width: 430px; font-family: 'Urbanist', Arial, sans-serif; font-size: 48px; font-weight: 700; letter-spacing: 0; line-height: 0.94; color: #000000;">
-                Enter your<br>studio code.
+                Enter your<br>login code.
               </h2>
             </td>
           </tr>
@@ -222,7 +222,7 @@ function renderOtpHtml(code: string) {
                 </tr>
               </table>
               <p style="margin: 22px 0 0 0; font-size: 13px; font-weight: 500; color: #d4d4d4; line-height: 1.7;">
-                Enter this code to sign in and keep building your next drop.
+                Enter this code to continue to your Cotton Bro account.
               </p>
             </td>
           </tr>
@@ -239,7 +239,7 @@ function renderOtpHtml(code: string) {
                 <tr>
                   <td style="padding: 0 0 18px 0; border-bottom: 1px solid #e5e5e5;">
                     <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #000000;">
-                      Design your first drop, launch your store, and earn from every sale.
+                      This code can be used once to sign in to Cotton Bro.
                     </p>
                   </td>
                 </tr>
@@ -255,7 +255,7 @@ function renderOtpHtml(code: string) {
           </tr>
         </table>
         <p style="margin: 28px 0 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #a3a3a3;">
-          Cottonbro.com &bull; Built for creators
+          Cottonbro.com
         </p>
       </td>
     </tr>

@@ -107,7 +107,7 @@ export default function LandingPage() {
     },
     {
       q: "What if I don't have a design?",
-      a: "Our built-in studio has typography tools, royalty-free assets, and AI generation to help you get started.",
+      a: "Our built-in design tools include typography, royalty-free assets, and AI generation to help you get started.",
     },
     {
       q: "Can I cancel my store?",
@@ -305,7 +305,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 opacity-40">
             <Image
               src={`${assetsBaseUrl}/site-images/studio-lights.png`}
-              alt="Studio Space"
+              alt="Product design workspace"
               fill
               className="object-cover"
             />

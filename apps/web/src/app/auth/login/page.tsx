@@ -12,70 +12,122 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Logo } from "@cottonbro/ui";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 // declare Turnstile’s HTML widget callbacks
 declare global {
   interface Window {
     turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback": () => void;
+          "error-callback": () => void;
+          size?: "normal" | "compact" | "flexible";
+          theme?: "light" | "dark" | "auto";
+        },
+      ) => string;
+      remove: (widgetId: string) => void;
       reset: (widgetId?: string) => void;
     };
-    cottonbroTurnstileCallback?: (token: string) => void;
-    cottonbroTurnstileExpired?: () => void;
-    cottonbroTurnstileError?: () => void;
   }
 }
 
-type AgreementFieldsProps = {
-  privacyPolicyAccepted: boolean;
-  termsAccepted: boolean;
-  onPrivacyPolicyChange: (checked: boolean) => void;
-  onTermsChange: (checked: boolean) => void;
+type OtpInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+  hasError?: boolean;
 };
 
-function AgreementFields({
-  privacyPolicyAccepted,
-  termsAccepted,
-  onPrivacyPolicyChange,
-  onTermsChange,
-}: AgreementFieldsProps) {
-  const checkboxClass =
-    "mt-0.5 h-4 w-4 shrink-0 appearance-none border border-gray-300 bg-white checked:border-black checked:bg-black focus:outline-none focus:ring-1 focus:ring-black";
+function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
+  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const v = e.target.value.replace(/[^0-9]/g, "");
+    if (!v) {
+      const newCode = value.split("");
+      newCode[index] = "";
+      onChange(newCode.join(""));
+      return;
+    }
+    
+    // Support typing over an existing digit
+    if (v.length > 1) {
+      const lastChar = v[v.length - 1];
+      const newCode = value.split("");
+      newCode[index] = lastChar;
+      onChange(newCode.join(""));
+      if (index < 5) {
+        inputsRef.current[index + 1]?.focus();
+      }
+      return;
+    }
+
+    const newCode = value.split("");
+    newCode[index] = v;
+    onChange(newCode.join(""));
+    
+    if (index < 5 && v) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Backspace") {
+      if (!value[index] && index > 0) {
+        inputsRef.current[index - 1]?.focus();
+        const newCode = value.split("");
+        newCode[index - 1] = "";
+        onChange(newCode.join(""));
+      } else {
+        const newCode = value.split("");
+        newCode[index] = "";
+        onChange(newCode.join(""));
+      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < 5) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    if (pasted) {
+      onChange(pasted);
+      const nextIndex = Math.min(pasted.length, 5);
+      if (nextIndex < 6) {
+        inputsRef.current[nextIndex]?.focus();
+      } else {
+        inputsRef.current[5]?.focus();
+      }
+    }
+  };
 
   return (
-    <div className="mb-8 space-y-3 border border-gray-200 bg-gray-50 p-4">
-      <label className="flex gap-3 text-left text-[11px] font-medium leading-5 text-gray-600">
+    <div className="flex gap-2 sm:gap-3 justify-between w-full">
+      {Array.from({ length: 6 }).map((_, i) => (
         <input
-          type="checkbox"
-          checked={privacyPolicyAccepted}
-          onChange={(event) => onPrivacyPolicyChange(event.target.checked)}
-          className={checkboxClass}
+          key={i}
+          ref={(el) => {
+            inputsRef.current[i] = el;
+          }}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={2}
+          value={value[i] || ""}
+          onChange={(e) => handleChange(e, i)}
+          onKeyDown={(e) => handleKeyDown(e, i)}
+          onPaste={handlePaste}
+          className={`w-full aspect-square bg-gray-50 border border-gray-200 text-center text-xl sm:text-3xl font-black focus:border-black focus:ring-1 focus:ring-black rounded-none transition-all font-mono placeholder:text-gray-300 outline-none ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-500" : "text-black"}`}
+          placeholder="0"
           required
         />
-        <span>
-          I agree to the{" "}
-          <Link href="#" className="font-bold text-black hover:opacity-70">
-            Privacy Policy
-          </Link>
-          .
-        </span>
-      </label>
-      <label className="flex gap-3 text-left text-[11px] font-medium leading-5 text-gray-600">
-        <input
-          type="checkbox"
-          checked={termsAccepted}
-          onChange={(event) => onTermsChange(event.target.checked)}
-          className={checkboxClass}
-          required
-        />
-        <span>
-          I agree to the{" "}
-          <Link href="#" className="font-bold text-black hover:opacity-70">
-            Terms of Service
-          </Link>
-          .
-        </span>
-      </label>
+      ))}
     </div>
   );
 }
@@ -92,11 +144,10 @@ function LoginView() {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const turnstileConfigured = Boolean(
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
-  );
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+  const turnstileConfigured = Boolean(turnstileSiteKey);
 
   const searchParams = useSearchParams();
   // Send users back to the protected page that redirected them here.
@@ -106,10 +157,9 @@ function LoginView() {
     "w-full rounded-none border border-black bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
   const secondaryButtonClass =
     "w-full rounded-none border border-gray-300 bg-white px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:border-black hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer [&_svg]:shrink-0";
-  const hasAcceptedAgreements = privacyPolicyAccepted && termsAccepted;
   const agreements = {
-    privacyPolicyAccepted,
-    termsAccepted,
+    privacyPolicyAccepted: true,
+    termsAccepted: true,
   };
 
   function validateEmail(value: string) {
@@ -138,7 +188,7 @@ function LoginView() {
     }
 
     if (!isValidOtp(normalizedCode)) {
-      setCodeError("Code must be 4 or 6 numbers.");
+      setCodeError("Code must be 6 digits.");
       return null;
     }
 
@@ -150,33 +200,75 @@ function LoginView() {
     setCaptchaToken(null);
     if (typeof window !== "undefined" && window.turnstile?.reset) {
       try {
-        window.turnstile.reset();
+        window.turnstile.reset(turnstileWidgetIdRef.current ?? undefined);
       } catch {
         // no-op; Turnstile script handles logging
       }
     }
   }, []);
 
-  // Turnstile calls these global functions when the captcha succeeds,
-  // expires, or fails.
+  // Render Turnstile explicitly so client navigation cannot miss the widget.
   useEffect(() => {
     if (typeof window === "undefined" || !turnstileConfigured) return;
-    window.cottonbroTurnstileCallback = (token: string) => {
-      setCaptchaToken(token);
-      setStatus(null);
+    if (sent || isAuthenticated) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    let timer: number | undefined;
+
+    const clearWidget = () => {
+      const widgetId = turnstileWidgetIdRef.current;
+      if (widgetId && window.turnstile?.remove) {
+        try {
+          window.turnstile.remove(widgetId);
+        } catch {
+          // The script owns widget cleanup errors.
+        }
+      }
+      turnstileWidgetIdRef.current = null;
     };
-    const invalidateToken = () => {
-      setCaptchaToken(null);
-      setStatus(null);
+
+    const renderWidget = () => {
+      if (cancelled) return;
+      const container = turnstileContainerRef.current;
+      const turnstile = window.turnstile;
+
+      if (!container || !turnstile?.render) {
+        attempts += 1;
+        if (attempts < 50) {
+          timer = window.setTimeout(renderWidget, 100);
+        }
+        return;
+      }
+
+      clearWidget();
+      turnstileWidgetIdRef.current = turnstile.render(container, {
+        sitekey: turnstileSiteKey,
+        callback: (token) => {
+          setCaptchaToken(token);
+          setStatus(null);
+        },
+        "expired-callback": () => {
+          setCaptchaToken(null);
+          setStatus(null);
+        },
+        "error-callback": () => {
+          setCaptchaToken(null);
+          setStatus(null);
+        },
+        size: "flexible",
+        theme: "dark",
+      });
     };
-    window.cottonbroTurnstileExpired = invalidateToken;
-    window.cottonbroTurnstileError = invalidateToken;
+
+    renderWidget();
+
     return () => {
-      delete window.cottonbroTurnstileCallback;
-      delete window.cottonbroTurnstileExpired;
-      delete window.cottonbroTurnstileError;
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+      clearWidget();
     };
-  }, [turnstileConfigured]);
+  }, [isAuthenticated, sent, turnstileConfigured, turnstileSiteKey]);
 
   // Continue with the existing signed-in session.
   const handleContinue = useCallback(() => {
@@ -207,10 +299,6 @@ function LoginView() {
   // Start Google auth, then return to the requested page.
   async function onGoogle() {
     setStatus(null);
-    if (!hasAcceptedAgreements) {
-      setStatus("Please accept the Privacy Policy and Terms of Service.");
-      return;
-    }
     try {
       await googleSignIn(agreements);
       window.location.replace(redirect);
@@ -224,10 +312,6 @@ function LoginView() {
     e.preventDefault();
     const emailValue = validateEmail(email);
     if (!emailValue) return;
-    if (!hasAcceptedAgreements) {
-      setStatus("Please accept the Privacy Policy and Terms of Service.");
-      return;
-    }
     if (!turnstileConfigured) {
       setStatus("Captcha is not configured. Contact support.");
       return;
@@ -286,26 +370,17 @@ function LoginView() {
 
         <div className="bg-white px-5 py-8 sm:p-10 relative overflow-hidden border border-gray-200">
           <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
-            Sign In / Sign Up
+            Continue to Cotton Bro
           </h1>
           <p className="text-gray-500 text-[10px] text-center mb-10 font-bold tracking-[0.2em] uppercase">
-            Access your studio dashboard
+            Sign in or create an account to continue.
           </p>
-
-          {!isAuthenticated && !sent && (
-            <AgreementFields
-              privacyPolicyAccepted={privacyPolicyAccepted}
-              termsAccepted={termsAccepted}
-              onPrivacyPolicyChange={setPrivacyPolicyAccepted}
-              onTermsChange={setTermsAccepted}
-            />
-          )}
 
           {/* Google Button */}
           <div className="mb-8">
             <GoogleButton
               onClick={onGoogle}
-              disabled={busy || !hasAcceptedAgreements}
+              disabled={busy}
               className={secondaryButtonClass}
             />
           </div>
@@ -374,51 +449,40 @@ function LoginView() {
               </div>
 
               {turnstileConfigured && (
-                <div className="mb-4 flex h-[65px] w-full justify-center overflow-hidden">
+                <div className="mb-4 flex min-h-[65px] w-full justify-center overflow-hidden">
                   <div
-                    className="cf-turnstile w-[300px] shrink-0 origin-top scale-[0.86] min-[360px]:scale-95 sm:scale-100"
-                    data-sitekey={
-                      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""
-                    }
-                    data-callback="cottonbroTurnstileCallback"
-                    data-expired-callback="cottonbroTurnstileExpired"
-                    data-error-callback="cottonbroTurnstileError"
-                    data-size="flexible"
-                    data-theme="dark"
+                    ref={turnstileContainerRef}
+                    className="w-full"
                   />
                 </div>
               )}
 
               <button
                 type="submit"
-                disabled={!email.trim() || busy || !hasAcceptedAgreements}
+                disabled={!email.trim() || busy}
                 className={primaryButtonClass}
               >
-                {busy ? "Sending..." : "Send Login Code"}
+                {busy ? "Sending..." : "Send Code"}
               </button>
             </form>
           ) : (
             <form onSubmit={onConfirm} className="space-y-6" noValidate>
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider ml-1">
-                  Enter Code
+                  Enter 6-Digit Code
                 </label>
-                <Input
-                  value={code}
-                  onBlur={(e) => {
-                    if (e.target.value) validateOtp(e.target.value);
-                  }}
-                  onChange={(e) => {
-                    setCode(normalizeOtp(e.target.value));
-                    if (codeError) setCodeError(null);
-                  }}
-                  placeholder="0000 or 000000"
-                  maxLength={6}
-                  aria-invalid={Boolean(codeError)}
-                  aria-describedby={codeError ? "code-error" : undefined}
-                  className="w-full bg-gray-50 border-gray-200 text-primary text-center text-3xl font-black placeholder:text-gray-300 focus:border-black focus:ring-1 focus:ring-black rounded-none py-6 px-4 tracking-[0.5em] transition-all font-mono h-20"
-                  required
-                />
+                <div onBlur={() => {
+                  if (code.length === 6) validateOtp(code);
+                }}>
+                  <OtpInputFields 
+                    value={code} 
+                    onChange={(val) => {
+                      setCode(val);
+                      if (codeError) setCodeError(null);
+                    }} 
+                    hasError={Boolean(codeError)}
+                  />
+                </div>
                 {codeError && (
                   <p
                     id="code-error"
@@ -434,7 +498,7 @@ function LoginView() {
                 disabled={!isValidOtp(code) || busy}
                 className={primaryButtonClass}
               >
-                {busy ? "Verifying..." : "Open Studio"}
+                {busy ? "Verifying..." : "Continue"}
               </button>
 
               <button
@@ -470,6 +534,26 @@ function LoginView() {
             >
               <p className="text-xs font-bold text-red-400">{error}</p>
             </motion.div>
+          )}
+
+          {!isAuthenticated && (
+            <p className="mt-6 text-center text-[10px] font-bold uppercase tracking-[0.12em] leading-5 text-gray-400">
+              By continuing, you agree to the{" "}
+              <Link
+                href="#"
+                className="text-black border-b border-black hover:opacity-70 transition-opacity"
+              >
+                Privacy Policy
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="#"
+                className="text-black border-b border-black hover:opacity-70 transition-opacity"
+              >
+                Terms of Service
+              </Link>
+              .
+            </p>
           )}
         </div>
 

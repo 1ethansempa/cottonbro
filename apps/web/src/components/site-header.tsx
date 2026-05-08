@@ -11,6 +11,7 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 interface SiteHeaderProps {
     theme?: "light" | "dark";
     disableLinks?: boolean;
+    position?: "fixed" | "static";
 }
 
 function MaybeLink({
@@ -41,19 +42,20 @@ function MaybeLink({
     );
 }
 
-export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderProps) {
+export function SiteHeader({ theme = "dark", disableLinks = false, position = "fixed" }: SiteHeaderProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const { user, logout, busy } = useAuth();
 
     useEffect(() => {
+        if (position === "static") return;
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
         };
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [position]);
 
     const isAuthenticated = Boolean(user);
 
@@ -89,15 +91,16 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
             ? "border-b border-black/10 bg-white/85 shadow-[0_1px_0_rgba(0,0,0,0.04)]"
             : "border-b border-white/10 bg-black/75 shadow-[0_1px_0_rgba(255,255,255,0.05)]";
 
-    const headerClass = isScrolled ? floatingHeaderClass : staticHeaderClass;
+    const activeScrolled = position === "static" ? false : isScrolled;
+    const headerClass = activeScrolled ? floatingHeaderClass : staticHeaderClass;
 
     return (
         <>
-            <div className={`fixed inset-x-0 top-0 z-50 flex justify-center pointer-events-none transition-all duration-300 ${isScrolled ? "px-4 pt-4 sm:px-6 sm:pt-6" : "px-0 pt-0"}`}>
+            <div className={`${position === "fixed" ? "fixed" : "relative"} inset-x-0 top-0 z-50 flex justify-center pointer-events-none transition-all duration-300 ${activeScrolled ? "px-4 pt-4 sm:px-6 sm:pt-6" : "px-0 pt-0"}`}>
                 <header
-                    className={`pointer-events-auto w-full transition-all duration-300 backdrop-blur-xl rounded-none ${isScrolled ? "max-w-6xl" : "max-w-full"} ${headerClass}`}
+                    className={`pointer-events-auto w-full transition-all duration-300 backdrop-blur-xl rounded-none ${activeScrolled ? "max-w-6xl" : "max-w-full"} ${headerClass}`}
                 >
-                    <div className={`grid grid-cols-2 md:grid-cols-[1fr_auto_1fr] items-center transition-all duration-300 ${isScrolled ? "h-14 px-4 sm:h-16 sm:px-6" : "h-[72px] px-5 sm:px-6"}`}>
+                    <div className={`grid grid-cols-2 md:grid-cols-[1fr_auto_1fr] items-center transition-all duration-300 ${activeScrolled ? "h-14 px-4 sm:h-16 sm:px-6" : "h-[72px] px-5 sm:px-6"}`}>
                         <div className="flex items-center">
                             <MaybeLink disabled={disableLinks} href="/" className="group flex items-center transition-transform duration-300 hover:scale-105">
                                 <div className="flex items-baseline text-xl font-black uppercase tracking-tighter leading-none">
