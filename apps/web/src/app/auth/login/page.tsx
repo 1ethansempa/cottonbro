@@ -26,6 +26,60 @@ declare global {
   }
 }
 
+type AgreementFieldsProps = {
+  privacyPolicyAccepted: boolean;
+  termsAccepted: boolean;
+  onPrivacyPolicyChange: (checked: boolean) => void;
+  onTermsChange: (checked: boolean) => void;
+};
+
+function AgreementFields({
+  privacyPolicyAccepted,
+  termsAccepted,
+  onPrivacyPolicyChange,
+  onTermsChange,
+}: AgreementFieldsProps) {
+  const checkboxClass =
+    "mt-0.5 h-4 w-4 shrink-0 appearance-none border border-gray-300 bg-white checked:border-black checked:bg-black focus:outline-none focus:ring-1 focus:ring-black";
+
+  return (
+    <div className="mb-8 space-y-3 border border-gray-200 bg-gray-50 p-4">
+      <label className="flex gap-3 text-left text-[11px] font-medium leading-5 text-gray-600">
+        <input
+          type="checkbox"
+          checked={privacyPolicyAccepted}
+          onChange={(event) => onPrivacyPolicyChange(event.target.checked)}
+          className={checkboxClass}
+          required
+        />
+        <span>
+          I agree to the{" "}
+          <Link href="#" className="font-bold text-black hover:opacity-70">
+            Privacy Policy
+          </Link>
+          .
+        </span>
+      </label>
+      <label className="flex gap-3 text-left text-[11px] font-medium leading-5 text-gray-600">
+        <input
+          type="checkbox"
+          checked={termsAccepted}
+          onChange={(event) => onTermsChange(event.target.checked)}
+          className={checkboxClass}
+          required
+        />
+        <span>
+          I agree to the{" "}
+          <Link href="#" className="font-bold text-black hover:opacity-70">
+            Terms of Service
+          </Link>
+          .
+        </span>
+      </label>
+    </div>
+  );
+}
+
 function LoginView() {
   const { requestOtp, confirmOtp, googleSignIn, busy, error, user, logout } =
     useAuth();
@@ -38,6 +92,8 @@ function LoginView() {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const turnstileConfigured = Boolean(
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
   );
@@ -50,6 +106,11 @@ function LoginView() {
     "w-full rounded-none border border-black bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
   const secondaryButtonClass =
     "w-full rounded-none border border-gray-300 bg-white px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:border-black hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer [&_svg]:shrink-0";
+  const hasAcceptedAgreements = privacyPolicyAccepted && termsAccepted;
+  const agreements = {
+    privacyPolicyAccepted,
+    termsAccepted,
+  };
 
   function validateEmail(value: string) {
     const normalizedEmail = normalizeEmail(value);
@@ -146,8 +207,12 @@ function LoginView() {
   // Start Google auth, then return to the requested page.
   async function onGoogle() {
     setStatus(null);
+    if (!hasAcceptedAgreements) {
+      setStatus("Please accept the Privacy Policy and Terms of Service.");
+      return;
+    }
     try {
-      await googleSignIn();
+      await googleSignIn(agreements);
       window.location.replace(redirect);
     } catch (e) {
       setStatus(null);
@@ -159,6 +224,10 @@ function LoginView() {
     e.preventDefault();
     const emailValue = validateEmail(email);
     if (!emailValue) return;
+    if (!hasAcceptedAgreements) {
+      setStatus("Please accept the Privacy Policy and Terms of Service.");
+      return;
+    }
     if (!turnstileConfigured) {
       setStatus("Captcha is not configured. Contact support.");
       return;
@@ -187,7 +256,7 @@ function LoginView() {
     if (!emailValue || !codeValue) return;
     setStatus(null);
     try {
-      await confirmOtp(emailValue, codeValue);
+      await confirmOtp(emailValue, codeValue, agreements);
       window.location.replace(redirect);
     } catch {
       setStatus(null);
@@ -223,11 +292,20 @@ function LoginView() {
             Access your studio dashboard
           </p>
 
+          {!isAuthenticated && !sent && (
+            <AgreementFields
+              privacyPolicyAccepted={privacyPolicyAccepted}
+              termsAccepted={termsAccepted}
+              onPrivacyPolicyChange={setPrivacyPolicyAccepted}
+              onTermsChange={setTermsAccepted}
+            />
+          )}
+
           {/* Google Button */}
           <div className="mb-8">
             <GoogleButton
               onClick={onGoogle}
-              disabled={busy}
+              disabled={busy || !hasAcceptedAgreements}
               className={secondaryButtonClass}
             />
           </div>
@@ -313,7 +391,7 @@ function LoginView() {
 
               <button
                 type="submit"
-                disabled={!email.trim() || busy}
+                disabled={!email.trim() || busy || !hasAcceptedAgreements}
                 className={primaryButtonClass}
               >
                 {busy ? "Sending..." : "Send Login Code"}

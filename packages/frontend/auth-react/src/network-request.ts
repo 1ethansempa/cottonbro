@@ -1,4 +1,4 @@
-export type GetBearerToken = () => Promise<string | null>;
+export type GetBearerToken = (forceRefresh?: boolean) => Promise<string | null>;
 
 export type NetworkRequestToken = "session" | "bearer";
 
@@ -38,31 +38,36 @@ export function createNetworkRequest(
       throw new Error("missing_bearer_token");
     }
 
-    const firstResponse = await fetchWithBearer(input, requestInit, firstToken);
+    const createBearerRequest = createBearerRequestFactory(input, requestInit);
+
+    const firstResponse = await fetch(createBearerRequest(firstToken));
     if (firstResponse.status !== 401) {
       return firstResponse;
     }
 
-    const retryToken = await getBearerToken();
+    const retryToken = await getBearerToken(true);
     if (!retryToken || retryToken === firstToken) {
       return firstResponse;
     }
 
-    return fetchWithBearer(input, requestInit, retryToken);
+    return fetch(createBearerRequest(retryToken));
   };
 }
 
-function fetchWithBearer(
+function createBearerRequestFactory(
   input: RequestInfo | URL,
   init: RequestInit | undefined,
-  token: string,
-) {
-  const headers = new Headers(init?.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-
-  return fetch(input, {
+): (token: string) => Request {
+  const baseRequest = new Request(input, {
     ...init,
     credentials: init?.credentials ?? "include",
-    headers,
   });
+
+  return (token) => {
+    const request = baseRequest.clone();
+    const headers = new Headers(request.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+
+    return new Request(request, { headers });
+  };
 }

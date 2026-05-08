@@ -20,6 +20,7 @@ import { normalizeEmail } from "@cottonbro/utils";
 import { MailService } from "../common/mail/mail.service.js";
 import type {
   AppUser,
+  LegalAgreementInput,
   UsersRepositoryPort,
   UserStatus,
 } from "./users.repository.js";
@@ -168,16 +169,25 @@ export class AuthService {
    * @throws {UnauthorizedException} If the ID token is invalid or revoked.
    * @throws {ForbiddenException}    If the account is blocked or deleted.
    */
-  async createSessionCookie(idToken: string, res: Response) {
+  async createSessionCookie(
+    idToken: string,
+    res: Response,
+    agreements?: LegalAgreementInput,
+  ) {
     if (!idToken) throw new BadRequestException("Missing ID token");
 
     let cookie: string;
     try {
-      const decoded = await adminAuth.verifyIdToken(idToken, true);
-      const firebaseUser = await adminAuth.getUser(decoded.uid);
       // Google sign-in lands here directly, so this check covers non-OTP
       // logins before we mint a long-lived HttpOnly session.
-      await this.syncActiveUserForSession(firebaseUser);
+      const decoded = await adminAuth.verifyIdToken(idToken, true);
+      const firebaseUser = await adminAuth.getUser(decoded.uid);
+
+      const user = await this.syncActiveUserForSession(
+        firebaseUser,
+        agreements,
+      );
+      this.assertHasRequiredAgreements(user);
 
       cookie = await adminAuth.createSessionCookie(idToken, {
         expiresIn: SESSION_TTL_MS,
@@ -240,13 +250,16 @@ export class AuthService {
    * @returns The upserted local `AppUser`, or `undefined` if the repository is unavailable.
    * @throws {ForbiddenException} If the account is blocked or deleted.
    */
-  private async syncActiveUserForSession(firebaseUser: {
-    uid: string;
-    email?: string;
-    emailVerified: boolean;
-    phoneNumber?: string;
-    displayName?: string;
-  }): Promise<AppUser | undefined> {
+  private async syncActiveUserForSession(
+    firebaseUser: {
+      uid: string;
+      email?: string;
+      emailVerified: boolean;
+      phoneNumber?: string;
+      displayName?: string;
+    },
+    agreements?: LegalAgreementInput,
+  ): Promise<AppUser | undefined> {
     const existing = await this.usersRepository?.findByFirebaseUidOrEmail(
       firebaseUser.uid,
       firebaseUser.email,
@@ -254,7 +267,18 @@ export class AuthService {
 
     await this.assertCanCreateSession(existing);
 
-    return this.usersRepository?.upsertFromFirebaseUser(firebaseUser);
+    return this.usersRepository?.upsertFromFirebaseUser(
+      firebaseUser,
+      agreements,
+    );
+  }
+
+  private assertHasRequiredAgreements(user?: AppUser | null): void {
+    if (!user) return;
+
+    if (!user.privacyPolicyAcceptedAt || !user.termsAcceptedAt) {
+      throw new ForbiddenException("agreements_required");
+    }
   }
 
   /**
@@ -267,9 +291,7 @@ export class AuthService {
    * @param user  - The existing local user record, if any.
    * @throws {ForbiddenException} If the user account cannot create a session.
    */
-  private async assertCanCreateSession(
-    user?: AppUser | null,
-  ): Promise<void> {
+  private async assertCanCreateSession(user?: AppUser | null): Promise<void> {
     if (!user) return;
 
     if (user.status === "active") return;
@@ -291,9 +313,7 @@ export class AuthService {
    *
    * @param user          - The soft-deleted `AppUser` record.
    */
-  private async sendAccountReinstatementEmail(
-    user: AppUser,
-  ): Promise<void> {
+  private async sendAccountReinstatementEmail(user: AppUser): Promise<void> {
     if (!this.usersRepository) return;
 
     const restoreWindowStartedAt = user.deletedAt ?? new Date();

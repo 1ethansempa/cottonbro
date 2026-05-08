@@ -53,7 +53,10 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response
   ) {
-    await this.service.createSessionCookie(dto.idToken, res);
+    await this.service.createSessionCookie(dto.idToken, res, {
+      privacyPolicyAccepted: dto.privacyPolicyAccepted,
+      termsAccepted: dto.termsAccepted,
+    });
     // 204 No Content
   }
 

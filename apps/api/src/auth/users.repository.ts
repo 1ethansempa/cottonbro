@@ -14,6 +14,8 @@ export type AppUser = {
   phoneNumber: string | null;
   name: string | null;
   status: UserStatus;
+  privacyPolicyAcceptedAt: Date | null;
+  termsAcceptedAt: Date | null;
   deletedAt: Date | null;
   lastLoginAt: Date | null;
   createdAt: Date;
@@ -23,7 +25,10 @@ export type AppUser = {
 export interface UsersRepositoryPort {
   findByEmail(email: string): Promise<AppUser | null>;
   findByFirebaseUidOrEmail(uid: string, email?: string): Promise<AppUser | null>;
-  upsertFromFirebaseUser(user: FirebaseUserProfile): Promise<AppUser>;
+  upsertFromFirebaseUser(
+    user: FirebaseUserProfile,
+    agreements?: LegalAgreementInput,
+  ): Promise<AppUser>;
   createAccountReinstatementToken(args: {
     userId: string;
     tokenHash: string;
@@ -38,6 +43,11 @@ type FirebaseUserProfile = {
   emailVerified: boolean;
   phoneNumber?: string;
   displayName?: string;
+};
+
+export type LegalAgreementInput = {
+  privacyPolicyAccepted?: boolean;
+  termsAccepted?: boolean;
 };
 
 @Injectable()
@@ -70,7 +80,10 @@ export class UsersRepository implements UsersRepositoryPort {
     return user ?? null;
   }
 
-  async upsertFromFirebaseUser(user: FirebaseUserProfile): Promise<AppUser> {
+  async upsertFromFirebaseUser(
+    user: FirebaseUserProfile,
+    agreements?: LegalAgreementInput,
+  ): Promise<AppUser> {
     const now = new Date();
     const email = user.email ? normalizeEmail(user.email) : undefined;
 
@@ -85,6 +98,12 @@ export class UsersRepository implements UsersRepositoryPort {
       .limit(1);
 
     if (existing) {
+      const privacyPolicyAcceptedAt =
+        existing.privacyPolicyAcceptedAt ??
+        (agreements?.privacyPolicyAccepted ? now : null);
+      const termsAcceptedAt =
+        existing.termsAcceptedAt ?? (agreements?.termsAccepted ? now : null);
+
       const [updated] = await db
         .update(users)
         .set({
@@ -93,6 +112,8 @@ export class UsersRepository implements UsersRepositoryPort {
           emailVerified: user.emailVerified,
           phoneNumber: user.phoneNumber ?? existing.phoneNumber,
           name: user.displayName ?? existing.name,
+          privacyPolicyAcceptedAt,
+          termsAcceptedAt,
           lastLoginAt: now,
           updatedAt: now,
         })
@@ -114,6 +135,8 @@ export class UsersRepository implements UsersRepositoryPort {
         emailVerified: user.emailVerified,
         phoneNumber: user.phoneNumber ?? null,
         name: user.displayName ?? null,
+        privacyPolicyAcceptedAt: agreements?.privacyPolicyAccepted ? now : null,
+        termsAcceptedAt: agreements?.termsAccepted ? now : null,
         lastLoginAt: now,
       })
       .returning();

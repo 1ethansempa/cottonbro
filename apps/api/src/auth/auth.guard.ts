@@ -21,6 +21,9 @@ type AuthClaims = {
   email?: unknown;
   iat?: unknown;
 };
+// At a high level, it accepts two kinds of auth:
+// 1. Firebase Bearer token in Authorization header
+// 2. Firebase session cookie named __session
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -68,7 +71,7 @@ export class AuthGuard implements CanActivate {
     try {
       decodedClaims = await adminAuth.verifySessionCookie(
         sessionCookie,
-        true // check if revoked
+        true, // check if revoked
       );
     } catch (error) {
       throw new UnauthorizedException("Invalid session");
@@ -88,7 +91,13 @@ export class AuthGuard implements CanActivate {
       email,
     );
 
-    if (!user || user.status !== "active" || user.deletedAt) {
+    if (
+      !user ||
+      user.status !== "active" ||
+      user.deletedAt ||
+      !user.privacyPolicyAcceptedAt ||
+      !user.termsAcceptedAt
+    ) {
       throw new ForbiddenException("account_unavailable");
     }
   }

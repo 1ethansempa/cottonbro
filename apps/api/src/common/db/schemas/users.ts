@@ -31,6 +31,10 @@ export const users = pgTable(
     phoneNumber: text("phone_number"),
     name: text("name"),
     status: userStatus("status").notNull().default("active"),
+    privacyPolicyAcceptedAt: timestamp("privacy_policy_accepted_at", {
+      withTimezone: true,
+    }),
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
     // Soft-delete marker. A NULL deleted_at means the user is not deleted.
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
