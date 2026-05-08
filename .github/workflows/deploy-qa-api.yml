@@ -66,6 +66,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
         # GitHub mints an OIDC token, Google trusts it via WIF, and impersonates the GCP service account.
         # no need to store json key in github
       - name: Authenticate to Google Cloud
@@ -105,6 +117,13 @@ jobs:
       - name: Push API image
         run: |
           docker push "$IMAGE"
+
+      - name: Run database migrations (QA)
+        run: |
+          DATABASE_URL="$(gcloud secrets versions access latest \
+            --project "$GCP_PROJECT_ID" \
+            --secret api-database-url)"
+          DATABASE_URL="$DATABASE_URL" pnpm --filter @cottonbro/api db:migrate
 
       # RUNTIME_SA is the service account that your Cloud Run service runs as at runtime
       # Creates or updates a Cloud Run service named cottonbro-api

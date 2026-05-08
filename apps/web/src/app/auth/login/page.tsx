@@ -55,7 +55,7 @@ function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
     
     // Support typing over an existing digit
     if (v.length > 1) {
-      const lastChar = v[v.length - 1];
+      const lastChar = v[v.length - 1] ?? "";
       const newCode = value.split("");
       newCode[index] = lastChar;
       onChange(newCode.join(""));

@@ -24,7 +24,7 @@ import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 const DEFAULT_AUTH_BASE_URL = "/api/auth";
 const BEARER_TOKEN_CACHE_TTL_MS = 20 * 60 * 1000;
 
-export type AuthRole = "User" | "Admin" | string | undefined;
+export type AuthRole = "admin" | "user" | "partner" | undefined;
 
 export type LegalAgreementInput = {
   privacyPolicyAccepted?: boolean;
@@ -79,6 +79,7 @@ export const AuthProvider: React.FC<
 > = ({ auth, onSession, onLogout, children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<IdTokenResult["claims"] | null>(null);
+  const [sessionRole, setSessionRole] = useState<AuthRole>(undefined);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +95,20 @@ export const AuthProvider: React.FC<
   // Loading should flip once, after Firebase's first auth-state callback.
   const hasResolvedInitialAuth = useRef(false);
 
-  const role = (claims?.role as AuthRole) ?? undefined;
+  const readRole = useCallback((value: unknown): AuthRole => {
+    if (typeof value !== "string") return undefined;
+    const roleValue = value.toLowerCase();
+    if (
+      roleValue === "admin" ||
+      roleValue === "user" ||
+      roleValue === "partner"
+    ) {
+      return roleValue;
+    }
+    return undefined;
+  }, []);
+
+  const role = sessionRole ?? readRole(claims?.role);
 
   const authRoutes = useMemo(() => {
     return {
@@ -102,8 +116,27 @@ export const AuthProvider: React.FC<
       verifyOtp: `${DEFAULT_AUTH_BASE_URL}/otp/verify`,
       login: `${DEFAULT_AUTH_BASE_URL}/login`,
       logout: `${DEFAULT_AUTH_BASE_URL}/logout`,
+      session: `${DEFAULT_AUTH_BASE_URL}/session`,
     };
   }, []);
+
+  const refreshBackendSessionRole = useCallback(async () => {
+    const res = await fetch(authRoutes.session, {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      setSessionRole(undefined);
+      return undefined;
+    }
+
+    const data = (await res.json()) as {
+      claims?: { role?: unknown };
+    };
+    const nextRole = readRole(data.claims?.role);
+    setSessionRole(nextRole);
+    return nextRole;
+  }, [authRoutes.session, readRole]);
 
   // Auth endpoints set/read HttpOnly cookies, so every request includes credentials.
   const postJson = useCallback(
@@ -172,6 +205,7 @@ export const AuthProvider: React.FC<
         privacyPolicyAccepted: agreements?.privacyPolicyAccepted,
         termsAccepted: agreements?.termsAccepted,
       });
+      await refreshBackendSessionRole();
 
       if (shouldEmitSession) {
         onSession?.({ idToken, user: firebaseUser });
@@ -179,7 +213,7 @@ export const AuthProvider: React.FC<
 
       return idToken;
     },
-    [authRoutes.login, onSession, postJson],
+    [authRoutes.login, onSession, postJson, refreshBackendSessionRole],
   );
 
   const finishSignIn = useCallback(
@@ -208,6 +242,7 @@ export const AuthProvider: React.FC<
       bearerTokenCache.current = null;
       setUser(null);
       setClaims(null);
+      setSessionRole(undefined);
       hasResolvedInitialAuth.current = true;
       setLoading(false);
 
@@ -237,6 +272,7 @@ export const AuthProvider: React.FC<
       if (!firebaseUser) {
         bearerTokenCache.current = null;
         setClaims(null);
+        setSessionRole(undefined);
         return;
       }
 
@@ -260,6 +296,21 @@ export const AuthProvider: React.FC<
       unsubscribeToken();
     };
   }, [auth]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    refreshBackendSessionRole().catch(() => {
+      if (!cancelled && mounted.current) {
+        setSessionRole(undefined);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshBackendSessionRole, user]);
 
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
     async (email, captchaToken) =>
@@ -384,6 +435,7 @@ export const AuthProvider: React.FC<
         if (mounted.current) {
           setUser(null);
           setClaims(null);
+          setSessionRole(undefined);
           setError(null);
         }
 

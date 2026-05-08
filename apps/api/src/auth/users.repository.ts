@@ -5,6 +5,7 @@ import { db } from "../common/db/sql.js";
 import { accountReinstatementTokens, users } from "../common/db/schema.js";
 
 export type UserStatus = "active" | "suspended" | "banned" | "deleted";
+export type UserRole = "admin" | "user" | "partner";
 
 export type AppUser = {
   id: string;
@@ -14,6 +15,7 @@ export type AppUser = {
   phoneNumber: string | null;
   name: string | null;
   status: UserStatus;
+  role: UserRole;
   privacyPolicyAcceptedAt: Date | null;
   termsAcceptedAt: Date | null;
   deletedAt: Date | null;

@@ -20,6 +20,7 @@ type AuthClaims = {
   uid: string;
   email?: unknown;
   iat?: unknown;
+  role?: unknown;
 };
 // At a high level, it accepts two kinds of auth:
 // 1. Firebase Bearer token in Authorization header
@@ -57,8 +58,8 @@ export class AuthGuard implements CanActivate {
       }
 
       this.assertFreshBearerToken(decodedClaims);
-      await this.assertAccountCanAccess(decodedClaims);
-      request.user = decodedClaims;
+      const user = await this.assertAccountCanAccess(decodedClaims);
+      request.user = { ...decodedClaims, role: user?.role };
       return true;
     }
 
@@ -77,13 +78,13 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Invalid session");
     }
 
-    await this.assertAccountCanAccess(decodedClaims);
-    request.user = decodedClaims;
+    const user = await this.assertAccountCanAccess(decodedClaims);
+    request.user = { ...decodedClaims, role: user?.role };
     return true;
   }
 
   private async assertAccountCanAccess(claims: AuthClaims) {
-    if (!this.usersRepository) return;
+    if (!this.usersRepository) return undefined;
 
     const email = typeof claims.email === "string" ? claims.email : undefined;
     const user = await this.usersRepository.findByFirebaseUidOrEmail(
@@ -100,6 +101,8 @@ export class AuthGuard implements CanActivate {
     ) {
       throw new ForbiddenException("account_unavailable");
     }
+
+    return user;
   }
 
   private assertFreshBearerToken(claims: AuthClaims) {

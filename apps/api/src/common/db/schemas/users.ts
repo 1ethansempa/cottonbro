@@ -17,6 +17,8 @@ export const userStatus = pgEnum("user_status", [
   "deleted",
 ]);
 
+export const userRole = pgEnum("user_role", ["admin", "user", "partner"]);
+
 //unique attributes have a fast lookup
 
 export const users = pgTable(
@@ -31,6 +33,7 @@ export const users = pgTable(
     phoneNumber: text("phone_number"),
     name: text("name"),
     status: userStatus("status").notNull().default("active"),
+    role: userRole("role").notNull().default("user"),
     privacyPolicyAcceptedAt: timestamp("privacy_policy_accepted_at", {
       withTimezone: true,
     }),
@@ -47,6 +50,7 @@ export const users = pgTable(
   },
   (table) => [
     index("users_status_idx").on(table.status),
+    index("users_role_idx").on(table.role),
     index("users_deleted_at_idx").on(table.deletedAt),
   ],
 );
