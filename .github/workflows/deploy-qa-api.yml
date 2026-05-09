@@ -66,6 +66,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
         # GitHub mints an OIDC token, Google trusts it via WIF, and impersonates the GCP service account.
         # no need to store json key in github
       - name: Authenticate to Google Cloud
@@ -106,6 +118,13 @@ jobs:
         run: |
           docker push "$IMAGE"
 
+      - name: Run database migrations (QA)
+        run: |
+          DATABASE_URL="$(gcloud secrets versions access latest \
+            --project "$GCP_PROJECT_ID" \
+            --secret api-database-url)"
+          DATABASE_URL="$DATABASE_URL" pnpm --filter @cottonbro/api db:migrate
+
       # RUNTIME_SA is the service account that your Cloud Run service runs as at runtime
       # Creates or updates a Cloud Run service named cottonbro-api
       # targets project called cottonbro-dev in region
@@ -125,6 +144,7 @@ jobs:
             --set-env-vars "^||^NODE_ENV=production||APP_ENV=qa||CORS_ORIGINS=${{ secrets.QA_API_CORS_ORIGINS }}" \
             --set-secrets FIREBASE_PROJECT_ID=api-firebase-project-id:latest \
             --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
+            --set-secrets DATABASE_URL=api-database-url:latest \
             --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest \
             --set-secrets SMTP_USER=api-smtp-user:latest \
             --set-secrets SMTP_PASS=api-smtp-pass:latest \
@@ -132,7 +152,8 @@ jobs:
             --set-secrets SMTP_PORT=api-smtp-port:latest \
             --set-secrets SMTP_FROM=api-smtp-user:latest \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
-            --set-secrets PYTHON_SERVICE_URL=python-service-url:latest
+            --set-secrets PYTHON_SERVICE_URL=python-service-url:latest \
+            --set-secrets WEB_BASE_URL=web-base-url:latest
 
         # Prints the service’s public URL
       - name: Show service URL

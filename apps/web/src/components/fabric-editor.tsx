@@ -194,7 +194,7 @@ export default function FabricEditor() {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const jsonInputRef = useRef<HTMLInputElement | null>(null);
-  const { refreshIdToken } = useAuth();
+  const { networkRequest } = useAuth();
 
   const fabricCanvasRef = useRef<any>(null);
   const artboardRef = useRef<any>(null);
@@ -1198,20 +1198,17 @@ export default function FabricEditor() {
       ctx?.drawImage(imgElement, 0, 0);
       const base64 = tempCanvas.toDataURL("image/png");
 
-      // Call NestJS API directly using env var
-      const idToken = await refreshIdToken();
-      if (!idToken) {
-        throw new Error("missing_id_token");
-      }
-
-      const response = await fetch(`${apiBaseUrl}/images/remove-background`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
+      const response = await networkRequest(
+        `${apiBaseUrl}/images/remove-background`,
+        {
+          token: "bearer",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ image_base64: base64 }),
         },
-        body: JSON.stringify({ image_base64: base64 }),
-      });
+      );
 
       if (!response.ok) throw new Error("API request failed");
 

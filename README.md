@@ -11,9 +11,10 @@ Cottonbro is a merch creation platform. The current monorepo contains a Next.js 
 | API | NestJS 11, Express 5 |
 | Python service | FastAPI, rembg/ONNX image processing |
 | Auth | Firebase client SDK, Firebase Admin SDK, HttpOnly session cookies |
+| Database | Neon Postgres, Drizzle ORM, Drizzle Kit migrations |
 | Tooling | pnpm 10 workspaces, Turborepo 2, TypeScript 5.9 |
 | Tests | Jest for API, Vitest for UI package, Playwright for web E2E |
-| Runtime | Node.js 24.x, Python 3.12 for `apps/python-services` |
+| Runtime | Node.js 24.x, Python 3.11 for the `apps/python-services` container |
 
 ## Repository Layout
 
@@ -91,6 +92,14 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 
 `API_BASE_URL` is server-side and should include the API version prefix. `NEXT_PUBLIC_ASSETS_BASE_URL` is required by `next.config.ts` so Next.js can allow remote images and CSP image sources.
 
+Important API database variable:
+
+```env
+DATABASE_URL=postgresql://...
+```
+
+`DATABASE_URL` is the Neon Postgres connection string used by the API and Drizzle. Keep it server-side only; do not expose it to the web app.
+
 ## Setup
 
 ```bash
@@ -105,10 +114,12 @@ Python service setup:
 
 ```bash
 cd apps/python-services
-python3.12 -m venv venv
+python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+If you use pyenv locally, select the Python version first, then run `python -m venv venv`. The Docker image for `apps/python-services` currently uses Python 3.11.
 
 ## Development
 
@@ -156,7 +167,12 @@ Useful package commands:
 | Web E2E | `pnpm --filter @cottonbro/web test:e2e` |
 | API dev | `pnpm --filter @cottonbro/api dev` |
 | API tests | `pnpm --filter @cottonbro/api test` |
+| API generate DB migrations | `pnpm --filter @cottonbro/api db:generate` |
+| API run DB migrations | `pnpm --filter @cottonbro/api db:migrate` |
+| API open Drizzle Studio | `pnpm --filter @cottonbro/api db:studio` |
 | UI package tests | `pnpm --filter @cottonbro/ui test` |
+
+Drizzle configuration lives in `apps/api/drizzle.config.ts`. Table definitions live in `apps/api/src/common/db/schema.ts`, generated migrations are written to `apps/api/drizzle/`, and the API exports Neon/Drizzle clients from `apps/api/src/common/db/sql.ts`.
 
 ## Docker
 

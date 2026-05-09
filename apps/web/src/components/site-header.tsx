@@ -11,6 +11,7 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 interface SiteHeaderProps {
     theme?: "light" | "dark";
     disableLinks?: boolean;
+    position?: "fixed" | "static";
 }
 
 function MaybeLink({
@@ -41,19 +42,20 @@ function MaybeLink({
     );
 }
 
-export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderProps) {
+export function SiteHeader({ theme = "dark", disableLinks = false, position = "fixed" }: SiteHeaderProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const { user, logout, busy } = useAuth();
 
     useEffect(() => {
+        if (position === "static") return;
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
         };
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [position]);
 
     const isAuthenticated = Boolean(user);
 
@@ -79,25 +81,13 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
         theme === "light"
             ? "text-black/60 hover:text-black"
             : "text-white/55 hover:text-white";
-    const floatingHeaderClass =
-        theme === "light"
-            ? "border border-black bg-white/90 shadow-[4px_4px_0_rgba(0,0,0,1)]"
-            : "border border-white bg-black/90 shadow-[4px_4px_0_rgba(255,255,255,1)]";
-            
-    const staticHeaderClass =
-        theme === "light"
-            ? "border-b border-black/10 bg-white/85 shadow-[0_1px_0_rgba(0,0,0,0.04)]"
-            : "border-b border-white/10 bg-black/75 shadow-[0_1px_0_rgba(255,255,255,0.05)]";
-
-    const headerClass = isScrolled ? floatingHeaderClass : staticHeaderClass;
-
     return (
         <>
-            <div className={`fixed inset-x-0 top-0 z-50 flex justify-center pointer-events-none transition-all duration-300 ${isScrolled ? "px-4 pt-4 sm:px-6 sm:pt-6" : "px-0 pt-0"}`}>
+            <div className={`${position === "fixed" ? "fixed" : "relative"} inset-x-0 top-0 z-50 flex justify-center pointer-events-none`}>
                 <header
-                    className={`pointer-events-auto w-full transition-all duration-300 backdrop-blur-xl rounded-none ${isScrolled ? "max-w-6xl" : "max-w-full"} ${headerClass}`}
+                    className={`pointer-events-auto w-full backdrop-blur-xl ${theme === "light" ? "bg-white/90" : "bg-black/90"}`}
                 >
-                    <div className={`grid grid-cols-2 md:grid-cols-[1fr_auto_1fr] items-center transition-all duration-300 ${isScrolled ? "h-14 px-4 sm:h-16 sm:px-6" : "h-[72px] px-5 sm:px-6"}`}>
+                    <div className="grid grid-cols-2 md:grid-cols-[1fr_auto_1fr] items-center h-[72px] px-5 sm:px-6">
                         <div className="flex items-center">
                             <MaybeLink disabled={disableLinks} href="/" className="group flex items-center transition-transform duration-300 hover:scale-105">
                                 <div className="flex items-baseline text-xl font-black uppercase tracking-tighter leading-none">
@@ -114,7 +104,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
                                     key={item.label}
                                     disabled={disableLinks}
                                     href={item.href}
-                                    className={`relative rounded-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 hover:underline underline-offset-4 ${theme === "light" ? "text-black/60 hover:text-black" : "text-white/55 hover:text-white"} `}
+                                    className={`relative rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 hover:underline underline-offset-4 ${theme === "light" ? "text-black/60 hover:text-black" : "text-white/55 hover:text-white"} `}
                                 >
                                     {item.label}
                                 </MaybeLink>
@@ -127,14 +117,14 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
                                     <MaybeLink
                                         disabled={disableLinks}
                                         href={loginHref}
-                                        className={`rounded-none px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:opacity-80 ${navTextClass}`}
+                                        className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:opacity-80 ${navTextClass}`}
                                     >
                                         Login
                                     </MaybeLink>
                                     <MaybeLink
                                         disabled={disableLinks}
                                         href={startHref}
-                                        className={`inline-flex items-center gap-2 rounded-none px-6 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:opacity-80 ${theme === "light"
+                                        className={`inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:opacity-80 ${theme === "light"
                                                 ? "bg-black text-white"
                                                 : "bg-white text-black"
                                                 }`}
@@ -148,7 +138,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
                                     type="button"
                                     onClick={handleLogout}
                                     disabled={loggingOut || busy}
-                                    className={`cursor-pointer rounded-none border px-6 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-60 hover:opacity-80 ${theme === "light"
+                                    className={`cursor-pointer rounded-full border px-6 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-60 hover:opacity-80 ${theme === "light"
                                             ? "border-black/20 bg-white text-black hover:border-black"
                                             : "border-white/20 bg-black text-white hover:border-white"
                                         }`}
@@ -162,7 +152,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false }: SiteHeaderP
                         <button
                             type="button"
                             aria-label="Open menu"
-                            className={`justify-self-end rounded-none p-2 transition-colors hover:bg-black/5 md:hidden ${theme === "light" ? "text-black hover:text-black/60" : "text-white hover:text-white/70"}`}
+                            className={`justify-self-end rounded-full p-2 transition-colors hover:bg-black/5 md:hidden ${theme === "light" ? "text-black hover:text-black/60" : "text-white hover:text-white/70"}`}
                             onClick={() => setMobileMenuOpen(true)}
                         >
                             <Menu className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />

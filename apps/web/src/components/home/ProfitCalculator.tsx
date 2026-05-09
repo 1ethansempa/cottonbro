@@ -25,7 +25,7 @@ export function ProfitCalculator() {
   const totalProfit = profitPerItem * salesQuantity;
 
   return (
-    <div className="mx-auto w-full max-w-5xl border border-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[8px_8px_0_rgba(0,0,0,1)] bg-white flex flex-col md:flex-row">
+    <div className="mx-auto w-full max-w-5xl border border-gray-200 rounded-3xl shadow-xl shadow-black/5 bg-white flex flex-col md:flex-row overflow-hidden">
       {/* Left Col - Inputs */}
       <div className="flex-1 p-6 sm:p-8 md:p-16 border-b md:border-b-0 md:border-r border-black space-y-10 sm:space-y-12">
         <div className="mb-12">
@@ -46,7 +46,7 @@ export function ProfitCalculator() {
             <select
               value={productType}
               onChange={(e) => setProductType(e.target.value)}
-              className="w-full border border-black px-5 py-4 bg-white font-bold text-sm tracking-wide text-black cursor-pointer appearance-none focus:outline-none rounded-none"
+              className="w-full border border-gray-300 rounded-xl px-5 py-4 bg-white font-bold text-sm tracking-wide text-black cursor-pointer appearance-none focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' viewBox='0 0 24 24' stroke-width='2'%3E%3Cpath stroke-linecap='square' stroke-linejoin='miter' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center', backgroundSize: '16px' }}
             >
               <option value="heavyweight">Heavyweight Tee</option>
@@ -62,15 +62,15 @@ export function ProfitCalculator() {
           <label className="text-[10px] font-bold text-black/60 tracking-[0.2em] uppercase block">
             YOUR SELLING PRICE
           </label>
-          <div className="flex items-center border border-black bg-white">
-            <div className="px-5 py-4 border-r border-black flex-shrink-0 bg-[#f5f5f5]">
+          <div className="flex items-center border border-gray-300 rounded-xl bg-white overflow-hidden focus-within:border-black focus-within:ring-1 focus-within:ring-black">
+            <div className="px-5 py-4 border-r border-gray-200 flex-shrink-0 bg-[#f5f5f5]">
               <span className="text-black font-black text-sm tracking-widest">UGX</span>
             </div>
             <input 
               type="number" 
               value={sellingPrice}
               onChange={(e) => setSellingPrice(Number(e.target.value))}
-              className="w-full px-5 py-4 font-black text-lg text-black focus:outline-none bg-transparent rounded-none"
+              className="w-full px-5 py-4 font-black text-lg text-black focus:outline-none bg-transparent"
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export function ProfitCalculator() {
             <label className="text-[10px] font-bold text-black/60 tracking-[0.2em] uppercase">
               ESTIMATED SALES
             </label>
-            <span className="font-black text-lg sm:text-xl text-black border border-black px-3 sm:px-4 py-1 bg-[#f5f5f5]">
+            <span className="font-black text-lg sm:text-xl text-black border border-gray-200 rounded-xl px-4 py-2 bg-[#f5f5f5]">
               {salesQuantity}
             </span>
           </div>
@@ -92,26 +92,29 @@ export function ProfitCalculator() {
               max="1000" 
               value={salesQuantity}
               onChange={(e) => setSalesQuantity(Number(e.target.value))}
-              className="w-full h-1 bg-black rounded-none appearance-none cursor-pointer outline-none"
+              className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer outline-none"
             />
             {/* Brutalist thumb */}
             <style dangerouslySetInnerHTML={{__html: `
               input[type=range]::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 appearance: none;
-                width: 16px;
+                width: 24px;
                 height: 24px;
                 background: #e60000;
-                border: 2px solid black;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                border-radius: 50%;
                 cursor: pointer;
               }
               input[type=range]::-moz-range-thumb {
-                width: 16px;
+                width: 24px;
                 height: 24px;
                 background: #e60000;
-                border: 2px solid black;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                border-radius: 50%;
                 cursor: pointer;
-                border-radius: 0;
               }
             `}} />
           </div>
@@ -152,7 +155,7 @@ export function ProfitCalculator() {
         </div>
         
         {/* Button attached to bottom of Right Col */}
-        <button className="group flex w-full items-center justify-center bg-black hover:opacity-80 transition-all text-white py-6 font-bold text-[10px] tracking-[0.2em] uppercase cursor-pointer border-t border-black">
+        <button className="group flex w-full items-center justify-center bg-black hover:opacity-80 transition-all text-white py-6 font-bold text-[10px] tracking-[0.2em] uppercase cursor-pointer">
           START YOUR BRAND
           <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
         </button>

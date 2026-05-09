@@ -16,6 +16,8 @@ import { AuthService } from "./auth.service.js";
 import { OtpStartDto } from "./dto/otp-start.dto.js";
 import { OtpVerifyDto } from "./dto/otp-verify.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
+import { RestoreAccountDto } from "./dto/restore-account.dto.js";
+import { MarketingConsentDto } from "./dto/marketing-consent.dto.js";
 import { Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "./auth.guard.js";
 import { Public } from "./public.decorator.js";
@@ -52,7 +54,10 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response
   ) {
-    await this.service.createSessionCookie(dto.idToken, res);
+    await this.service.createSessionCookie(dto.idToken, res, {
+      privacyPolicyAccepted: dto.privacyPolicyAccepted,
+      termsAccepted: dto.termsAccepted,
+    });
     // 204 No Content
   }
 
@@ -63,10 +68,46 @@ export class AuthController {
     await this.service.logoutAndRevoke(res);
   }
 
+  @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post("restore")
+  @HttpCode(204)
+  async restoreAccount(@Body() dto: RestoreAccountDto): Promise<void> {
+    await this.service.restoreDeletedAccount(dto.token);
+  }
+
   @UseGuards(AuthGuard)
   @Get("session")
   session(@Req() req: Request) {
     const user = (req as any).user;
     return { ok: true, uid: user?.uid, claims: user };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get("settings")
+  settings(@Req() req: Request) {
+    return this.service.getAccountSettings((req as any).user);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post("settings/marketing")
+  updateMarketingConsent(
+    @Req() req: Request,
+    @Body() dto: MarketingConsentDto,
+  ) {
+    return this.service.updateMarketingEmailConsent(
+      (req as any).user,
+      dto.enabled,
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Post("delete-account")
+  @HttpCode(204)
+  async deleteAccount(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    await this.service.deleteAccount((req as any).user, res);
   }
 }

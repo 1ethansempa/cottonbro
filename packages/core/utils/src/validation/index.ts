@@ -1,2 +1,2 @@
-export * from "./email";
-export * from "./otp";
+export * from "./email.js";
+export * from "./otp.js";

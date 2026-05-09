@@ -15,12 +15,21 @@ import {
   signInWithCustomToken,
   signInWithPopup,
 } from "firebase/auth";
+import {
+  createNetworkRequest,
+  type NetworkRequest,
+} from "./network-request";
 import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
 const DEFAULT_AUTH_BASE_URL = "/api/auth";
-const SESSION_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const BEARER_TOKEN_CACHE_TTL_MS = 20 * 60 * 1000;
 
-export type AuthRole = "User" | "Admin" | string | undefined;
+export type AuthRole = "admin" | "user" | "partner" | undefined;
+
+export type LegalAgreementInput = {
+  privacyPolicyAccepted?: boolean;
+  termsAccepted?: boolean;
+};
 
 export interface AuthContextConfig {
   // Firebase client auth instance; pass null until the browser-only SDK is ready.
@@ -43,14 +52,22 @@ export interface AuthContextValue {
   // Claims are UI hints only; protected APIs must verify authorization server-side.
   claims: IdTokenResult["claims"] | null;
   role: AuthRole;
-  // Refreshes the Firebase ID token and asks the backend to renew the cookie.
-  refreshIdToken: () => Promise<string | null>;
+  // Returns a Firebase ID token for endpoints that explicitly accept Bearer auth.
+  // The token is cached in memory for up to 20 minutes.
+  // This does not renew the backend session cookie.
+  refreshIdToken: (forceRefresh?: boolean) => Promise<string | null>;
+  // Network wrapper. Requests are protected by default unless protected=false.
+  networkRequest: NetworkRequest;
   // Starts the email OTP flow. Captcha must be verified by the backend.
   requestOtp: (email: string, captchaToken: string) => Promise<void>;
   // Completes OTP login by exchanging the backend custom token with Firebase.
-  confirmOtp: (email: string, code: string) => Promise<void>;
+  confirmOtp: (
+    email: string,
+    code: string,
+    agreements?: LegalAgreementInput,
+  ) => Promise<void>;
   // Starts Firebase Google sign-in and then creates the backend session.
-  googleSignIn: () => Promise<void>;
+  googleSignIn: (agreements?: LegalAgreementInput) => Promise<void>;
   // Clears the backend session cookie when possible and signs out Firebase locally.
   logout: () => Promise<void>;
 }
@@ -62,17 +79,36 @@ export const AuthProvider: React.FC<
 > = ({ auth, onSession, onLogout, children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<IdTokenResult["claims"] | null>(null);
+  const [sessionRole, setSessionRole] = useState<AuthRole>(undefined);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Firebase callbacks may resolve after unmount; guard React state writes.
   const mounted = useRef(true);
+  const bearerTokenCache = useRef<{
+    token: string;
+    uid: string;
+    cachedAt: number;
+  } | null>(null);
 
   // Loading should flip once, after Firebase's first auth-state callback.
   const hasResolvedInitialAuth = useRef(false);
 
-  const role = (claims?.role as AuthRole) ?? undefined;
+  const readRole = useCallback((value: unknown): AuthRole => {
+    if (typeof value !== "string") return undefined;
+    const roleValue = value.toLowerCase();
+    if (
+      roleValue === "admin" ||
+      roleValue === "user" ||
+      roleValue === "partner"
+    ) {
+      return roleValue;
+    }
+    return undefined;
+  }, []);
+
+  const role = sessionRole ?? readRole(claims?.role);
 
   const authRoutes = useMemo(() => {
     return {
@@ -80,8 +116,27 @@ export const AuthProvider: React.FC<
       verifyOtp: `${DEFAULT_AUTH_BASE_URL}/otp/verify`,
       login: `${DEFAULT_AUTH_BASE_URL}/login`,
       logout: `${DEFAULT_AUTH_BASE_URL}/logout`,
+      session: `${DEFAULT_AUTH_BASE_URL}/session`,
     };
   }, []);
+
+  const refreshBackendSessionRole = useCallback(async () => {
+    const res = await fetch(authRoutes.session, {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      setSessionRole(undefined);
+      return undefined;
+    }
+
+    const data = (await res.json()) as {
+      claims?: { role?: unknown };
+    };
+    const nextRole = readRole(data.claims?.role);
+    setSessionRole(nextRole);
+    return nextRole;
+  }, [authRoutes.session, readRole]);
 
   // Auth endpoints set/read HttpOnly cookies, so every request includes credentials.
   const postJson = useCallback(
@@ -123,6 +178,12 @@ export const AuthProvider: React.FC<
 
     try {
       return await action();
+    } catch (err: unknown) {
+      if (mounted.current) {
+        setError(toUserMessage(err));
+      }
+
+      throw err;
     } finally {
       if (mounted.current) {
         setBusy(false);
@@ -132,12 +193,19 @@ export const AuthProvider: React.FC<
 
   // Trust handoff: Firebase proves identity; the backend decides whether to mint a session.
   const createBackendSession = useCallback(
-    async (firebaseUser: User, shouldEmitSession = true) => {
+    async (
+      firebaseUser: User,
+      shouldEmitSession = true,
+      agreements?: LegalAgreementInput,
+    ) => {
       const idToken = await firebaseUser.getIdToken(true);
 
       await postJson(authRoutes.login, {
         idToken,
+        privacyPolicyAccepted: agreements?.privacyPolicyAccepted,
+        termsAccepted: agreements?.termsAccepted,
       });
+      await refreshBackendSessionRole();
 
       if (shouldEmitSession) {
         onSession?.({ idToken, user: firebaseUser });
@@ -145,25 +213,41 @@ export const AuthProvider: React.FC<
 
       return idToken;
     },
-    [authRoutes.login, onSession, postJson],
+    [authRoutes.login, onSession, postJson, refreshBackendSessionRole],
   );
 
   const finishSignIn = useCallback(
-    async (firebaseUser: User) => {
-      await createBackendSession(firebaseUser, true);
+    async (firebaseUser: User, agreements?: LegalAgreementInput) => {
+      try {
+        await createBackendSession(firebaseUser, true, agreements);
+      } catch (err) {
+        await auth?.signOut().catch(() => {
+          // Backend refused the session; clear any Firebase-only login state.
+        });
+        throw err;
+      }
     },
-    [createBackendSession],
+    [auth, createBackendSession],
   );
 
   // Keep client UI state aligned with Firebase, including custom claims changes.
   useEffect(() => {
+    let cancelled = false;
+
     mounted.current = true;
+    hasResolvedInitialAuth.current = false;
+    setLoading(true);
 
     if (!auth) {
+      bearerTokenCache.current = null;
+      setUser(null);
+      setClaims(null);
+      setSessionRole(undefined);
       hasResolvedInitialAuth.current = true;
       setLoading(false);
 
       return () => {
+        cancelled = true;
         mounted.current = false;
       };
     }
@@ -176,39 +260,57 @@ export const AuthProvider: React.FC<
     };
 
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
-      if (!mounted.current) return;
+      if (!mounted.current || cancelled) return;
 
       setUser(firebaseUser);
       finishInitialLoad();
     });
 
     const unsubscribeToken = onIdTokenChanged(auth, async (firebaseUser) => {
-      if (!mounted.current) return;
+      if (!mounted.current || cancelled) return;
 
       if (!firebaseUser) {
+        bearerTokenCache.current = null;
         setClaims(null);
+        setSessionRole(undefined);
         return;
       }
 
       try {
         const tokenInfo = await firebaseUser.getIdTokenResult();
 
-        if (mounted.current) {
+        if (mounted.current && !cancelled) {
           setClaims(tokenInfo.claims);
         }
       } catch {
-        if (mounted.current) {
+        if (mounted.current && !cancelled) {
           setClaims(null);
         }
       }
     });
 
     return () => {
+      cancelled = true;
       mounted.current = false;
       unsubscribeAuth();
       unsubscribeToken();
     };
   }, [auth]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    refreshBackendSessionRole().catch(() => {
+      if (!cancelled && mounted.current) {
+        setSessionRole(undefined);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshBackendSessionRole, user]);
 
   const requestOtp = useCallback<AuthContextValue["requestOtp"]>(
     async (email, captchaToken) =>
@@ -228,7 +330,7 @@ export const AuthProvider: React.FC<
   );
 
   const confirmOtp = useCallback<AuthContextValue["confirmOtp"]>(
-    async (email, code) =>
+    async (email, code, agreements) =>
       runAuthAction(async () => {
         if (!auth) throw new Error("auth_not_initialized");
 
@@ -239,66 +341,63 @@ export const AuthProvider: React.FC<
           throw new Error("invalid_otp_payload");
         }
 
-        try {
-          // The backend returns a short-lived Firebase custom token after OTP success.
-          const data = (await postJson(authRoutes.verifyOtp, {
-            email: emailValue,
-            code: codeValue,
-          })) as { customToken?: string } | undefined;
+        // The backend returns a short-lived Firebase custom token after OTP success.
+        const data = (await postJson(authRoutes.verifyOtp, {
+          email: emailValue,
+          code: codeValue,
+        })) as { customToken?: string } | undefined;
 
-          if (!data?.customToken) {
-            throw new Error("missing_custom_token");
-          }
-
-          const credential = await signInWithCustomToken(
-            auth,
-            data.customToken,
-          );
-
-          await finishSignIn(credential.user);
-        } catch (err: unknown) {
-          if (mounted.current) {
-            setError(toUserMessage(err));
-          }
-
-          throw err;
+        if (!data?.customToken) {
+          throw new Error("missing_custom_token");
         }
+
+        const credential = await signInWithCustomToken(auth, data.customToken);
+
+        await finishSignIn(credential.user, agreements);
       }),
     [auth, authRoutes.verifyOtp, finishSignIn, postJson, runAuthAction],
   );
 
   const googleSignIn = useCallback<AuthContextValue["googleSignIn"]>(
-    async () =>
+    async (agreements) =>
       runAuthAction(async () => {
         if (!auth) throw new Error("auth_not_initialized");
 
-        try {
-          const provider = new GoogleAuthProvider();
+        const provider = new GoogleAuthProvider();
 
-          const result = await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(auth, provider);
 
-          await finishSignIn(result.user);
-        } catch (err: unknown) {
-          if (mounted.current) {
-            setError(toUserMessage(err));
-          }
-
-          throw err;
-        }
+        await finishSignIn(result.user, agreements);
       }),
     [auth, finishSignIn, runAuthAction],
   );
 
-  // Best-effort renewal for sliding sessions; callers must still handle null/expiry.
+  // Some API calls need Firebase bearer auth directly. Keep the token in memory
+  // only, and refresh it once it is older than the backend's 20-minute policy.
   const refreshIdToken = useCallback<
     AuthContextValue["refreshIdToken"]
-  >(async () => {
+  >(async (forceRefresh = false) => {
     const currentUser = auth?.currentUser;
 
     if (!currentUser) return null;
 
     try {
-      const idToken = await createBackendSession(currentUser, false);
+      const cached = bearerTokenCache.current;
+      if (
+        !forceRefresh &&
+        cached?.uid === currentUser.uid &&
+        Date.now() - cached.cachedAt < BEARER_TOKEN_CACHE_TTL_MS
+      ) {
+        return cached.token;
+      }
+
+      const idToken = await currentUser.getIdToken(true);
+      bearerTokenCache.current = {
+        token: idToken,
+        uid: currentUser.uid,
+        cachedAt: Date.now(),
+      };
+
       const tokenInfo = await currentUser.getIdTokenResult();
 
       if (mounted.current) {
@@ -309,41 +408,12 @@ export const AuthProvider: React.FC<
     } catch {
       return null;
     }
-  }, [auth, createBackendSession]);
+  }, [auth]);
 
-  // Renew the backend cookie while Firebase says a user is signed in.
-  useEffect(() => {
-    if (!user) return undefined;
-
-    const refreshTimer = window.setInterval(() => {
-      refreshIdToken().catch(() => {
-        // Protected calls remain the source of truth if background refresh fails.
-      });
-    }, SESSION_REFRESH_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(refreshTimer);
-    };
-  }, [refreshIdToken, user]);
-
-  // Background tabs can miss timers; refresh promptly when the user returns.
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-
-    const refreshWhenTabIsVisible = () => {
-      if (!document.hidden) {
-        refreshIdToken().catch(() => {
-          // Non-fatal; the next protected request still has to handle auth failure.
-        });
-      }
-    };
-
-    document.addEventListener("visibilitychange", refreshWhenTabIsVisible);
-
-    return () => {
-      document.removeEventListener("visibilitychange", refreshWhenTabIsVisible);
-    };
-  }, [refreshIdToken]);
+  const networkRequest = useMemo(
+    () => createNetworkRequest(refreshIdToken),
+    [refreshIdToken],
+  );
 
   // Logout must clean up the browser even if the network or backend is unavailable.
   const logout = useCallback<AuthContextValue["logout"]>(
@@ -360,9 +430,12 @@ export const AuthProvider: React.FC<
           // React state cleanup below is the final local fallback.
         });
 
+        bearerTokenCache.current = null;
+
         if (mounted.current) {
           setUser(null);
           setClaims(null);
+          setSessionRole(undefined);
           setError(null);
         }
 
@@ -380,6 +453,7 @@ export const AuthProvider: React.FC<
       claims,
       role,
       refreshIdToken,
+      networkRequest,
       requestOtp,
       confirmOtp,
       googleSignIn,
@@ -393,6 +467,7 @@ export const AuthProvider: React.FC<
       claims,
       role,
       refreshIdToken,
+      networkRequest,
       requestOtp,
       confirmOtp,
       googleSignIn,
