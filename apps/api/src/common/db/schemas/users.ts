@@ -38,6 +38,12 @@ export const users = pgTable(
       withTimezone: true,
     }),
     termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+    marketingEmailsOptedInAt: timestamp("marketing_emails_opted_in_at", {
+      withTimezone: true,
+    }),
+    marketingEmailsOptedOutAt: timestamp("marketing_emails_opted_out_at", {
+      withTimezone: true,
+    }),
     // Soft-delete marker. A NULL deleted_at means the user is not deleted.
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),

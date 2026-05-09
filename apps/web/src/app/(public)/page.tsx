@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
@@ -109,10 +110,6 @@ export default function LandingPage() {
       q: "What if I don't have a design?",
       a: "Our built-in design tools include typography, royalty-free assets, and AI generation to help you get started.",
     },
-    {
-      q: "Can I cancel my store?",
-      a: "Yes, you can close your store and withdraw your remaining balance at any time.",
-    },
   ];
 
   // Shared product card renderer
@@ -126,14 +123,9 @@ export default function LandingPage() {
     <div
       className={`group cursor-pointer ${faded ? "opacity-80 hover:opacity-100 transition-opacity duration-300" : ""}`}
     >
-      <div className="relative aspect-[4/5] bg-[#e5e5e5] mb-2 overflow-hidden flex items-center justify-center">
+      <div className="relative aspect-[4/5] bg-[#f5f5f5] mb-3 overflow-hidden flex items-center justify-center rounded-2xl">
         <div className="relative w-full h-full mix-blend-multiply transition-transform duration-700 group-hover:scale-105">
-          <Image
-            src={item.img}
-            alt={item.name}
-            fill
-            className="object-cover"
-          />
+          <Image src={item.img} alt={item.name} fill className="object-cover" />
         </div>
       </div>
       <div className="space-y-1.5">
@@ -181,27 +173,40 @@ export default function LandingPage() {
               your store, and earn from every sale.
             </p>
 
-            <div className="flex flex-row items-center gap-3">
-              <button
-                type="button"
-                className="group inline-flex items-center justify-center bg-black text-white hover:opacity-80 px-8 py-5 rounded-none text-xs font-semibold tracking-wide transition-all cursor-pointer"
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/dashboard"
+                className="group inline-flex items-center justify-center bg-black text-white hover:opacity-80 px-8 py-4 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
                 Start designing
-                <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="group inline-flex items-center justify-center border border-gray-300 bg-white text-black hover:border-black px-8 py-5 rounded-none text-xs font-semibold tracking-wide transition-all cursor-pointer"
+                <ArrowUpRight
+                  className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
+                  aria-hidden="true"
+                />
+              </Link>
+              <Link
+                href="/dashboard"
+                className="group inline-flex items-center justify-center border border-gray-200 bg-white text-black hover:bg-gray-50 px-8 py-4 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
-                Shop now
-                <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
-              </button>
+                Go to dashboard
+                <ArrowUpRight
+                  className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
+                  aria-hidden="true"
+                />
+              </Link>
             </div>
+
+            <Link
+              href="/auth/login?redirect=/dashboard"
+              className="mt-5 inline-flex text-xs font-semibold text-black/55 underline-offset-4 transition-colors hover:text-black hover:underline"
+            >
+              Sign in to access your account
+            </Link>
           </motion.div>
         </div>
 
         {/* Right: Image */}
-        <div className="flex-1 relative min-h-[450px] md:min-h-full bg-gray-100 overflow-hidden">
+        <div className="flex-1 relative min-h-[450px] md:min-h-full bg-gray-50 overflow-hidden">
           <Image
             src={`${assetsBaseUrl}/site-images/hero-new-2.png`}
             alt="Model wearing brand tee"
@@ -221,9 +226,7 @@ export default function LandingPage() {
       <div id="drops" className="scroll-mt-24" />
       <section className="py-20 px-6 md:px-[6%]">
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
-          <h2 className="text-2xl font-bold text-black">
-            Latest drops
-          </h2>
+          <h2 className="text-2xl font-bold text-black">Latest drops</h2>
           <span
             aria-disabled="true"
             className="text-xs font-semibold text-black/55 tracking-wide cursor-default"
@@ -374,13 +377,16 @@ export default function LandingPage() {
             <p className="text-sm font-medium text-black/60 mb-10 max-w-[260px]">
               The best ideas start here. We give you the tools.
             </p>
-            <button
-              type="button"
-              className="group inline-flex items-center justify-center bg-white text-black hover:opacity-80 px-8 py-5 rounded-none text-xs font-semibold tracking-wide transition-all cursor-pointer shadow-lg border border-gray-200"
+            <Link
+              href="/dashboard"
+              className="group inline-flex items-center justify-center bg-white text-black hover:opacity-80 px-8 py-4 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer border border-gray-200"
             >
-              Start designing
-              <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
-            </button>
+              Start Designing
+              <ArrowUpRight
+                className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
+                aria-hidden="true"
+              />
+            </Link>
           </div>
         </div>
       </section>
@@ -413,9 +419,7 @@ export default function LandingPage() {
       <section className="py-20 px-6 md:px-[6%] bg-white border-t border-gray-100">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold text-black">
-              Help & support
-            </h2>
+            <h2 className="text-3xl font-bold text-black">Help & support</h2>
           </div>
 
           <div className="border-t border-gray-200">

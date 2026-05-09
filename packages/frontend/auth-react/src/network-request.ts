@@ -54,6 +54,31 @@ export function createNetworkRequest(
   };
 }
 
+export function createSessionNetworkRequest(): NetworkRequest {
+  return async (input, init) => {
+    const {
+      protected: isProtected = true,
+      token = "session",
+      ...requestInit
+    } = init ?? {};
+
+    if (!isProtected) {
+      return fetch(input, requestInit);
+    }
+
+    if (token !== "session") {
+      throw new Error("session_request_does_not_support_bearer_token");
+    }
+
+    return fetch(input, {
+      ...requestInit,
+      credentials: requestInit.credentials ?? "include",
+    });
+  };
+}
+
+export const sessionNetworkRequest = createSessionNetworkRequest();
+
 function createBearerRequestFactory(
   input: RequestInfo | URL,
   init: RequestInit | undefined,

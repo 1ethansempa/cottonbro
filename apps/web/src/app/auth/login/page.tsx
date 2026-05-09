@@ -11,7 +11,6 @@ import { Input, GoogleButton } from "@cottonbro/ui";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Logo } from "@cottonbro/ui";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 // declare Turnstile’s HTML widget callbacks
@@ -40,6 +39,8 @@ type OtpInputProps = {
   onChange: (value: string) => void;
   hasError?: boolean;
 };
+
+const DEFAULT_AUTH_REDIRECT = "/dashboard";
 
 function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
@@ -123,7 +124,7 @@ function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
           onChange={(e) => handleChange(e, i)}
           onKeyDown={(e) => handleKeyDown(e, i)}
           onPaste={handlePaste}
-          className={`w-full aspect-square bg-gray-50 border border-gray-200 text-center text-xl sm:text-3xl font-black focus:border-black focus:ring-1 focus:ring-black rounded-none transition-all font-mono placeholder:text-gray-300 outline-none ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-500" : "text-black"}`}
+          className={`w-full aspect-square bg-gray-50 border border-gray-200 text-center text-xl sm:text-3xl font-black focus:border-black focus:ring-1 focus:ring-black rounded-xl transition-all font-mono placeholder:text-gray-300 outline-none ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-500" : "text-black"}`}
           placeholder="0"
           required
         />
@@ -151,12 +152,12 @@ function LoginView() {
 
   const searchParams = useSearchParams();
   // Send users back to the protected page that redirected them here.
-  const redirect = searchParams?.get("redirect") || "/";
+  const redirect = getSafeRedirectPath(searchParams?.get("redirect"));
   const isAuthenticated = Boolean(user);
   const primaryButtonClass =
-    "w-full rounded-none border border-black bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
+    "w-full rounded-full bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
   const secondaryButtonClass =
-    "w-full rounded-none border border-gray-300 bg-white px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:border-black hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer [&_svg]:shrink-0";
+    "w-full rounded-full border border-gray-200 bg-white px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer [&_svg]:shrink-0";
   const agreements = {
     privacyPolicyAccepted: true,
     termsAccepted: true,
@@ -348,27 +349,15 @@ function LoginView() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-white px-3 py-6 sm:p-6 font-sans text-black relative overflow-hidden">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative z-10"
-      >
-        <div className="mb-12 text-center">
-          <Link
-            href="/"
-            className="inline-block hover:opacity-70 transition-opacity"
-          >
-            <Logo
-              size="xl"
-              color="black"
-              fontClassName="font-bold tracking-tight"
-            />
-          </Link>
-        </div>
-
-        <div className="bg-white px-5 py-8 sm:p-10 relative overflow-hidden border border-gray-200">
+    <div className="min-h-screen w-full flex flex-col bg-white font-sans text-black relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center px-3 py-6 sm:p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md relative z-10"
+        >
+          <div className="bg-white px-5 py-8 sm:p-10 relative overflow-hidden border border-gray-200 rounded-3xl">
           <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
             Continue to Cotton Bro
           </h1>
@@ -395,7 +384,7 @@ function LoginView() {
           </div>
 
           {isAuthenticated ? (
-            <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-sm">
+            <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-2xl">
               <p className="text-xs font-medium text-black mb-1 font-mono">
                 ID: {user?.email}
               </p>
@@ -435,7 +424,7 @@ function LoginView() {
                   placeholder="name@example.com"
                   aria-invalid={Boolean(emailError)}
                   aria-describedby={emailError ? "email-error" : undefined}
-                  className="w-full bg-gray-50 border-gray-200 text-primary placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black rounded-none py-6 px-6 transition-all font-medium text-base h-14"
+                  className="w-full bg-gray-50 border border-gray-200 text-primary placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black rounded-xl py-6 px-6 transition-all font-medium text-base h-14"
                   required
                 />
                 {emailError && (
@@ -557,18 +546,27 @@ function LoginView() {
           )}
         </div>
 
-        <div className="mt-8 text-center text-xs text-secondary">
-          <Link href="#" className="hover:text-primary transition-colors">
-            Privacy Policy
-          </Link>
-          <span className="mx-2">•</span>
-          <Link href="#" className="hover:text-primary transition-colors">
-            Terms of Service
-          </Link>
-        </div>
-      </motion.div>
+          <div className="mt-8 text-center text-xs text-secondary">
+            <Link href="#" className="hover:text-primary transition-colors">
+              Privacy Policy
+            </Link>
+            <span className="mx-2">•</span>
+            <Link href="#" className="hover:text-primary transition-colors">
+              Terms of Service
+            </Link>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
+}
+
+function getSafeRedirectPath(value: string | null | undefined) {
+  if (!value) return DEFAULT_AUTH_REDIRECT;
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return DEFAULT_AUTH_REDIRECT;
+  }
+  return value;
 }
 
 export default function LoginPage() {

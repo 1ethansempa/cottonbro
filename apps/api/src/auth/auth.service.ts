@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
   ForbiddenException,
+  NotFoundException,
   Inject,
   Optional,
 } from "@nestjs/common";
@@ -62,6 +63,11 @@ type TurnstileVerifyResponse = {
   "error-codes"?: string[];
   action?: string;
   cdata?: string;
+};
+
+type RequestUser = {
+  uid?: unknown;
+  email?: unknown;
 };
 
 @Injectable()
@@ -197,7 +203,7 @@ export class AuthService {
         throw err;
       }
       console.error("createSessionCookie error:", err);
-      throw new UnauthorizedException("Invalid ID token");
+      throw new UnauthorizedException("login_session_failed");
     }
 
     const secure = process.env.NODE_ENV === "production";
@@ -237,6 +243,57 @@ export class AuthService {
     if (!restored) {
       throw new BadRequestException("invalid_or_expired_restore_token");
     }
+  }
+
+  async getAccountSettings(claims: RequestUser) {
+    const { uid, email } = this.readRequestUser(claims);
+    const user = await this.usersRepository?.findByFirebaseUidOrEmail(
+      uid,
+      email,
+    );
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return {
+      marketingEmailsEnabled: isMarketingEmailEnabled(user),
+      marketingEmailsOptedInAt: user.marketingEmailsOptedInAt,
+      marketingEmailsOptedOutAt: user.marketingEmailsOptedOutAt,
+    };
+  }
+
+  async updateMarketingEmailConsent(claims: RequestUser, enabled: boolean) {
+    const { uid, email } = this.readRequestUser(claims);
+    const user = await this.usersRepository?.updateMarketingEmailConsent({
+      uid,
+      email,
+      enabled,
+    });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return {
+      marketingEmailsEnabled: isMarketingEmailEnabled(user),
+      marketingEmailsOptedInAt: user.marketingEmailsOptedInAt,
+      marketingEmailsOptedOutAt: user.marketingEmailsOptedOutAt,
+    };
+  }
+
+  async deleteAccount(claims: RequestUser, res: Response): Promise<void> {
+    const { uid, email } = this.readRequestUser(claims);
+    const user = await this.usersRepository?.softDeleteUser({ uid, email });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    await this.logoutAndRevoke(res);
+    await adminAuth.revokeRefreshTokens(uid).catch((err) => {
+      console.error("Failed to revoke Firebase refresh tokens:", err);
+    });
   }
 
   /**
@@ -363,6 +420,17 @@ export class AuthService {
     // await adminAuth.revokeRefreshTokens(uid);
   }
 
+  private readRequestUser(claims: RequestUser) {
+    if (typeof claims.uid !== "string" || !claims.uid) {
+      throw new UnauthorizedException("Invalid session");
+    }
+
+    return {
+      uid: claims.uid,
+      email: typeof claims.email === "string" ? claims.email : undefined,
+    };
+  }
+
   /**
    * Verifies a Cloudflare Turnstile captcha token.
    *
@@ -468,4 +536,10 @@ function buildRestoreUrl(token: string) {
   const url = new URL("/account/restore", baseUrl);
   url.searchParams.set("token", token);
   return url.toString();
+}
+
+function isMarketingEmailEnabled(user: AppUser) {
+  if (!user.marketingEmailsOptedInAt) return false;
+  if (!user.marketingEmailsOptedOutAt) return true;
+  return user.marketingEmailsOptedInAt > user.marketingEmailsOptedOutAt;
 }

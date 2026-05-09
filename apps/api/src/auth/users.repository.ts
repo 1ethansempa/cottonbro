@@ -18,6 +18,8 @@ export type AppUser = {
   role: UserRole;
   privacyPolicyAcceptedAt: Date | null;
   termsAcceptedAt: Date | null;
+  marketingEmailsOptedInAt: Date | null;
+  marketingEmailsOptedOutAt: Date | null;
   deletedAt: Date | null;
   lastLoginAt: Date | null;
   createdAt: Date;
@@ -31,6 +33,12 @@ export interface UsersRepositoryPort {
     user: FirebaseUserProfile,
     agreements?: LegalAgreementInput,
   ): Promise<AppUser>;
+  updateMarketingEmailConsent(args: {
+    uid: string;
+    email?: string;
+    enabled: boolean;
+  }): Promise<AppUser | null>;
+  softDeleteUser(args: { uid: string; email?: string }): Promise<AppUser | null>;
   createAccountReinstatementToken(args: {
     userId: string;
     tokenHash: string;
@@ -148,6 +156,51 @@ export class UsersRepository implements UsersRepositoryPort {
     }
 
     return created;
+  }
+
+  async updateMarketingEmailConsent(args: {
+    uid: string;
+    email?: string;
+    enabled: boolean;
+  }): Promise<AppUser | null> {
+    const existing = await this.findByFirebaseUidOrEmail(args.uid, args.email);
+    if (!existing) return null;
+
+    const now = new Date();
+    const [updated] = await db
+      .update(users)
+      .set({
+        marketingEmailsOptedInAt: args.enabled
+          ? now
+          : existing.marketingEmailsOptedInAt,
+        marketingEmailsOptedOutAt: args.enabled ? null : now,
+        updatedAt: now,
+      })
+      .where(eq(users.id, existing.id))
+      .returning();
+
+    return updated ?? null;
+  }
+
+  async softDeleteUser(args: {
+    uid: string;
+    email?: string;
+  }): Promise<AppUser | null> {
+    const existing = await this.findByFirebaseUidOrEmail(args.uid, args.email);
+    if (!existing) return null;
+
+    const now = new Date();
+    const [updated] = await db
+      .update(users)
+      .set({
+        status: "deleted",
+        deletedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(users.id, existing.id))
+      .returning();
+
+    return updated ?? null;
   }
 
   async createAccountReinstatementToken(args: {

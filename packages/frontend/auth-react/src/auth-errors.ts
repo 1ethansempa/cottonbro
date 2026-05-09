@@ -60,6 +60,7 @@ const AUTH_ERROR_MAP: Record<string, string> = {
     "Please accept the Privacy Policy and Terms of Service to continue.",
 
   /* ── session / logout ────────────────────────────────────── */
+  login_session_failed: "Could not finish sign-in. Please try again.",
   "Invalid ID token": "Your sign-in session expired. Please sign in again.",
   logout_failed: "Could not sign you out. Please try again.",
 };
