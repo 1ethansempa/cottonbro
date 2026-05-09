@@ -33,6 +33,7 @@ const csp = [
   `connect-src ${connectSrc.join(" ")}`,
   "font-src 'self' https://*.crisp.chat https://fonts.gstatic.com data:",
   "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://challenges.cloudflare.com",
+  "trusted-types default goog#html 'allow-duplicates'",
   "frame-ancestors 'none'",
 ].join("; ");
 
