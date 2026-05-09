@@ -45,12 +45,18 @@ export const useAccountSettingsStore = create<AccountSettingsState>((set) => ({
 
   async updateMarketingConsent(enabled) {
     const previous = useAccountSettingsStore.getState().settings;
+    const optimisticSettings: AccountSettings = previous
+      ? { ...previous, marketingEmailsEnabled: enabled }
+      : {
+          marketingEmailsEnabled: enabled,
+          marketingEmailsOptedInAt: enabled ? new Date().toISOString() : null,
+          marketingEmailsOptedOutAt: enabled ? null : new Date().toISOString(),
+        };
+
     set({
       savingMarketing: true,
       error: null,
-      settings: previous
-        ? { ...previous, marketingEmailsEnabled: enabled }
-        : previous,
+      settings: optimisticSettings,
     });
 
     try {
