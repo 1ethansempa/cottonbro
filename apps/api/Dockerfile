@@ -56,8 +56,10 @@ ENV NODE_ENV=production
 # This is done AFTER dependency installation so Docker caching works better.
 COPY apps ./apps
 
-# Build the shared auth-server package first.
-# This is likely a shared library used by the API.
+# Build shared workspace packages first.
+# These packages export from dist/, so the API compiler cannot resolve them
+# until their TypeScript output exists inside the Docker build context.
+RUN pnpm --filter @cottonbro/utils build
 RUN pnpm --filter @cottonbro/auth-server build
 
 # Build the NestJS API application.
