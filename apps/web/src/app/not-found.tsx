@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Frown } from "lucide-react";
+import { ArrowUpRight, SmileySad as Frown } from "@phosphor-icons/react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -12,7 +12,7 @@ export default function NotFound() {
       
       <main className="flex-1 flex flex-col items-center justify-center p-8 md:p-16 text-center">
         <div className="flex h-24 w-24 shrink-0 items-center justify-center border-4 border-gray-200 bg-white mb-6 rounded-3xl shadow-xl shadow-black/5">
-          <Frown className="h-12 w-12 text-black" strokeWidth={2.5} aria-hidden="true" />
+          <Frown className="h-12 w-12 text-black" weight="fill" aria-hidden="true" />
         </div>
 
         <div className="mb-4">
@@ -30,7 +30,7 @@ export default function NotFound() {
           className="group inline-flex items-center justify-center bg-black text-white hover:opacity-80 px-10 py-5 rounded-full text-xs font-bold tracking-[0.15em] uppercase transition-all cursor-pointer"
         >
           Return Home
-          <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" aria-hidden="true" />
+          <ArrowUpRight className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2" weight="regular" aria-hidden="true" />
         </Link>
       </main>
 

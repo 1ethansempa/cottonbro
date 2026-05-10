@@ -18,11 +18,18 @@ import { OtpVerifyDto } from "./dto/otp-verify.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
 import { RestoreAccountDto } from "./dto/restore-account.dto.js";
 import { MarketingConsentDto } from "./dto/marketing-consent.dto.js";
+import {
+  UpdateProfileAvatarDto,
+  UpdateProfilePhoneDto,
+  ConfirmEmailChangeDto,
+  StartEmailChangeDto,
+  UpdateProfileNameDto,
+} from "./dto/profile.dto.js";
 import { Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "./auth.guard.js";
 import { Public } from "./public.decorator.js";
 
-@Controller("auth") // with app.setGlobalPrefix('v1') this becomes /v1/auth/*
+@Controller("auth")
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class AuthController {
   constructor(private readonly service: AuthService) {}
@@ -41,7 +48,7 @@ export class AuthController {
   async verifyOtp(@Body() dto: OtpVerifyDto) {
     const customToken = await this.service.verifyOtpAndMintCustomToken(
       dto.email,
-      dto.code
+      dto.code,
     );
     return { customToken };
   }
@@ -52,7 +59,7 @@ export class AuthController {
   @HttpCode(204)
   async login(
     @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
     await this.service.createSessionCookie(dto.idToken, res, {
       privacyPolicyAccepted: dto.privacyPolicyAccepted,
@@ -87,6 +94,56 @@ export class AuthController {
   @Get("settings")
   settings(@Req() req: Request) {
     return this.service.getAccountSettings((req as any).user);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get("profile")
+  profile(@Req() req: Request) {
+    return this.service.getProfile((req as any).user);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post("profile/name")
+  updateProfileName(@Req() req: Request, @Body() dto: UpdateProfileNameDto) {
+    return this.service.updateProfileName((req as any).user, dto.name);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post("profile/phone")
+  updateProfilePhone(@Req() req: Request, @Body() dto: UpdateProfilePhoneDto) {
+    return this.service.updateProfilePhone((req as any).user, dto.phoneNumber);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post("profile/avatar")
+  updateProfileAvatar(
+    @Req() req: Request,
+    @Body() dto: UpdateProfileAvatarDto,
+  ) {
+    return this.service.updateProfileAvatar((req as any).user, dto.imageBase64);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post("profile/email/start")
+  @HttpCode(204)
+  async startProfileEmailChange(
+    @Req() req: Request,
+    @Body() dto: StartEmailChangeDto,
+  ): Promise<void> {
+    await this.service.startProfileEmailChange((req as any).user, dto.email);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post("profile/email/confirm")
+  confirmProfileEmailChange(
+    @Req() req: Request,
+    @Body() dto: ConfirmEmailChangeDto,
+  ) {
+    return this.service.confirmProfileEmailChange(
+      (req as any).user,
+      dto.email,
+      dto.code,
+    );
   }
 
   @UseGuards(AuthGuard)

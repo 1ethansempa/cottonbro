@@ -36,6 +36,20 @@
       "when": 1778317947650,
       "tag": "0004_careful_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778388126974,
+      "tag": "0005_lush_toad",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778388718331,
+      "tag": "0006_cheerful_black_tarantula",
+      "breakpoints": true
     }
   ]
 }

@@ -136,3 +136,22 @@ export async function proxyApiRequest(request: Request, path: string) {
     headers,
   });
 }
+
+export function createProxyRoute(prefix: string) {
+  return async function proxyRoute(request: Request, context: RouteContext) {
+    const { path } = await context.params;
+    const routePath = path.map(encodeURIComponent).join("/");
+
+    return proxyApiRequest(request, `${prefix}/${routePath}`);
+  };
+}
+
+export function createProxyRouteHandlers(prefix: string) {
+  const proxyRoute = createProxyRoute(prefix);
+
+  return {
+    GET: proxyRoute,
+    POST: proxyRoute,
+    PUT: proxyRoute,
+  };
+}

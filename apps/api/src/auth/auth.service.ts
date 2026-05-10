@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   UnauthorizedException,
   InternalServerErrorException,
   ForbiddenException,
@@ -19,6 +20,7 @@ import {
 } from "@cottonbro/auth-server";
 import { normalizeEmail } from "@cottonbro/utils";
 import { MailService } from "../common/mail/mail.service.js";
+import { R2StorageService } from "../common/storage/r2-storage.service.js";
 import type {
   AppUser,
   LegalAgreementInput,
@@ -26,28 +28,19 @@ import type {
   UserStatus,
 } from "./users.repository.js";
 
-// Firebase owns identity; our local users table owns account access.
-// Every token/session creation path must check local account status first.
 const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const DELETED_ACCOUNT_RESTORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5mb
 export const USERS_REPOSITORY = Symbol("USERS_REPOSITORY");
 
-// Deleted accounts are handled separately because they can self-restore by email.
 const BLOCKED_STATUSES = new Set<UserStatus>(["suspended", "banned"]);
 
-/**
- * Derive the cookie domain from WEB_BASE_URL so the session cookie is
- * scoped to the root domain (e.g. `.cottonbro.com`). Falls back to
- * `undefined` (exact-host scoping) when the env var is absent.
- */
 function parseCookieDomain(): string | undefined {
   const raw = process.env.WEB_BASE_URL?.trim();
   if (!raw) return undefined;
   try {
     const hostname = new URL(raw).hostname;
-    // If it's localhost or an IP, don't set a domain — let the browser scope to the exact host.
     if (hostname === "localhost" || /^\d+\./.test(hostname)) return undefined;
-    // Prefix with a dot so the cookie is shared across subdomains.
     return hostname.startsWith(".") ? hostname : `.${hostname}`;
   } catch {
     return undefined;
@@ -74,24 +67,12 @@ type RequestUser = {
 export class AuthService {
   constructor(
     private readonly mail: MailService,
+    private readonly storage: R2StorageService,
     @Optional()
     @Inject(USERS_REPOSITORY)
     private readonly usersRepository?: UsersRepositoryPort,
   ) {}
 
-  /**
-   * Starts an OTP authentication flow.
-   *
-   * Validates the captcha, normalizes the email, and generates a one-time
-   * password that is sent to the user via email. Silently no-ops for
-   * blocked (suspended/banned) accounts to avoid leaking account status.
-   * For soft-deleted accounts, sends a reinstatement email instead.
-   *
-   * @param email    - The user's email address.
-   * @param captchaToken - Cloudflare Turnstile captcha response token.
-   * @param remoteIp - Optional client IP forwarded for captcha verification.
-   * @throws {BadRequestException} If the email is missing or captcha fails.
-   */
   async startOtp(email: string, captchaToken: string, remoteIp?: string) {
     if (!email) throw new BadRequestException("Email is required");
     const normalizedEmail = normalizeEmail(email);
@@ -99,7 +80,7 @@ export class AuthService {
 
     const user = await this.usersRepository?.findByEmail(normalizedEmail);
     if (user?.status === "deleted") {
-      // Deleted users get the recovery path instead of a sign-in OTP.
+      // Deleted users are sent re-instatement email instead of a sign-in OTP.
       await this.sendAccountReinstatementEmail(user);
       return;
     }
@@ -114,21 +95,6 @@ export class AuthService {
     await this.mail.sendOtpEmail(normalizedEmail, code);
   }
 
-  /**
-   * Verifies the OTP code and mints a Firebase Custom Token.
-   *
-   * On success the user record is synced (upserted) into the local
-   * database and a short-lived Firebase custom token is returned so the
-   * client can exchange it for a full ID token via `signInWithCustomToken`.
-   *
-   * @param email - The user's email address.
-   * @param code  - The one-time password to verify.
-   * @returns A Firebase custom token string.
-   * @throws {BadRequestException}          If email or code is empty.
-   * @throws {UnauthorizedException}        If the OTP is invalid, expired, or attempts are exhausted.
-   * @throws {ForbiddenException}           If the account is blocked or deleted.
-   * @throws {InternalServerErrorException} On unexpected verification errors.
-   */
   async verifyOtpAndMintCustomToken(
     email: string,
     code: string,
@@ -161,20 +127,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Exchanges a Firebase ID token for an HttpOnly session cookie.
-   *
-   * Verifies the ID token's authenticity, syncs the corresponding user
-   * record, and sets a secure `__session` cookie on the response with a
-   * 14-day TTL. The cookie is marked `httpOnly`, `sameSite=lax`, and
-   * `secure` in production.
-   *
-   * @param idToken - A valid Firebase ID token obtained from the client.
-   * @param res     - Express response object used to set the cookie.
-   * @throws {BadRequestException}   If the ID token is missing.
-   * @throws {UnauthorizedException} If the ID token is invalid or revoked.
-   * @throws {ForbiddenException}    If the account is blocked or deleted.
-   */
   async createSessionCookie(
     idToken: string,
     res: Response,
@@ -218,16 +170,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Restores a soft-deleted account using a one-time restore token.
-   *
-   * Looks up the hashed token in the database and re-activates the
-   * associated user if the token is still within the 30-day restore
-   * window.
-   *
-   * @param token - The plaintext restore token from the reinstatement email link.
-   * @throws {BadRequestException} If the token is empty, invalid, or expired.
-   */
   async restoreDeletedAccount(token: string): Promise<void> {
     const tokenValue = token.trim();
     if (!tokenValue) {
@@ -263,6 +205,185 @@ export class AuthService {
     };
   }
 
+  async getProfile(claims: RequestUser) {
+    const user = await this.getRequestUserRecord(claims);
+    return toProfileResponse(user);
+  }
+
+  async updateProfileName(claims: RequestUser, name: string) {
+    const { uid, email } = this.readRequestUser(claims);
+    const nextName = name.trim();
+    if (!nextName) {
+      throw new BadRequestException("name_required");
+    }
+
+    await adminAuth.updateUser(uid, { displayName: nextName }).catch((err) => {
+      console.error("Failed to update display name:", err);
+      throw new InternalServerErrorException("profile_update_failed");
+    });
+
+    const user = await this.usersRepository?.updateName({
+      uid,
+      email,
+      name: nextName,
+    });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return toProfileResponse(user);
+  }
+
+  async updateProfilePhone(claims: RequestUser, phoneNumber?: string) {
+    const { uid, email } = this.readRequestUser(claims);
+    const nextPhoneNumber = normalizeOptionalText(phoneNumber);
+
+    const user = await this.usersRepository?.updatePhoneNumber({
+      uid,
+      email,
+      phoneNumber: nextPhoneNumber,
+    });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return toProfileResponse(user);
+  }
+
+  async updateProfileAvatar(claims: RequestUser, imageBase64?: string) {
+    const { uid, email } = this.readRequestUser(claims);
+    const existingUser = await this.getRequestUserRecord(claims);
+    const imageValue = normalizeOptionalText(imageBase64);
+
+    if (!imageValue) {
+      await adminAuth.updateUser(uid, { photoURL: null }).catch((err) => {
+        console.error("Failed to clear profile photo:", err);
+        throw new InternalServerErrorException("profile_update_failed");
+      });
+
+      const user = await this.usersRepository?.updateAvatarUrl({
+        uid,
+        email,
+        avatarUrl: null,
+        avatarObjectKey: null,
+      });
+
+      if (!user) {
+        throw new NotFoundException("account_not_found");
+      }
+
+      await this.storage.deleteObject(existingUser.avatarObjectKey);
+      return toProfileResponse(user);
+    }
+
+    const uploaded = await this.storage.uploadBase64Image({
+      imageBase64: imageValue,
+      path: `users/${existingUser.id}/avatar`,
+      maxBytes: MAX_AVATAR_BYTES,
+    });
+
+    await adminAuth.updateUser(uid, { photoURL: uploaded.url }).catch((err) => {
+      console.error(
+        "Failed to update profile photo in identity provider:",
+        err,
+      );
+      throw new InternalServerErrorException("profile_update_failed");
+    });
+
+    const user = await this.usersRepository?.updateAvatarUrl({
+      uid,
+      email,
+      avatarUrl: uploaded.url,
+      avatarObjectKey: uploaded.objectKey,
+    });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    await this.storage.deleteObject(existingUser.avatarObjectKey);
+    return toProfileResponse(user);
+  }
+
+  async startProfileEmailChange(claims: RequestUser, nextEmail: string) {
+    const { uid } = this.readRequestUser(claims);
+    const user = await this.getRequestUserRecord(claims);
+    this.assertCanChangeEmail(user);
+
+    const normalizedEmail = normalizeEmail(nextEmail);
+
+    if (normalizedEmail === user.email) {
+      throw new BadRequestException("email_unchanged");
+    }
+
+    await this.assertEmailAvailable(normalizedEmail, uid);
+
+    const code = await startOtp(normalizedEmail);
+    await this.mail.sendOtpEmail(normalizedEmail, code);
+  }
+
+  async confirmProfileEmailChange(
+    claims: RequestUser,
+    nextEmail: string,
+    code: string,
+  ) {
+    const { uid, email } = this.readRequestUser(claims);
+    const user = await this.getRequestUserRecord(claims);
+    this.assertCanChangeEmail(user);
+
+    const normalizedEmail = normalizeEmail(nextEmail);
+
+    if (normalizedEmail === user.email) {
+      throw new BadRequestException("email_unchanged");
+    }
+
+    await this.assertEmailAvailable(normalizedEmail, uid);
+
+    try {
+      await verifyOtp(normalizedEmail, code);
+    } catch (err: any) {
+      if (
+        [
+          "otp_invalid",
+          "otp_expired",
+          "otp_not_found",
+          "otp_attempts_exhausted",
+        ].includes(err?.message)
+      ) {
+        throw new UnauthorizedException("Invalid or expired code");
+      }
+      console.error("confirmProfileEmailChange OTP error:", err);
+      throw new InternalServerErrorException("OTP verification failed");
+    }
+
+    await adminAuth
+      .updateUser(uid, {
+        email: normalizedEmail,
+        emailVerified: true,
+      })
+      .catch((err: any) => {
+        if (err?.code === "auth/email-already-exists") {
+          throw new ConflictException("email_in_use");
+        }
+        console.error("Failed to update email in identity provider:", err);
+        throw new InternalServerErrorException("profile_update_failed");
+      });
+
+    const updated = await this.usersRepository?.updateEmail({
+      uid,
+      email,
+      newEmail: normalizedEmail,
+    });
+
+    if (!updated) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return toProfileResponse(updated);
+  }
+
   async updateMarketingEmailConsent(claims: RequestUser, enabled: boolean) {
     const { uid, email } = this.readRequestUser(claims);
     const user = await this.usersRepository?.updateMarketingEmailConsent({
@@ -292,21 +413,11 @@ export class AuthService {
 
     await this.logoutAndRevoke(res);
     await adminAuth.revokeRefreshTokens(uid).catch((err) => {
-      console.error("Failed to revoke Firebase refresh tokens:", err);
+      console.error("Failed to revoke identity provider refresh tokens:", err);
     });
   }
 
-  /**
-   * Syncs the Firebase user into the local database before creating a session.
-   *
-   * Checks whether the user is allowed to start a session (not blocked or
-   * deleted) and then upserts the Firebase user data into the local users
-   * table.
-   *
-   * @param firebaseUser - A subset of the Firebase `UserRecord` fields.
-   * @returns The upserted local `AppUser`, or `undefined` if the repository is unavailable.
-   * @throws {ForbiddenException} If the account is blocked or deleted.
-   */
+  // Firebase proves identity; local status decides access.
   private async syncActiveUserForSession(
     firebaseUser: {
       uid: string;
@@ -314,6 +425,7 @@ export class AuthService {
       emailVerified: boolean;
       phoneNumber?: string;
       displayName?: string;
+      photoURL?: string;
     },
     agreements?: LegalAgreementInput,
   ): Promise<AppUser | undefined> {
@@ -324,10 +436,16 @@ export class AuthService {
 
     await this.assertCanCreateSession(existing);
 
-    return this.usersRepository?.upsertFromFirebaseUser(
+    const user = await this.usersRepository?.upsertFromFirebaseUser(
       firebaseUser,
       agreements,
     );
+
+    if (!existing && user) {
+      await this.sendWelcomeEmail(user.email);
+    }
+
+    return user;
   }
 
   private assertHasRequiredAgreements(user?: AppUser | null): void {
@@ -338,16 +456,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Guards session creation based on account status.
-   *
-   * - **active / new user** → allows the session.
-   * - **deleted** → sends a reinstatement email and throws `ForbiddenException`.
-   * - **suspended / banned** → throws `ForbiddenException` with a generic message.
-   *
-   * @param user  - The existing local user record, if any.
-   * @throws {ForbiddenException} If the user account cannot create a session.
-   */
   private async assertCanCreateSession(user?: AppUser | null): Promise<void> {
     if (!user) return;
 
@@ -361,15 +469,6 @@ export class AuthService {
     throw new ForbiddenException("account_unavailable");
   }
 
-  /**
-   * Generates a restore token and emails a reinstatement link to the user.
-   *
-   * A SHA-256 hash of the token is persisted so it can be verified later
-   * without storing the plaintext. The email is only sent if the account
-   * is still within the 30-day restore window.
-   *
-   * @param user          - The soft-deleted `AppUser` record.
-   */
   private async sendAccountReinstatementEmail(user: AppUser): Promise<void> {
     if (!this.usersRepository) return;
 
@@ -396,18 +495,15 @@ export class AuthService {
     );
   }
 
-  /**
-   * Clears the `__session` cookie to log the user out.
-   *
-   * This performs a best-effort cookie removal. Full token revocation is
-   * handled client-side via `firebase.auth().signOut()`. A dedicated
-   * `/auth/revoke` endpoint can be added if server-side revocation is
-   * needed.
-   *
-   * @param res - Express response object used to clear the cookie.
-   */
+  private async sendWelcomeEmail(email: string): Promise<void> {
+    await this.mail
+      .sendWelcomeEmail(email, buildMarketingPreferencesUrl())
+      .catch((err) => {
+        console.error("Failed to send welcome email:", err);
+      });
+  }
+
   async logoutAndRevoke(res: Response) {
-    // Best-effort clear; revocation is optional without a req context/uid
     res.clearCookie("__session", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -415,9 +511,6 @@ export class AuthService {
       domain: COOKIE_DOMAIN,
       path: "/",
     });
-    // If you want to revoke, do it on the client by calling Firebase Auth signOut (already handled),
-    // or add a /auth/revoke endpoint that verifies the session cookie and calls:
-    // await adminAuth.revokeRefreshTokens(uid);
   }
 
   private readRequestUser(claims: RequestUser) {
@@ -431,19 +524,54 @@ export class AuthService {
     };
   }
 
-  /**
-   * Verifies a Cloudflare Turnstile captcha token.
-   *
-   * Sends the token and the optional client IP to Cloudflare's
-   * `/siteverify` endpoint and throws if verification fails at any stage
-   * (network error, non-2xx response, JSON parse error, or rejection).
-   *
-   * @param token    - The Turnstile response token from the client.
-   * @param remoteIp - Optional client IP for additional verification.
-   * @throws {BadRequestException}          If the token is missing or rejected.
-   * @throws {InternalServerErrorException} If the secret is missing or the
-   *                                        request to Cloudflare fails.
-   */
+  private async getRequestUserRecord(claims: RequestUser): Promise<AppUser> {
+    const { uid, email } = this.readRequestUser(claims);
+    const user = await this.usersRepository?.findByFirebaseUidOrEmail(
+      uid,
+      email,
+    );
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return user;
+  }
+
+  private async assertEmailAvailable(email: string, currentUid: string) {
+    const existing = await this.usersRepository?.findByEmail(email);
+    if (existing && existing.firebaseUid !== currentUid) {
+      throw new ConflictException("email_in_use");
+    }
+
+    await adminAuth
+      .getUserByEmail(email)
+      .then((firebaseUser) => {
+        if (firebaseUser.uid !== currentUid) {
+          throw new ConflictException("email_in_use");
+        }
+      })
+      .catch((err: any) => {
+        if (err instanceof ConflictException) {
+          throw err;
+        }
+        if (err?.code === "auth/user-not-found") {
+          return;
+        }
+        console.error(
+          "Failed to check identity provider email availability:",
+          err,
+        );
+        throw new InternalServerErrorException("profile_update_failed");
+      });
+  }
+
+  private assertCanChangeEmail(user: AppUser): void {
+    if (user.role !== "user") {
+      throw new ForbiddenException("email_change_forbidden");
+    }
+  }
+
   private async verifyCaptcha(token: string, remoteIp?: string) {
     if (!token) {
       throw new BadRequestException("Captcha token is required");
@@ -504,30 +632,13 @@ export class AuthService {
   }
 }
 
-/**
- * Returns the SHA-256 hex digest of a restore token so the plaintext is
- * never stored in the database.
- */
 function hashRestoreToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-/**
- * Builds the full account-restore URL that is emailed to the user.
- *
- * Resolves the web base URL from environment variables in order of
- * priority: `WEB_BASE_URL` → `NEXT_PUBLIC_WEB_BASE_URL` → first entry
- * in `CORS_ORIGINS`.
- *
- * @param token - The plaintext restore token to embed as a query param.
- * @returns The absolute restore URL, e.g. `https://app.cottonbro.com/account/restore?token=…`.
- * @throws {Error} If no base URL can be resolved from the environment.
- */
 function buildRestoreUrl(token: string) {
   const baseUrl =
-    process.env.WEB_BASE_URL?.trim().replace(/\/+$/, "") ||
-    process.env.NEXT_PUBLIC_WEB_BASE_URL?.trim().replace(/\/+$/, "") ||
-    process.env.CORS_ORIGINS?.split(",")[0]?.trim().replace(/\/+$/, "");
+    readWebBaseUrl();
 
   if (!baseUrl) {
     throw new Error("Missing WEB_BASE_URL for account restore links");
@@ -538,8 +649,43 @@ function buildRestoreUrl(token: string) {
   return url.toString();
 }
 
+function buildMarketingPreferencesUrl() {
+  const baseUrl = readWebBaseUrl();
+
+  if (!baseUrl) {
+    throw new Error("Missing WEB_BASE_URL for marketing preference links");
+  }
+
+  return new URL("/dashboard/settings", baseUrl).toString();
+}
+
+function readWebBaseUrl() {
+  return (
+    process.env.WEB_BASE_URL?.trim().replace(/\/+$/, "") ||
+    process.env.NEXT_PUBLIC_WEB_BASE_URL?.trim().replace(/\/+$/, "") ||
+    process.env.CORS_ORIGINS?.split(",")[0]?.trim().replace(/\/+$/, "")
+  );
+}
+
 function isMarketingEmailEnabled(user: AppUser) {
   if (!user.marketingEmailsOptedInAt) return false;
   if (!user.marketingEmailsOptedOutAt) return true;
   return user.marketingEmailsOptedInAt > user.marketingEmailsOptedOutAt;
+}
+
+function normalizeOptionalText(value?: string) {
+  const nextValue = value?.trim();
+  return nextValue ? nextValue : null;
+}
+
+function toProfileResponse(user: AppUser) {
+  return {
+    name: user.name,
+    email: user.email,
+    emailVerified: user.emailVerified,
+    phoneNumber: user.phoneNumber,
+    avatarUrl: user.avatarUrl,
+    role: user.role,
+    canChangeEmail: user.role === "user",
+  };
 }
