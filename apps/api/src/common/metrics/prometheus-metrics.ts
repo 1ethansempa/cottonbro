@@ -43,6 +43,13 @@ export function prometheusMetricsMiddleware(
 }
 
 export function prometheusMetricsHandler(req: Request, res: Response): void {
+  console.info("Metrics request", {
+    host: req.headers.host,
+    userAgent: req.headers["user-agent"],
+    ip: req.ip,
+    xForwardedFor: req.headers["x-forwarded-for"],
+  });
+
   if (process.env.NODE_ENV === "production" && !isLocalMetricsRequest(req)) {
     res.status(404).send("Not Found");
     return;
