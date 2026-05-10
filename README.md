@@ -203,7 +203,15 @@ The API exposes Prometheus-format metrics at `/metrics`. In production, this end
 PROMETHEUS_METRICS_ENABLED=true
 ```
 
-The QA API deploy runs a `cloud-run-gmp-sidecar` container and mounts scrape config from the `api-prometheus-run-monitoring` Secret Manager secret. The source config is versioned at `apps/api/deploy/prometheus-run-monitoring.yaml` and uses a `5m` scrape interval. The intended path is:
+The QA API deploy runs a `cloud-run-gmp-sidecar` container and mounts scrape config from the `api-prometheus-run-monitoring` Secret Manager secret. The source config is versioned at `apps/api/deploy/prometheus-run-monitoring.yaml` and uses a `5m` scrape interval. Update the secret manually when this file changes:
+
+```bash
+gcloud secrets versions add api-prometheus-run-monitoring \
+  --project cottonbro-dev \
+  --data-file apps/api/deploy/prometheus-run-monitoring.yaml
+```
+
+The intended path is:
 
 ```text
 NestJS /metrics
