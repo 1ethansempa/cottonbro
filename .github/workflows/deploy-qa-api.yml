@@ -151,6 +151,11 @@ jobs:
             --set-secrets SMTP_HOST=api-smtp-host:latest \
             --set-secrets SMTP_PORT=api-smtp-port:latest \
             --set-secrets SMTP_FROM=api-smtp-user:latest \
+            --set-secrets R2_ACCOUNT_ID=api-r2-account-id:latest \
+            --set-secrets R2_ACCESS_KEY_ID=api-r2-access-key-id:latest \
+            --set-secrets R2_SECRET_ACCESS_KEY=api-r2-secret-access-key:latest \
+            --set-secrets R2_BUCKET=api-r2-bucket:latest \
+            --set-secrets R2_PUBLIC_BASE_URL=web-assets-url:latest \
             --set-secrets PYTHON_API_KEY=python-api-key:latest \
             --set-secrets PYTHON_SERVICE_URL=python-service-url:latest \
             --set-secrets WEB_BASE_URL=web-base-url:latest

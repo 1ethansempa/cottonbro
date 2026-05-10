@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { X, Move } from "lucide-react";
+import { ArrowsOutCardinal as Move, X } from "@phosphor-icons/react";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 
 interface PreviewModalProps {

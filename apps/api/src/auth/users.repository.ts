@@ -14,6 +14,8 @@ export type AppUser = {
   emailVerified: boolean;
   phoneNumber: string | null;
   name: string | null;
+  avatarUrl: string | null;
+  avatarObjectKey: string | null;
   status: UserStatus;
   role: UserRole;
   privacyPolicyAcceptedAt: Date | null;
@@ -38,6 +40,27 @@ export interface UsersRepositoryPort {
     email?: string;
     enabled: boolean;
   }): Promise<AppUser | null>;
+  updateName(args: {
+    uid: string;
+    email?: string;
+    name: string;
+  }): Promise<AppUser | null>;
+  updatePhoneNumber(args: {
+    uid: string;
+    email?: string;
+    phoneNumber: string | null;
+  }): Promise<AppUser | null>;
+  updateAvatarUrl(args: {
+    uid: string;
+    email?: string;
+    avatarUrl: string | null;
+    avatarObjectKey?: string | null;
+  }): Promise<AppUser | null>;
+  updateEmail(args: {
+    uid: string;
+    email?: string;
+    newEmail: string;
+  }): Promise<AppUser | null>;
   softDeleteUser(args: { uid: string; email?: string }): Promise<AppUser | null>;
   createAccountReinstatementToken(args: {
     userId: string;
@@ -53,6 +76,7 @@ type FirebaseUserProfile = {
   emailVerified: boolean;
   phoneNumber?: string;
   displayName?: string;
+  photoURL?: string;
 };
 
 export type LegalAgreementInput = {
@@ -122,6 +146,8 @@ export class UsersRepository implements UsersRepositoryPort {
           emailVerified: user.emailVerified,
           phoneNumber: user.phoneNumber ?? existing.phoneNumber,
           name: user.displayName ?? existing.name,
+          avatarUrl: user.photoURL ?? existing.avatarUrl,
+          avatarObjectKey: user.photoURL ? null : existing.avatarObjectKey,
           privacyPolicyAcceptedAt,
           termsAcceptedAt,
           lastLoginAt: now,
@@ -145,6 +171,8 @@ export class UsersRepository implements UsersRepositoryPort {
         emailVerified: user.emailVerified,
         phoneNumber: user.phoneNumber ?? null,
         name: user.displayName ?? null,
+        avatarUrl: user.photoURL ?? null,
+        avatarObjectKey: null,
         privacyPolicyAcceptedAt: agreements?.privacyPolicyAccepted ? now : null,
         termsAcceptedAt: agreements?.termsAccepted ? now : null,
         lastLoginAt: now,
@@ -175,6 +203,89 @@ export class UsersRepository implements UsersRepositoryPort {
           : existing.marketingEmailsOptedInAt,
         marketingEmailsOptedOutAt: args.enabled ? null : now,
         updatedAt: now,
+      })
+      .where(eq(users.id, existing.id))
+      .returning();
+
+    return updated ?? null;
+  }
+
+  async updateName(args: {
+    uid: string;
+    email?: string;
+    name: string;
+  }): Promise<AppUser | null> {
+    const existing = await this.findByFirebaseUidOrEmail(args.uid, args.email);
+    if (!existing) return null;
+
+    const [updated] = await db
+      .update(users)
+      .set({
+        name: args.name,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, existing.id))
+      .returning();
+
+    return updated ?? null;
+  }
+
+  async updatePhoneNumber(args: {
+    uid: string;
+    email?: string;
+    phoneNumber: string | null;
+  }): Promise<AppUser | null> {
+    const existing = await this.findByFirebaseUidOrEmail(args.uid, args.email);
+    if (!existing) return null;
+
+    const [updated] = await db
+      .update(users)
+      .set({
+        phoneNumber: args.phoneNumber,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, existing.id))
+      .returning();
+
+    return updated ?? null;
+  }
+
+  async updateAvatarUrl(args: {
+    uid: string;
+    email?: string;
+    avatarUrl: string | null;
+    avatarObjectKey?: string | null;
+  }): Promise<AppUser | null> {
+    const existing = await this.findByFirebaseUidOrEmail(args.uid, args.email);
+    if (!existing) return null;
+
+    const [updated] = await db
+      .update(users)
+      .set({
+        avatarUrl: args.avatarUrl,
+        avatarObjectKey: args.avatarObjectKey ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, existing.id))
+      .returning();
+
+    return updated ?? null;
+  }
+
+  async updateEmail(args: {
+    uid: string;
+    email?: string;
+    newEmail: string;
+  }): Promise<AppUser | null> {
+    const existing = await this.findByFirebaseUidOrEmail(args.uid, args.email);
+    if (!existing) return null;
+
+    const [updated] = await db
+      .update(users)
+      .set({
+        email: normalizeEmail(args.newEmail),
+        emailVerified: true,
+        updatedAt: new Date(),
       })
       .where(eq(users.id, existing.id))
       .returning();

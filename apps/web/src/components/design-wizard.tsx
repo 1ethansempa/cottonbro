@@ -8,9 +8,9 @@ import {
     Check,
     ArrowRight,
     ArrowLeft,
-    AlertTriangle,
-    Move,
-} from "lucide-react";
+    Warning as AlertTriangle,
+    ArrowsOutCardinal as Move,
+} from "@phosphor-icons/react";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { Canvas, FabricImage } from "fabric";
 import { Logo } from "@cottonbro/ui";
@@ -253,15 +253,15 @@ export default function DesignWizard({
                         <span className={step === "choice" ? "text-black font-bold" : ""}>
                             Start
                         </span>
-                        <ArrowRight className="w-3 h-3" />
+                        <ArrowRight className="w-3 h-3" weight="regular" />
                         <span className={step === "upload" ? "text-black font-bold" : ""}>
                             Upload
                         </span>
-                        <ArrowRight className="w-3 h-3" />
+                        <ArrowRight className="w-3 h-3" weight="regular" />
                         <span className={step === "preview" ? "text-black font-bold" : ""}>
                             Preview
                         </span>
-                        <ArrowRight className="w-3 h-3" />
+                        <ArrowRight className="w-3 h-3" weight="regular" />
                         <span className={step === "confirm" ? "text-black font-bold" : ""}>
                             Confirm
                         </span>
@@ -304,7 +304,7 @@ export default function DesignWizard({
                             onClick={() => setStep("choice")}
                             className="flex items-center gap-2 text-gray-400 hover:text-black mb-8 transition-colors"
                         >
-                            <ArrowLeft className="w-4 h-4" /> Back
+                            <ArrowLeft className="w-4 h-4" weight="regular" /> Back
                         </button>
 
                         <h2 className="text-4xl font-black mb-4 tracking-tight">
@@ -354,7 +354,7 @@ export default function DesignWizard({
                             onClick={() => setStep("upload")}
                             className="flex items-center gap-2 text-gray-400 hover:text-primary mb-8 transition-colors"
                         >
-                            <ArrowLeft className="w-4 h-4" /> Back
+                            <ArrowLeft className="w-4 h-4" weight="regular" /> Back
                         </button>
 
                         {/* Quality Warning */}
@@ -376,7 +376,7 @@ export default function DesignWizard({
 
                         {qualityPassed === true && (
                             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-8 flex items-center gap-3">
-                                <Check className="w-5 h-5 text-emerald-500" />
+                                <Check className="w-5 h-5 text-emerald-500" weight="fill" />
                                 <p className="text-emerald-700 font-medium">
                                     Great! Your image ({imageDimensions?.width}×
                                     {imageDimensions?.height}px) meets quality requirements.
@@ -476,7 +476,7 @@ export default function DesignWizard({
                 {step === "confirm" && uploadedImage && (
                     <div className="text-center max-w-2xl mx-auto">
                         <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-emerald-100">
-                            <Check className="w-10 h-10 text-emerald-500" />
+                            <Check className="w-10 h-10 text-emerald-500" weight="fill" />
                         </div>
                         <h2 className="text-5xl font-black mb-6 tracking-tight">
                             Ready to <span className="text-gray-400">launch</span>!

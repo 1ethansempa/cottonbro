@@ -5,7 +5,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "@phosphor-icons/react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Marquee } from "@/components/home/Marquee";
@@ -181,6 +181,7 @@ export default function LandingPage() {
                 Start designing
                 <ArrowUpRight
                   className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
+                  weight="regular"
                   aria-hidden="true"
                 />
               </Link>
@@ -191,6 +192,7 @@ export default function LandingPage() {
                 Go to dashboard
                 <ArrowUpRight
                   className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
+                  weight="regular"
                   aria-hidden="true"
                 />
               </Link>
@@ -384,6 +386,7 @@ export default function LandingPage() {
               Start Designing
               <ArrowUpRight
                 className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
+                weight="regular"
                 aria-hidden="true"
               />
             </Link>

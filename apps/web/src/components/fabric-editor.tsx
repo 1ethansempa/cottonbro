@@ -3,31 +3,31 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  Type,
-  Download,
-  Trash2,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Bold,
-  Italic,
+  TextT as Type,
+  DownloadSimple as Download,
+  Trash as Trash2,
+  TextAlignLeft as AlignLeft,
+  TextAlignCenter as AlignCenter,
+  TextAlignRight as AlignRight,
+  TextB as Bold,
+  TextItalic as Italic,
   Upload,
-  Undo2,
-  Redo2,
+  ArrowCounterClockwise as Undo2,
+  ArrowClockwise as Redo2,
   X,
   Minus,
   Plus,
-  CloudUpload,
+  CloudArrowUp as CloudUpload,
   Copy,
   ArrowUp,
   ArrowDown,
   Image as ImageIcon,
   Circle,
   Eye,
-  Wand2,
-  Loader2,
+  MagicWand as Wand2,
+  SpinnerGap as Loader2,
   FolderOpen,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";

@@ -32,6 +32,8 @@ export const users = pgTable(
     // Postgres stores NULL when the app inserts no value for them.
     phoneNumber: text("phone_number"),
     name: text("name"),
+    avatarUrl: text("avatar_url"),
+    avatarObjectKey: text("avatar_object_key"),
     status: userStatus("status").notNull().default("active"),
     role: userRole("role").notNull().default("user"),
     privacyPolicyAcceptedAt: timestamp("privacy_policy_accepted_at", {

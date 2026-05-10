@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowUpRight, Plus } from "lucide-react";
+import { ArrowUpRight, Plus } from "@phosphor-icons/react";
 
 type DashboardProduct = {
   id: string;
@@ -45,6 +47,7 @@ function CreateFirstProduct() {
               Create Product
               <ArrowUpRight
                 className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100"
+                weight="regular"
                 aria-hidden="true"
               />
             </Link>

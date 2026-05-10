@@ -62,7 +62,7 @@ function RestoreAccountView() {
     },
     success: {
       title: "Your account is restored.",
-      body: "You can sign in again and keep building your next drop.",
+      body: "You can sign in again and continue where you left off.",
     },
     error: {
       title: "This restore link is not available.",

@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@cottonbro/auth-react";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, List as Menu, X } from "@phosphor-icons/react";
 
 interface SiteHeaderProps {
     theme?: "light" | "dark";
@@ -130,7 +130,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false, position = "f
                                                 }`}
                                     >
                                         Start Designing
-                                        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                                        <ArrowUpRight className="h-3.5 w-3.5" weight="regular" aria-hidden="true" />
                                     </MaybeLink>
                                 </>
                             ) : (
@@ -211,7 +211,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false, position = "f
                                         className="mt-2 inline-flex items-center gap-2 bg-white px-7 py-4 text-[11px] font-black uppercase tracking-[0.18em] text-black transition-all hover:bg-zinc-100"
                                     >
                                         Start Designing
-                                        <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                                        <ArrowUpRight className="h-4 w-4" weight="regular" aria-hidden="true" />
                                     </MaybeLink>
                                 </>
                             ) : (

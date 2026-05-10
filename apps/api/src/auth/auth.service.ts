@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   UnauthorizedException,
   InternalServerErrorException,
   ForbiddenException,
@@ -19,6 +20,7 @@ import {
 } from "@cottonbro/auth-server";
 import { normalizeEmail } from "@cottonbro/utils";
 import { MailService } from "../common/mail/mail.service.js";
+import { R2StorageService } from "../common/storage/r2-storage.service.js";
 import type {
   AppUser,
   LegalAgreementInput,
@@ -30,6 +32,7 @@ import type {
 // Every token/session creation path must check local account status first.
 const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const DELETED_ACCOUNT_RESTORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 export const USERS_REPOSITORY = Symbol("USERS_REPOSITORY");
 
 // Deleted accounts are handled separately because they can self-restore by email.
@@ -74,6 +77,7 @@ type RequestUser = {
 export class AuthService {
   constructor(
     private readonly mail: MailService,
+    private readonly storage: R2StorageService,
     @Optional()
     @Inject(USERS_REPOSITORY)
     private readonly usersRepository?: UsersRepositoryPort,
@@ -263,6 +267,187 @@ export class AuthService {
     };
   }
 
+  async getProfile(claims: RequestUser) {
+    const user = await this.getRequestUserRecord(claims);
+    return toProfileResponse(user);
+  }
+
+  async updateProfileName(claims: RequestUser, name: string) {
+    const { uid, email } = this.readRequestUser(claims);
+    const nextName = name.trim();
+    if (!nextName) {
+      throw new BadRequestException("name_required");
+    }
+
+    await adminAuth.updateUser(uid, { displayName: nextName }).catch((err) => {
+      console.error("Failed to update Firebase display name:", err);
+      throw new InternalServerErrorException("profile_update_failed");
+    });
+
+    const user = await this.usersRepository?.updateName({
+      uid,
+      email,
+      name: nextName,
+    });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return toProfileResponse(user);
+  }
+
+  async updateProfilePhone(
+    claims: RequestUser,
+    phoneNumber?: string,
+  ) {
+    const { uid, email } = this.readRequestUser(claims);
+    const nextPhoneNumber = normalizeOptionalText(phoneNumber);
+
+    const user = await this.usersRepository?.updatePhoneNumber({
+      uid,
+      email,
+      phoneNumber: nextPhoneNumber,
+    });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return toProfileResponse(user);
+  }
+
+  async updateProfileAvatar(claims: RequestUser, imageBase64?: string) {
+    const { uid, email } = this.readRequestUser(claims);
+    const existingUser = await this.getRequestUserRecord(claims);
+    const imageValue = normalizeOptionalText(imageBase64);
+
+    if (!imageValue) {
+      await adminAuth.updateUser(uid, { photoURL: null }).catch((err) => {
+        console.error("Failed to clear Firebase profile photo:", err);
+        throw new InternalServerErrorException("profile_update_failed");
+      });
+
+      const user = await this.usersRepository?.updateAvatarUrl({
+        uid,
+        email,
+        avatarUrl: null,
+        avatarObjectKey: null,
+      });
+
+      if (!user) {
+        throw new NotFoundException("account_not_found");
+      }
+
+      await this.storage.deleteObject(existingUser.avatarObjectKey);
+      return toProfileResponse(user);
+    }
+
+    const uploaded = await this.storage.uploadBase64Image({
+      imageBase64: imageValue,
+      path: `users/${existingUser.id}/avatar`,
+      maxBytes: MAX_AVATAR_BYTES,
+    });
+
+    await adminAuth
+      .updateUser(uid, { photoURL: uploaded.url })
+      .catch((err) => {
+        console.error("Failed to update Firebase profile photo:", err);
+        throw new InternalServerErrorException("profile_update_failed");
+      });
+
+    const user = await this.usersRepository?.updateAvatarUrl({
+      uid,
+      email,
+      avatarUrl: uploaded.url,
+      avatarObjectKey: uploaded.objectKey,
+    });
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    await this.storage.deleteObject(existingUser.avatarObjectKey);
+    return toProfileResponse(user);
+  }
+
+  async startProfileEmailChange(claims: RequestUser, nextEmail: string) {
+    const { uid } = this.readRequestUser(claims);
+    const user = await this.getRequestUserRecord(claims);
+    this.assertCanChangeEmail(user);
+
+    const normalizedEmail = normalizeEmail(nextEmail);
+
+    if (normalizedEmail === user.email) {
+      throw new BadRequestException("email_unchanged");
+    }
+
+    await this.assertEmailAvailable(normalizedEmail, uid);
+
+    const code = await startOtp(normalizedEmail);
+    await this.mail.sendOtpEmail(normalizedEmail, code);
+  }
+
+  async confirmProfileEmailChange(
+    claims: RequestUser,
+    nextEmail: string,
+    code: string,
+  ) {
+    const { uid, email } = this.readRequestUser(claims);
+    const user = await this.getRequestUserRecord(claims);
+    this.assertCanChangeEmail(user);
+
+    const normalizedEmail = normalizeEmail(nextEmail);
+
+    if (normalizedEmail === user.email) {
+      throw new BadRequestException("email_unchanged");
+    }
+
+    await this.assertEmailAvailable(normalizedEmail, uid);
+
+    try {
+      await verifyOtp(normalizedEmail, code);
+    } catch (err: any) {
+      if (
+        [
+          "otp_invalid",
+          "otp_expired",
+          "otp_not_found",
+          "otp_attempts_exhausted",
+        ].includes(err?.message)
+      ) {
+        throw new UnauthorizedException("Invalid or expired code");
+      }
+      console.error("confirmProfileEmailChange OTP error:", err);
+      throw new InternalServerErrorException("OTP verification failed");
+    }
+
+    await adminAuth
+      .updateUser(uid, {
+        email: normalizedEmail,
+        emailVerified: true,
+      })
+      .catch((err: any) => {
+        if (err?.code === "auth/email-already-exists") {
+          throw new ConflictException("email_in_use");
+        }
+        console.error("Failed to update Firebase email:", err);
+        throw new InternalServerErrorException("profile_update_failed");
+      });
+
+    const updated = await this.usersRepository?.updateEmail({
+      uid,
+      email,
+      newEmail: normalizedEmail,
+    });
+
+    if (!updated) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return toProfileResponse(updated);
+  }
+
   async updateMarketingEmailConsent(claims: RequestUser, enabled: boolean) {
     const { uid, email } = this.readRequestUser(claims);
     const user = await this.usersRepository?.updateMarketingEmailConsent({
@@ -314,6 +499,7 @@ export class AuthService {
       emailVerified: boolean;
       phoneNumber?: string;
       displayName?: string;
+      photoURL?: string;
     },
     agreements?: LegalAgreementInput,
   ): Promise<AppUser | undefined> {
@@ -431,6 +617,51 @@ export class AuthService {
     };
   }
 
+  private async getRequestUserRecord(claims: RequestUser): Promise<AppUser> {
+    const { uid, email } = this.readRequestUser(claims);
+    const user = await this.usersRepository?.findByFirebaseUidOrEmail(
+      uid,
+      email,
+    );
+
+    if (!user) {
+      throw new NotFoundException("account_not_found");
+    }
+
+    return user;
+  }
+
+  private async assertEmailAvailable(email: string, currentUid: string) {
+    const existing = await this.usersRepository?.findByEmail(email);
+    if (existing && existing.firebaseUid !== currentUid) {
+      throw new ConflictException("email_in_use");
+    }
+
+    await adminAuth
+      .getUserByEmail(email)
+      .then((firebaseUser) => {
+        if (firebaseUser.uid !== currentUid) {
+          throw new ConflictException("email_in_use");
+        }
+      })
+      .catch((err: any) => {
+        if (err instanceof ConflictException) {
+          throw err;
+        }
+        if (err?.code === "auth/user-not-found") {
+          return;
+        }
+        console.error("Failed to check Firebase email availability:", err);
+        throw new InternalServerErrorException("profile_update_failed");
+      });
+  }
+
+  private assertCanChangeEmail(user: AppUser): void {
+    if (user.role !== "user") {
+      throw new ForbiddenException("email_change_forbidden");
+    }
+  }
+
   /**
    * Verifies a Cloudflare Turnstile captcha token.
    *
@@ -542,4 +773,21 @@ function isMarketingEmailEnabled(user: AppUser) {
   if (!user.marketingEmailsOptedInAt) return false;
   if (!user.marketingEmailsOptedOutAt) return true;
   return user.marketingEmailsOptedInAt > user.marketingEmailsOptedOutAt;
+}
+
+function normalizeOptionalText(value?: string) {
+  const nextValue = value?.trim();
+  return nextValue ? nextValue : null;
+}
+
+function toProfileResponse(user: AppUser) {
+  return {
+    name: user.name,
+    email: user.email,
+    emailVerified: user.emailVerified,
+    phoneNumber: user.phoneNumber,
+    avatarUrl: user.avatarUrl,
+    role: user.role,
+    canChangeEmail: user.role === "user",
+  };
 }
