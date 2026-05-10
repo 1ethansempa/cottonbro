@@ -50,8 +50,13 @@ export default function AuthenticatedLayout({
   // Show loading until Firebase auth state is ready
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-white text-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-black border-t-transparent" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+            Loading...
+          </p>
+        </div>
       </div>
     );
   }
@@ -59,8 +64,13 @@ export default function AuthenticatedLayout({
   // No user after auth ready = redirect happening
   if (!user) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-white text-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-black border-t-transparent" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+            Loading...
+          </p>
+        </div>
       </div>
     );
   }
