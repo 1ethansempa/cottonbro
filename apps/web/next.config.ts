@@ -1,15 +1,8 @@
 import type { NextConfig } from "next";
 
-const apiUrl = process.env.API_BASE_URL;
-const assetsBaseUrl = process.env.NEXT_PUBLIC_ASSETS_BASE_URL;
-
-if (!apiUrl) {
-  throw new Error("Missing API_BASE_URL");
-}
-
-if (!assetsBaseUrl) {
-  throw new Error("Missing NEXT_PUBLIC_ASSETS_BASE_URL");
-}
+const apiUrl = process.env.API_BASE_URL ?? "http://localhost:3001/v1";
+const assetsBaseUrl =
+  process.env.NEXT_PUBLIC_ASSETS_BASE_URL ?? "https://qa-assets.cottonbro.com";
 
 const assetsUrl = new URL(assetsBaseUrl);
 
