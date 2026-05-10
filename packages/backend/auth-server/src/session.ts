@@ -6,7 +6,7 @@ export async function signInOrCreateUser(email: string) {
     return await adminAuth.getUserByEmail(email);
   } catch {
     const u = await adminAuth.createUser({ email, emailVerified: true });
-    await adminAuth.setCustomUserClaims(u.uid, { role: "User" });
+    await adminAuth.setCustomUserClaims(u.uid, { role: "user" });
     return u;
   }
 }

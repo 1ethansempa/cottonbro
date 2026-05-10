@@ -42,7 +42,11 @@ export function SiteFooter({ theme = "dark", disableLinks = false }: SiteFooterP
         >
             <div className="flex flex-col gap-2 mb-10 md:mb-0">
                 <MaybeLink disabled={disableLinks} href="#" className="inline-block hover:opacity-80 transition-opacity">
-                    <Logo size="md" color={theme === "light" ? "black" : "white"} fontClassName="font-black tracking-tighter uppercase" />
+                    <div className="flex items-baseline text-xl font-black uppercase tracking-tighter leading-none">
+                        <span className={theme === "light" ? "text-black" : "text-white"}>COTTON</span>
+                        <span className="text-[#e60000]">BRO</span>
+                        <span className="ml-1 h-2 w-2 rounded-full bg-[#e60000]"></span>
+                    </div>
                 </MaybeLink>
                 <div className={`text-[10px] uppercase tracking-widest font-bold mt-1 text-gray-400`}>
                     TERMS AND PRIVACY &middot; &copy; {new Date().getFullYear()} ALL RIGHTS RESERVED.

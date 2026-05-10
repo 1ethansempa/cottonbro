@@ -14,7 +14,7 @@ export default function AuthLoginLayout({
     <>
       {hasTurnstileSiteKey && (
         <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
           strategy="afterInteractive"
         />
       )}

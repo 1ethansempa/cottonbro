@@ -1,4 +1,4 @@
-export const OTP_CODE_PATTERN = /^\d{4}(?:\d{2})?$/;
+export const OTP_CODE_PATTERN = /^\d{6}$/;
 
 export function normalizeOtp(code: string) {
   return code.replace(/\D/g, "").slice(0, 6);

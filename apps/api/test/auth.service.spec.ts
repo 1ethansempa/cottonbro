@@ -8,6 +8,7 @@ import {
 import { AuthService } from "../src/auth/auth.service.js";
 
 import { MailService } from "../src/common/mail/mail.service.js";
+import { R2StorageService } from "../src/common/storage/r2-storage.service.js";
 
 // Import mocked functions (Jest auto-mocks via __mocks__ folder)
 import {
@@ -48,6 +49,13 @@ describe("AuthService", () => {
             sendOtpEmail: jest
               .fn<() => Promise<void>>()
               .mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: R2StorageService,
+          useValue: {
+            uploadBase64Image: jest.fn(),
+            deleteObject: jest.fn(),
           },
         },
       ],

@@ -2,32 +2,39 @@ import * as React from "react";
 import { cn } from "../lib/utils";
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "ghost" | "outline";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+  size?: "sm" | "md" | "lg";
 };
 
-export const Button: React.FC<ButtonProps> = ({
-  variant = "primary",
-  className = "",
-  ...props
-}) => {
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = "primary", size = "md", className = "", type, ...props }, ref) => {
   const base =
-    "inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap px-6 py-4 text-sm font-bold uppercase tracking-widest transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:opacity-60 disabled:cursor-not-allowed rounded-lg";
+    "inline-flex cursor-pointer flex-row items-center justify-center gap-2 whitespace-nowrap rounded-full border text-center font-bold uppercase tracking-[0.18em] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:cursor-not-allowed disabled:border-black/25 disabled:bg-white disabled:text-black/35 disabled:hover:bg-white disabled:hover:text-black/35 disabled:hover:opacity-100";
 
-  let variantStyles = "";
-  switch (variant) {
-    case "primary":
-      variantStyles =
-        "bg-black border-2 border-black text-white hover:bg-white hover:text-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]";
-      break;
-    case "outline":
-      variantStyles =
-        "bg-white border-2 border-black text-black hover:bg-black hover:text-white";
-      break;
-    case "ghost":
-      variantStyles =
-        "bg-transparent border-2 border-transparent text-black hover:bg-gray-100";
-      break;
-  }
+  const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
+    primary: "border-black bg-black text-white hover:opacity-80",
+    secondary: "border-gray-200 bg-white text-black hover:bg-gray-50",
+    outline: "border-black bg-white text-black hover:bg-black hover:text-white",
+    ghost: "border-transparent bg-transparent text-black hover:bg-gray-100",
+    danger:
+      "border-red-600 bg-red-600 text-white hover:bg-white hover:text-red-600",
+  };
 
-  return <button className={cn(base, variantStyles, className)} {...props} />;
-};
+  const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
+    sm: "px-4 py-2 text-[10px]",
+    md: "px-6 py-4 text-[10px]",
+    lg: "px-8 py-5 text-xs",
+  };
+
+    return (
+      <button
+        ref={ref}
+        type={type ?? "button"}
+        className={cn(base, variants[variant], sizes[size], className)}
+        {...props}
+      />
+    );
+  },
+);
+
+Button.displayName = "Button";

@@ -10,9 +10,6 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "baseUrl": ".",
-    "paths": {
-      "@cottonbro/utils": ["../../packages/core/utils/src"]
-    },
 
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

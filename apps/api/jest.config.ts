@@ -18,6 +18,7 @@ const config: Config = {
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     "^@cottonbro/auth-server$": "<rootDir>/__mocks__/@cottonbro/auth-server.ts",
+    "^@cottonbro/utils$": "<rootDir>/../../packages/core/utils/dist/index.js",
     "^@cottonbro/(.*)$": "<rootDir>/../../packages/*/$1/dist/index.js",
   },
   extensionsToTreatAsEsm: [".ts"],

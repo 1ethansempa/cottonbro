@@ -1,13 +1,10 @@
 import type { NextConfig } from "next";
 
-const isDev = process.env.NODE_ENV !== "production";
-const isCi = process.env.CI === "true";
-const apiUrl =
-  process.env.API_BASE_URL || (isDev || isCi ? "http://localhost:3001" : "");
+const apiUrl = process.env.API_BASE_URL ?? "http://localhost:3001/v1";
+const assetsBaseUrl =
+  process.env.NEXT_PUBLIC_ASSETS_BASE_URL ?? "https://qa-assets.cottonbro.com";
 
-if (!apiUrl) {
-  throw new Error("Missing API_BASE_URL");
-}
+const assetsUrl = new URL(assetsBaseUrl);
 
 const connectSrc = [
   "'self'",
@@ -17,16 +14,19 @@ const connectSrc = [
   "https://*.cloudflare.com",
   "http://localhost:8000",
   "https://*.google.com",
+  "https://*.crisp.chat",
+  "wss://*.crisp.chat",
 ];
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.cloudflare.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data:",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.cloudflare.com https://crisp.chat https://*.crisp.chat",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.crisp.chat",
+  "img-src 'self' https://*.crisp.chat https://*.cottonbro.com data:",
   `connect-src ${connectSrc.join(" ")}`,
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://challenges.cloudflare.com",
+  "font-src 'self' https://*.crisp.chat https://fonts.gstatic.com data:",
+  "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://*.cloudflare.com",
+  "trusted-types * 'allow-duplicates'",
   "frame-ancestors 'none'",
 ].join("; ");
 
@@ -59,6 +59,16 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: assetsUrl.protocol.replace(":", "") as "http" | "https",
+        hostname: assetsUrl.hostname,
+        port: assetsUrl.port,
+        pathname: "/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {

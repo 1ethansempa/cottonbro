@@ -48,6 +48,6 @@ describe("Button", () => {
 
     it("applies disabled styles when disabled", () => {
         render(<Button disabled>Disabled</Button>);
-        expect(screen.getByRole("button")).toHaveClass("disabled:opacity-60");
+        expect(screen.getByRole("button")).toHaveClass("disabled:cursor-not-allowed");
     });
 });

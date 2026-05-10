@@ -38,8 +38,11 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
   return (
     <Button
       type="button"
-      variant="outline"
-      className={cn("w-full gap-3 flex cursor-pointer", className)}
+      variant="secondary"
+      className={cn(
+        "w-full cursor-pointer gap-3 border-gray-200 bg-white text-black hover:bg-gray-50 hover:text-black",
+        className,
+      )}
       {...props}
     >
       <GoogleIcon />

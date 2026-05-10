@@ -23,6 +23,11 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   otp_verify_failed: "Could not verify your code. Please try again.",
   invalid_otp: "That code is incorrect. Please check and try again.",
   otp_expired: "That code has expired. Request a new one.",
+  "Invalid or expired code": "That code is incorrect or expired.",
+  "OTP verification failed": "Could not verify your code. Please try again.",
+  "Captcha token is required": "Please complete the captcha verification.",
+  "Captcha verification unavailable":
+    "Captcha verification is unavailable. Please try again later.",
 
   /* ── Google sign-in ──────────────────────────────────────── */
   google_signin_failed: "Google sign-in failed. Please try again.",
@@ -46,7 +51,17 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   "auth/custom-token-mismatch":
     "Sign-in token mismatch. Please request a new code.",
 
+  /* ── account status ─────────────────────────────────────── */
+  account_deleted:
+    "We sent you an email with instructions to restore your account.",
+  account_unavailable:
+    "We can’t sign in this account right now. Contact support.",
+  agreements_required:
+    "Please accept the Privacy Policy and Terms of Service to continue.",
+
   /* ── session / logout ────────────────────────────────────── */
+  login_session_failed: "Could not finish sign-in. Please try again.",
+  "Invalid ID token": "Your sign-in session expired. Please sign in again.",
   logout_failed: "Could not sign you out. Please try again.",
 };
 
@@ -73,7 +88,8 @@ export function toUserMessage(err: unknown): string {
     typeof (err as any)?.message === "string" ? (err as any).message : undefined;
 
   // Try code first (Firebase style), then message (our custom throws)
-  const mapped = (code && AUTH_ERROR_MAP[code]) || (message && AUTH_ERROR_MAP[message]);
+  const mapped =
+    (code && AUTH_ERROR_MAP[code]) || (message && AUTH_ERROR_MAP[message]);
 
   if (mapped) return mapped;
 
@@ -95,8 +111,22 @@ export function sanitizeBackendError(raw: string): string {
     return DEFAULT_MESSAGE;
   }
 
-  // Cap length
-  const trimmed = raw.trim().slice(0, MAX_MESSAGE_LENGTH);
+  const trimmed = raw.trim();
 
-  return trimmed || DEFAULT_MESSAGE;
+  try {
+    const parsed = JSON.parse(trimmed) as { message?: unknown };
+    if (typeof parsed.message === "string") {
+      return parsed.message.slice(0, MAX_MESSAGE_LENGTH);
+    }
+    if (
+      Array.isArray(parsed.message) &&
+      typeof parsed.message[0] === "string"
+    ) {
+      return parsed.message[0].slice(0, MAX_MESSAGE_LENGTH);
+    }
+  } catch {
+    // Non-JSON response bodies fall through to the plain text path.
+  }
+
+  return trimmed.slice(0, MAX_MESSAGE_LENGTH) || DEFAULT_MESSAGE;
 }

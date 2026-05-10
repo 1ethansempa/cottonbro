@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { getClientAuth } from "@/lib/firebase-client";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@cottonbro/auth-react";
 
 export default function AuthenticatedLayout({
   children,
@@ -11,39 +10,53 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const { loading, logout, networkRequest, user } = useAuth();
 
   useEffect(() => {
-    const clientAuth = getClientAuth();
-    if (!clientAuth) {
-      setAuthReady(true);
+    if (loading) return;
+
+    if (!user) {
+      const currentPath = window.location.pathname;
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
 
-    // Listen directly to Firebase auth state changes
-    // This fires once auth state is restored from IndexedDB
-    const unsubscribe = onAuthStateChanged(clientAuth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setAuthReady(true);
-    });
+    let cancelled = false;
 
-    return () => unsubscribe();
-  }, []);
+    const verifyBackendSession = async () => {
+      try {
+        const response = await networkRequest("/api/auth/session");
 
-  useEffect(() => {
-    // Only redirect after auth state is determined
-    if (authReady && !user) {
-      const currentPath = window.location.pathname;
-      router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
-    }
-  }, [authReady, user, router]);
+        if (response.ok || cancelled) return;
+      } catch {
+        if (cancelled) return;
+      }
+
+      await logout();
+
+      if (!cancelled) {
+        const currentPath = window.location.pathname;
+        router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+      }
+    };
+
+    verifyBackendSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, logout, networkRequest, user, router]);
 
   // Show loading until Firebase auth state is ready
-  if (!authReady) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-white text-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-black border-t-transparent" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+            Loading...
+          </p>
+        </div>
       </div>
     );
   }
@@ -51,8 +64,13 @@ export default function AuthenticatedLayout({
   // No user after auth ready = redirect happening
   if (!user) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-white text-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-black border-t-transparent" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+            Loading...
+          </p>
+        </div>
       </div>
     );
   }
