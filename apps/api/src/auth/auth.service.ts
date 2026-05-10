@@ -36,10 +36,11 @@ export const USERS_REPOSITORY = Symbol("USERS_REPOSITORY");
 const BLOCKED_STATUSES = new Set<UserStatus>(["suspended", "banned"]);
 
 function parseCookieDomain(): string | undefined {
-  const raw = process.env.WEB_BASE_URL?.trim();
+  const raw = process.env.WEB_COOKIE_DOMAIN?.trim();
   if (!raw) return undefined;
+
   try {
-    const hostname = new URL(raw).hostname;
+    const hostname = raw.includes("://") ? new URL(raw).hostname : raw;
     if (hostname === "localhost" || /^\d+\./.test(hostname)) return undefined;
     return hostname.startsWith(".") ? hostname : `.${hostname}`;
   } catch {

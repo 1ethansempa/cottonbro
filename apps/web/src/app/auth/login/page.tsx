@@ -273,13 +273,13 @@ function LoginView() {
   }, [isAuthenticated, sent, turnstileConfigured, turnstileSiteKey]);
 
   useEffect(() => {
-    if (!isAuthenticated || hasRedirectedRef.current) return;
+    if (!isAuthenticated || busy || hasRedirectedRef.current) return;
     if (typeof window !== "undefined") {
       hasRedirectedRef.current = true;
       setIsRedirecting(true);
       window.location.replace(redirect);
     }
-  }, [isAuthenticated, redirect]);
+  }, [busy, isAuthenticated, redirect]);
 
   // Start Google auth, then return to the requested page.
   async function onGoogle() {
