@@ -100,6 +100,15 @@ DATABASE_URL=postgresql://...
 
 `DATABASE_URL` is the Neon Postgres connection string used by the API and Drizzle. Keep it server-side only; do not expose it to the web app.
 
+Important API auth variables:
+
+```env
+WEB_BASE_URL=http://localhost:5173
+WEB_COOKIE_DOMAIN=
+```
+
+`WEB_BASE_URL` is used for user-facing links such as account restore emails. `WEB_COOKIE_DOMAIN` is optional and should normally be left blank so the API sets host-only `__session` cookies through the web app proxy. Only set `WEB_COOKIE_DOMAIN` when cookies must be shared across a known parent domain, for example `.cottonbro.com`.
+
 ## Setup
 
 ```bash
@@ -173,6 +182,69 @@ Useful package commands:
 | UI package tests | `pnpm --filter @cottonbro/ui test` |
 
 Drizzle configuration lives in `apps/api/drizzle.config.ts`. Table definitions live in `apps/api/src/common/db/schema.ts`, generated migrations are written to `apps/api/drizzle/`, and the API exports Neon/Drizzle clients from `apps/api/src/common/db/sql.ts`.
+
+## Auth Flow
+
+```text
+Browser
+  -> Next.js /api/auth/*
+  -> API_BASE_URL/auth/*
+  -> NestJS API sets HttpOnly __session cookie
+  -> Browser keeps the cookie on the web app origin
+```
+
+Firebase client auth proves identity in the browser, but protected app pages still verify the backend session with `/api/auth/session`. If login succeeds and immediately returns to `/auth/login`, check that the browser received a `Set-Cookie: __session=...` response from `/api/auth/login`, clear old site cookies, and make sure `WEB_COOKIE_DOMAIN` is blank unless you intentionally need a shared parent-domain cookie.
+
+## Observability
+
+The API exposes Prometheus-format metrics at `/metrics`. In production, this endpoint is intended for the Cloud Run Google Managed Prometheus sidecar; public access can be enabled per environment with:
+
+```env
+PROMETHEUS_METRICS_ENABLED=true
+```
+
+The QA API deploy runs a `cloud-run-gmp-sidecar` container and mounts scrape config from the `api-prometheus-run-monitoring` Secret Manager secret. The intended path is:
+
+```text
+NestJS /metrics
+  -> Cloud Run GMP sidecar
+  -> Google Managed Service for Prometheus
+  -> Cloud Monitoring PromQL
+  -> optional Grafana dashboard
+```
+
+Useful PromQL queries:
+
+```promql
+cottonbro_api_up
+```
+
+```promql
+sum(rate(cottonbro_api_http_request_duration_seconds_count[15m]))
+```
+
+```promql
+1000 *
+histogram_quantile(
+  0.95,
+  sum by (le, method, route) (
+    rate(cottonbro_api_http_request_duration_seconds_bucket[1h])
+  )
+)
+```
+
+```promql
+100 *
+sum(rate(cottonbro_api_http_request_duration_seconds_count{statusCode=~"5.."}[15m]))
+/
+sum(rate(cottonbro_api_http_request_duration_seconds_count[15m]))
+```
+
+```promql
+cottonbro_api_memory_bytes{type="heap_used"} / 1024 / 1024
+```
+
+For low QA traffic, prefer `[15m]` or `[1h]` windows so p95 and request-rate charts are not too sparse. A `60s` scrape interval is usually enough for QA and helps keep Google Managed Prometheus ingestion costs low.
 
 ## Docker
 
