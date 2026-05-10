@@ -145,7 +145,7 @@ jobs:
             annotations:
               run.googleapis.com/launch-stage: ALPHA
               run.googleapis.com/cpu-throttling: "false"
-              run.googleapis.com/secrets: api-prometheus-run-monitoring:api-prometheus-run-monitoring
+              run.googleapis.com/secrets: api-prometheus-run-monitoring:projects/cottonbro-dev/secrets/api-prometheus-run-monitoring
           spec:
             template:
               metadata:
