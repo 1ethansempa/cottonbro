@@ -43,14 +43,7 @@ export function prometheusMetricsMiddleware(
 }
 
 export function prometheusMetricsHandler(req: Request, res: Response): void {
-  console.info("Metrics request", {
-    host: req.headers.host,
-    userAgent: req.headers["user-agent"],
-    ip: req.ip,
-    xForwardedFor: req.headers["x-forwarded-for"],
-  });
-
-  if (process.env.NODE_ENV === "production" && !isLocalMetricsRequest(req)) {
+  if (!shouldExposeMetrics(req)) {
     res.status(404).send("Not Found");
     return;
   }
@@ -78,6 +71,7 @@ function observeHttpRequest(durationSeconds: number, labels: MetricLabels): void
     const bucket = BUCKETS[index];
     if (bucket !== undefined && durationSeconds <= bucket) {
       state.buckets[index] = (state.buckets[index] ?? 0) + 1;
+      break;
     }
   }
 
@@ -111,7 +105,7 @@ function renderPrometheusMetrics(): string {
       const bucket = BUCKETS[index];
       if (bucket === undefined) continue;
 
-      cumulative = state.buckets[index] ?? 0;
+      cumulative += state.buckets[index] ?? 0;
       lines.push(
         `cottonbro_api_http_request_duration_seconds_bucket{${formatLabels({
           ...labels,
@@ -154,7 +148,20 @@ function escapeLabel(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+function shouldExposeMetrics(req: Request): boolean {
+  return (
+    process.env.PROMETHEUS_METRICS_ENABLED === "true" ||
+    process.env.NODE_ENV !== "production" ||
+    isLocalMetricsRequest(req)
+  );
+}
+
 function isLocalMetricsRequest(req: Request): boolean {
-  const host = req.headers.host?.split(":")[0]?.toLowerCase();
-  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const ip = req.ip ?? req.socket?.remoteAddress ?? "";
+  return (
+    ip === "127.0.0.1" ||
+    ip === "::1" ||
+    ip === "::ffff:127.0.0.1" ||
+    ip === "localhost"
+  );
 }
