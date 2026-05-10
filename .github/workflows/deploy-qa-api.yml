@@ -140,12 +140,6 @@ jobs:
                 interval: 30s
           EOF
 
-          gcloud secrets describe api-prometheus-run-monitoring \
-            --project "$GCP_PROJECT_ID" >/dev/null 2>&1 || \
-            gcloud secrets create api-prometheus-run-monitoring \
-              --project "$GCP_PROJECT_ID" \
-              --replication-policy automatic
-
           gcloud secrets versions add api-prometheus-run-monitoring \
             --project "$GCP_PROJECT_ID" \
             --data-file run-monitoring.yaml
