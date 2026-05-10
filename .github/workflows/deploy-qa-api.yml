@@ -126,23 +126,7 @@ jobs:
             --secret api-database-url)"
           DATABASE_URL="$DATABASE_URL" pnpm --filter @cottonbro/api db:migrate
 
-      - name: Configure Prometheus sidecar scrape
-        run: |
-          cat > run-monitoring.yaml <<EOF
-          apiVersion: monitoring.googleapis.com/v1beta
-          kind: RunMonitoring
-          metadata:
-            name: cottonbro-api
-          spec:
-            endpoints:
-              - port: 8080
-                path: /metrics
-                interval: 30s
-          EOF
 
-          gcloud secrets versions add api-prometheus-run-monitoring \
-            --project "$GCP_PROJECT_ID" \
-            --data-file run-monitoring.yaml
 
       # RUNTIME_SA is the service account that your Cloud Run service runs as at runtime
       # Creates or updates a Cloud Run service named cottonbro-api
