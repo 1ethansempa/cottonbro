@@ -126,6 +126,30 @@ jobs:
             --secret api-database-url)"
           DATABASE_URL="$DATABASE_URL" pnpm --filter @cottonbro/api db:migrate
 
+      - name: Configure Prometheus sidecar scrape
+        run: |
+          cat > run-monitoring.yaml <<EOF
+          apiVersion: monitoring.googleapis.com/v1beta
+          kind: RunMonitoring
+          metadata:
+            name: cottonbro-api
+          spec:
+            endpoints:
+              - port: 8080
+                path: /metrics
+                interval: 30s
+          EOF
+
+          gcloud secrets describe api-prometheus-run-monitoring \
+            --project "$GCP_PROJECT_ID" >/dev/null 2>&1 || \
+            gcloud secrets create api-prometheus-run-monitoring \
+              --project "$GCP_PROJECT_ID" \
+              --replication-policy automatic
+
+          gcloud secrets versions add api-prometheus-run-monitoring \
+            --project "$GCP_PROJECT_ID" \
+            --data-file run-monitoring.yaml
+
       # RUNTIME_SA is the service account that your Cloud Run service runs as at runtime
       # Creates or updates a Cloud Run service named cottonbro-api
       # targets project called cottonbro-dev in region
@@ -143,6 +167,7 @@ jobs:
             annotations:
               run.googleapis.com/launch-stage: ALPHA
               run.googleapis.com/cpu-throttling: "false"
+              run.googleapis.com/secrets: api-prometheus-run-monitoring:api-prometheus-run-monitoring
           spec:
             template:
               metadata:
@@ -151,6 +176,13 @@ jobs:
                   run.googleapis.com/container-dependencies: '{"collector":["app"]}'
               spec:
                 serviceAccountName: ${{ secrets.RUNTIME_SA }}
+                volumes:
+                  - name: prometheus-config
+                    secret:
+                      secretName: api-prometheus-run-monitoring
+                      items:
+                        - key: latest
+                          path: config.yaml
                 containers:
                   - name: app
                     image: $IMAGE
@@ -256,6 +288,9 @@ jobs:
                     resources:
                       limits:
                         memory: 128Mi
+                    volumeMounts:
+                      - name: prometheus-config
+                        mountPath: /etc/rungmp
           EOF
 
           gcloud run services replace cloud-run-api-service.yaml \

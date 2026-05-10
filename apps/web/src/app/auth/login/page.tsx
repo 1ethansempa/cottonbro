@@ -134,7 +134,7 @@ function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
 }
 
 function LoginView() {
-  const { requestOtp, confirmOtp, googleSignIn, busy, error, user, logout } =
+  const { requestOtp, confirmOtp, googleSignIn, busy, error, user } =
     useAuth();
 
   const [email, setEmail] = useState("");
@@ -144,9 +144,10 @@ function LoginView() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
+  const hasRedirectedRef = useRef(false);
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
   const turnstileConfigured = Boolean(turnstileSiteKey);
 
@@ -271,39 +272,24 @@ function LoginView() {
     };
   }, [isAuthenticated, sent, turnstileConfigured, turnstileSiteKey]);
 
-  // Continue with the existing signed-in session.
-  const handleContinue = useCallback(() => {
+  useEffect(() => {
+    if (!isAuthenticated || hasRedirectedRef.current) return;
     if (typeof window !== "undefined") {
+      hasRedirectedRef.current = true;
+      setIsRedirecting(true);
       window.location.replace(redirect);
     }
-  }, [redirect]);
-
-  // Sign out so the user can log in with a different account.
-  const handleSignOut = useCallback(async () => {
-    if (isSigningOut) return;
-    setIsSigningOut(true);
-    setStatus("Signing you out…");
-    try {
-      await logout();
-      setSent(false);
-      setCode("");
-      setCodeError(null);
-      resetCaptcha();
-      setStatus("Signed out. Enter your email to continue.");
-    } catch {
-      setStatus("Could not sign you out. Please try again.");
-    } finally {
-      setIsSigningOut(false);
-    }
-  }, [logout, resetCaptcha, isSigningOut]);
+  }, [isAuthenticated, redirect]);
 
   // Start Google auth, then return to the requested page.
   async function onGoogle() {
     setStatus(null);
+    setIsRedirecting(true);
     try {
       await googleSignIn(agreements);
       window.location.replace(redirect);
     } catch (e) {
+      setIsRedirecting(false);
       setStatus(null);
     }
   }
@@ -340,10 +326,12 @@ function LoginView() {
     const codeValue = validateOtp(code);
     if (!emailValue || !codeValue) return;
     setStatus(null);
+    setIsRedirecting(true);
     try {
       await confirmOtp(emailValue, codeValue, agreements);
       window.location.replace(redirect);
     } catch {
+      setIsRedirecting(false);
       setStatus(null);
     }
   }
@@ -383,27 +371,11 @@ function LoginView() {
             </div>
           </div>
 
-          {isAuthenticated ? (
+          {isRedirecting || isAuthenticated ? (
             <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-2xl">
-              <p className="text-xs font-medium text-black mb-1 font-mono">
-                ID: {user?.email}
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-black">
+                Taking you to your dashboard...
               </p>
-              <div className="flex flex-col gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={handleContinue}
-                  className={primaryButtonClass}
-                >
-                  Proceed to Dashboard
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  disabled={isSigningOut || busy}
-                  className="text-[10px] text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em] font-bold cursor-pointer mt-2"
-                >
-                  {isSigningOut ? "Signing out..." : "Sign Out"}
-                </button>
-              </div>
             </div>
           ) : !sent ? (
             <form onSubmit={onSend} className="space-y-6" noValidate>
