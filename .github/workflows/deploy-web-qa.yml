@@ -89,6 +89,7 @@ jobs:
           load_secret NEXT_PUBLIC_FIREBASE_PROJECT_ID web-firebase-project-id
           load_secret NEXT_PUBLIC_FIREBASE_APP_ID web-firebase-app-id
           load_secret NEXT_PUBLIC_ASSETS_BASE_URL web-assets-url
+          load_secret NEXT_PUBLIC_FALLBACK_AVATAR_URL web-fallback-avatar-url
 
       - name: Configure Docker auth for Artifact Registry
         run: |
@@ -107,6 +108,7 @@ jobs:
             --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
             --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="$NEXT_PUBLIC_FIREBASE_APP_ID" \
             --build-arg NEXT_PUBLIC_ASSETS_BASE_URL="$NEXT_PUBLIC_ASSETS_BASE_URL" \
+            --build-arg NEXT_PUBLIC_FALLBACK_AVATAR_URL="$NEXT_PUBLIC_FALLBACK_AVATAR_URL" \
             --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.QA_WEB_TURNSTILE_SITE_KEY }} \
             -f "$DOCKERFILE" \
             -t "$IMAGE" \
@@ -135,6 +137,7 @@ jobs:
             --set-env-vars NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
             --set-env-vars NEXT_PUBLIC_FIREBASE_APP_ID="$NEXT_PUBLIC_FIREBASE_APP_ID" \
             --set-env-vars NEXT_PUBLIC_ASSETS_BASE_URL="$NEXT_PUBLIC_ASSETS_BASE_URL" \
+            --set-env-vars NEXT_PUBLIC_FALLBACK_AVATAR_URL="$NEXT_PUBLIC_FALLBACK_AVATAR_URL" \
             --set-env-vars NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.QA_WEB_TURNSTILE_SITE_KEY }}
 
       - name: Show service URL

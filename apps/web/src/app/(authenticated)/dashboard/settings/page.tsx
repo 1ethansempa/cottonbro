@@ -2,30 +2,32 @@
 
 import { useEffect, useState } from "react";
 import {
+  CircleNotchIcon,
   EnvelopeIcon as Mail,
-  TrashIcon as Trash2,
-  WarningCircleIcon as AlertTriangle,
+  TrashIcon,
+  WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@cottonbro/auth-react";
-import { Button, Card, ConfirmDialog, Switch } from "@cottonbro/ui";
-import { useAccountSettingsStore } from "@/stores/account-settings-store";
+import { Card, ConfirmDialog, Switch } from "@cottonbro/ui";
+import { useUserStore } from "@/stores/user-store";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { logout, role } = useAuth();
   const {
     settings,
-    loading,
+    settingsLoading: loading,
     savingMarketing,
     deletingAccount,
-    error,
-    load,
+    settingsError: error,
+    loadSettings,
     updateMarketingConsent,
     deleteAccount,
-  } = useAccountSettingsStore();
+  } = useUserStore();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
   const canAccessSettings = role === "user" || role === undefined;
 
   useEffect(() => {
@@ -36,8 +38,25 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!canAccessSettings) return;
-    load();
-  }, [canAccessSettings, load]);
+    let cancelled = false;
+    setPageReady(false);
+
+    loadSettings().finally(() => {
+      if (!cancelled) {
+        setPageReady(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canAccessSettings, loadSettings]);
+
+  useEffect(() => {
+    if (error) {
+      scrollDashboardToTop();
+    }
+  }, [error]);
 
   async function handleDeleteAccount() {
     try {
@@ -50,8 +69,15 @@ export default function SettingsPage() {
     }
   }
 
+  if (!canAccessSettings) {
+    return null;
+  }
+
+  if (!pageReady) {
+    return <DashboardPageLoader label="Loading settings ...." />;
+  }
+
   return (
-    canAccessSettings && (
     <div className="p-6 md:p-12">
       <div className="mb-14">
         <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-gray-600">
@@ -65,6 +91,12 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      {error && (
+        <p className="mb-8 border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
+          {error}
+        </p>
+      )}
+
       <div className="space-y-12">
         <section>
           <div className="mb-4">
@@ -75,9 +107,11 @@ export default function SettingsPage() {
 
           <Card className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between px-6 py-6 border-gray-200 shadow-sm bg-white rounded-[12px]">
             <div className="flex gap-5 items-center">
-              <div className="flex shrink-0 items-center justify-center bg-gray-100 rounded-lg p-3">
-                <Mail className="h-5 w-5 text-black" aria-hidden="true" />
-              </div>
+              <Mail
+                className="h-6 w-6 shrink-0 text-black"
+                weight="regular"
+                aria-hidden="true"
+              />
               <div>
                 <p className="text-sm font-medium text-gray-700">
                   You&apos;ll receive marketing updates, creator inspiration, and weekly campaigns
@@ -105,52 +139,47 @@ export default function SettingsPage() {
 
         <section>
           <div className="mb-4">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-black">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-red-600">
               Delete Account
             </h2>
           </div>
 
           <Card
             tone="danger"
-            className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between px-6 py-6 border-[#fde8e8] shadow-sm bg-[#fdf5f5] rounded-[12px]"
+            className="flex flex-col gap-6 rounded-[12px] border-[#fde8e8] bg-[#fdf5f5] px-6 py-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
           >
-            <div className="flex gap-5 items-center">
-              <div className="flex shrink-0 items-center justify-center bg-[#fde8e8] rounded-lg p-3">
-                <AlertTriangle
-                  className="h-5 w-5 text-red-700"
-                  aria-hidden="true"
-                />
-              </div>
+            <div className="flex gap-5">
+              <WarningCircleIcon
+                className="h-6 w-6 shrink-0 text-red-700"
+                weight="regular"
+                aria-hidden="true"
+              />
               <div>
-                <p className="max-w-xl text-sm font-medium text-gray-700 leading-relaxed">
-                  Your account can be reinstated within 30 days after
-                  <br className="hidden lg:block" />
-                  deletion. After that period, your account and associated
-                  <br className="hidden lg:block" />
-                  data are permanently removed.
+                <p className="max-w-xl text-sm font-medium leading-relaxed text-gray-700">
+                  Your account can be reinstated within 30 days after deletion.
+                  After that period, your account and associated data are
+                  permanently removed.
                 </p>
               </div>
             </div>
 
             <div className="shrink-0 lg:ml-auto">
-              <Button
-                variant="danger"
+              <button
+                type="button"
                 onClick={() => setShowDeleteModal(true)}
-                className="w-full sm:w-auto bg-[#c81e1e] hover:bg-[#a51a1a] text-white rounded-[6px] text-[10px] px-5 py-3 font-bold uppercase tracking-wide border-none"
+                className="inline-flex w-full items-center justify-center rounded-[6px] border-none bg-[#c81e1e] px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#a51a1a] sm:w-auto"
               >
-                <Trash2 className="h-4 w-4 mr-2" weight="regular" aria-hidden="true" />
+                <TrashIcon
+                  className="mr-2 h-4 w-4"
+                  weight="regular"
+                  aria-hidden="true"
+                />
                 Delete Account
-              </Button>
+              </button>
             </div>
           </Card>
         </section>
       </div>
-
-      {error && (
-        <p className="mt-6 border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
-          {error}
-        </p>
-      )}
 
       {showDeleteModal && (
         <ConfirmDialog
@@ -172,6 +201,33 @@ export default function SettingsPage() {
         />
       )}
     </div>
-    )
+  );
+}
+
+function scrollDashboardToTop() {
+  const scrollContainer = document.querySelector(
+    "[data-dashboard-scroll-container]",
+  );
+
+  if (scrollContainer) {
+    scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function DashboardPageLoader({ label }: { label: string }) {
+  return (
+    <div className="flex min-h-[55vh] items-center justify-center p-6 md:p-12">
+      <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-gray-500">
+        <CircleNotchIcon
+          className="h-4 w-4 animate-spin"
+          weight="regular"
+          aria-hidden="true"
+        />
+        {label}
+      </div>
+    </div>
   );
 }

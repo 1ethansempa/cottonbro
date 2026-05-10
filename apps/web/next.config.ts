@@ -22,17 +22,17 @@ const connectSrc = [
   "http://localhost:8000",
   "https://*.google.com",
   "https://*.crisp.chat",
-  "wss://client.relay.crisp.chat",
+  "wss://*.crisp.chat",
 ];
 
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.cloudflare.com https://crisp.chat https://*.crisp.chat",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.crisp.chat",
-  `img-src 'self' https://*.crisp.chat data: ${assetsUrl.origin}`,
+  "img-src 'self' https://*.crisp.chat https://*.cottonbro.com data:",
   `connect-src ${connectSrc.join(" ")}`,
   "font-src 'self' https://*.crisp.chat https://fonts.gstatic.com data:",
-  "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://challenges.cloudflare.com",
+  "frame-src 'self' https://cottonbro-dev.firebaseapp.com https://*.cottonbro.com https://www.gstatic.com https://*.cloudflare.com",
   "trusted-types * 'allow-duplicates'",
   "frame-ancestors 'none'",
 ].join("; ");

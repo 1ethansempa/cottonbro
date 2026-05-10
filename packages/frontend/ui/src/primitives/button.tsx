@@ -9,7 +9,7 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "primary", size = "md", className = "", type, ...props }, ref) => {
   const base =
-    "inline-flex cursor-pointer flex-row items-center justify-center gap-2 whitespace-nowrap rounded-full border text-center font-bold uppercase tracking-[0.18em] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex cursor-pointer flex-row items-center justify-center gap-2 whitespace-nowrap rounded-full border text-center font-bold uppercase tracking-[0.18em] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:cursor-not-allowed disabled:border-black/25 disabled:bg-white disabled:text-black/35 disabled:hover:bg-white disabled:hover:text-black/35 disabled:hover:opacity-100";
 
   const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
     primary: "border-black bg-black text-white hover:opacity-80",

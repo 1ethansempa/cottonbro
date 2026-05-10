@@ -4,12 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@cottonbro/auth-react";
 import {
-  ArrowUpRight,
-  Bell,
-  GearSix as Settings,
-  Plus,
-  SignOut as LogOut,
-  UserCircle as User,
+  ArrowUpRightIcon,
+  GearSixIcon,
+  PlusIcon,
+  SignOutIcon,
+  UserCircleIcon,
 } from "@phosphor-icons/react";
 import { Logo } from "@cottonbro/ui";
 
@@ -28,17 +27,33 @@ export default function DashboardLayout({
           {
             href: "/dashboard/settings",
             label: "Settings",
-            icon: <Settings className="w-4 h-4" />,
+            icon: (
+              <GearSixIcon
+                className="h-4 w-4"
+                weight="regular"
+                aria-hidden="true"
+              />
+            ),
           },
         ]
       : []),
-    { href: "/dashboard/profile", label: "Profile", icon: <User className="w-4 h-4" /> },
+    {
+      href: "/dashboard/profile",
+      label: "Profile",
+      icon: (
+        <UserCircleIcon
+          className="h-4 w-4"
+          weight="regular"
+          aria-hidden="true"
+        />
+      ),
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] flex flex-col md:flex-row font-sans text-black selection:bg-black selection:text-white">
+    <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#f9f9f9] font-sans text-black selection:bg-black selection:text-white md:h-screen md:overflow-hidden md:flex-row">
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col justify-between shrink-0 h-auto md:min-h-screen relative z-10">
+      <aside className="relative z-10 flex h-auto w-full shrink-0 flex-col justify-between border-b border-gray-200 md:h-screen md:w-64 md:border-b-0 md:border-r">
         <div>
           {/* Logo Area */}
           <div className="p-6 md:p-8 flex items-center justify-between md:justify-start">
@@ -54,10 +69,14 @@ export default function DashboardLayout({
               className="group flex items-center justify-between w-full bg-black text-white px-5 py-4 text-[10px] font-bold tracking-[0.2em] uppercase transition-all hover:opacity-80 rounded-full"
             >
               <span className="flex items-center gap-2 whitespace-nowrap">
-                <Plus className="w-3.5 h-3.5" />
+                <PlusIcon
+                  className="h-3.5 w-3.5"
+                  weight="regular"
+                  aria-hidden="true"
+                />
                 Create Product
               </span>
-              <ArrowUpRight className="h-3.5 w-3.5 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" weight="regular" aria-hidden="true" />
+              <ArrowUpRightIcon className="h-3.5 w-3.5 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" weight="regular" aria-hidden="true" />
             </Link>
           </div>
 
@@ -96,19 +115,21 @@ export default function DashboardLayout({
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-white text-xs font-bold">C</div>
               <span className="text-[10px] font-bold tracking-[0.15em] text-gray-500 group-hover:text-black transition-colors">Logout</span>
             </div>
-            <LogOut className="w-4 h-4 text-gray-500 group-hover:text-black transition-colors" />
+            <SignOutIcon
+              className="h-4 w-4 text-gray-500 transition-colors group-hover:text-black"
+              weight="regular"
+              aria-hidden="true"
+            />
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 relative">
-        {/* Top bar with notification & profile icons */}
-        <div className="flex justify-end items-center gap-6 px-6 md:px-12 pt-6 md:pt-8">
-          <Bell className="w-5 h-5 text-black cursor-pointer hover:opacity-70 transition-opacity" />
-          <User className="w-5 h-5 text-black cursor-pointer hover:opacity-70 transition-opacity" />
-        </div>
-        <div className="max-w-6xl mx-auto h-full min-h-screen">
+      <main
+        data-dashboard-scroll-container
+        className="relative min-w-0 flex-1 overflow-x-hidden md:h-screen md:overflow-y-auto"
+      >
+        <div className="mx-auto min-h-screen w-full max-w-6xl">
           {children}
         </div>
       </main>
