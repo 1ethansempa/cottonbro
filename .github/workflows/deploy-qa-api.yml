@@ -26,7 +26,6 @@ env:
   # global envs used in workflow
   SERVICE_NAME: cottonbro-api
   DOCKERFILE: apps/api/Dockerfile
-  PROMETHEUS_CONFIG: apps/api/deploy/prometheus-run-monitoring.yaml
   GCP_PROJECT_ID: cottonbro-dev
   REGION: europe-west1
   # artifact registry for that region
@@ -126,12 +125,6 @@ jobs:
             --project "$GCP_PROJECT_ID" \
             --secret api-database-url)"
           DATABASE_URL="$DATABASE_URL" pnpm --filter @cottonbro/api db:migrate
-
-      - name: Update Prometheus scrape config (QA)
-        run: |
-          gcloud secrets versions add api-prometheus-run-monitoring \
-            --project "$GCP_PROJECT_ID" \
-            --data-file "$PROMETHEUS_CONFIG"
 
       # RUNTIME_SA is the service account that your Cloud Run service runs as at runtime
       # Creates or updates a Cloud Run service named cottonbro-api
