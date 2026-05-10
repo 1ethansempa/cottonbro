@@ -203,7 +203,7 @@ The API exposes Prometheus-format metrics at `/metrics`. In production, this end
 PROMETHEUS_METRICS_ENABLED=true
 ```
 
-The QA API deploy runs a `cloud-run-gmp-sidecar` container and mounts scrape config from the `api-prometheus-run-monitoring` Secret Manager secret. The intended path is:
+The QA API deploy runs a `cloud-run-gmp-sidecar` container and mounts scrape config from the `api-prometheus-run-monitoring` Secret Manager secret. The source config is versioned at `apps/api/deploy/prometheus-run-monitoring.yaml` and uses a `5m` scrape interval. The intended path is:
 
 ```text
 NestJS /metrics
@@ -244,7 +244,7 @@ sum(rate(cottonbro_api_http_request_duration_seconds_count[15m]))
 cottonbro_api_memory_bytes{type="heap_used"} / 1024 / 1024
 ```
 
-For low QA traffic, prefer `[15m]` or `[1h]` windows so p95 and request-rate charts are not too sparse. A `60s` scrape interval is usually enough for QA and helps keep Google Managed Prometheus ingestion costs low.
+For low QA traffic, prefer `[15m]` or `[1h]` windows so p95 and request-rate charts are not too sparse. A `5m` scrape interval keeps QA ingestion low; temporarily lower it to `60s` when actively debugging performance.
 
 ## Docker
 
