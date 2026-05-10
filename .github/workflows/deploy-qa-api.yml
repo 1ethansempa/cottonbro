@@ -168,7 +168,8 @@ jobs:
             --container collector \
             --image "$GMP_SIDECAR_IMAGE" \
             --depends-on app \
-            --memory 128Mi
+            --memory 128Mi \
+            --port default
 
         # Prints the service’s public URL
       - name: Show service URL
