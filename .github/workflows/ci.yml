@@ -23,11 +23,11 @@ jobs:
       # set up node in runner environment
       - name: Setup Node.js
         uses: actions/setup-node@v6
-        # install node 22
+        # install node 24
         # cache: 'pnpm' speeds up installs, reuses previously installed dependencies
         # uses lockfile as cache key
         with:
-          node-version: 22
+          node-version: 24
           cache: "pnpm"
         # install dependencies exactly like in lock file
       - name: Install dependencies
