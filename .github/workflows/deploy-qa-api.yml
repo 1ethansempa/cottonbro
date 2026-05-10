@@ -119,29 +119,6 @@ jobs:
         run: |
           docker push "$IMAGE"
 
-      - name: Resolve existing Cloud Run containers
-        run: |
-          EXISTING_CONTAINERS="$(gcloud run services describe "$SERVICE_NAME" \
-            --project "$GCP_PROJECT_ID" \
-            --region "$REGION" \
-            --format='value(spec.template.spec.containers[].name)' 2>/dev/null || true)"
-
-          REMOVE_CONTAINERS=""
-          for container in $EXISTING_CONTAINERS; do
-            if [ "$container" != "app" ] && [ "$container" != "collector" ]; then
-              if [ -z "$REMOVE_CONTAINERS" ]; then
-                REMOVE_CONTAINERS="$container"
-              else
-                REMOVE_CONTAINERS="$REMOVE_CONTAINERS,$container"
-              fi
-            fi
-          done
-
-          if [ -n "$REMOVE_CONTAINERS" ]; then
-            echo "Removing stale Cloud Run containers: $REMOVE_CONTAINERS"
-            echo "REMOVE_CONTAINERS_ARG=--remove-containers=$REMOVE_CONTAINERS" >> "$GITHUB_ENV"
-          fi
-
       - name: Run database migrations (QA)
         run: |
           DATABASE_URL="$(gcloud secrets versions access latest \
@@ -158,41 +135,139 @@ jobs:
       # set-secrets binds secret Manager secrets into the service as environment variables
       - name: Deploy API to Cloud Run (QA)
         run: |
-          gcloud run deploy "$SERVICE_NAME" \
+          cat > cloud-run-api-service.yaml <<EOF
+          apiVersion: serving.knative.dev/v1
+          kind: Service
+          metadata:
+            name: $SERVICE_NAME
+            annotations:
+              run.googleapis.com/launch-stage: ALPHA
+              run.googleapis.com/cpu-throttling: "false"
+          spec:
+            template:
+              metadata:
+                annotations:
+                  run.googleapis.com/execution-environment: gen2
+                  run.googleapis.com/container-dependencies: '{"collector":["app"]}'
+              spec:
+                serviceAccountName: ${{ secrets.RUNTIME_SA }}
+                containers:
+                  - name: app
+                    image: $IMAGE
+                    ports:
+                      - containerPort: 8080
+                    resources:
+                      limits:
+                        memory: 512Mi
+                    env:
+                      - name: NODE_ENV
+                        value: production
+                      - name: APP_ENV
+                        value: qa
+                      - name: CORS_ORIGINS
+                        value: "${{ secrets.QA_API_CORS_ORIGINS }}"
+                      - name: FIREBASE_PROJECT_ID
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-firebase-project-id
+                            key: latest
+                      - name: FIREBASE_ADMIN_JSON
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-firebase-admin-json
+                            key: latest
+                      - name: DATABASE_URL
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-database-url
+                            key: latest
+                      - name: TURNSTILE_SECRET
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-turnstile-secret
+                            key: latest
+                      - name: SMTP_USER
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-smtp-user
+                            key: latest
+                      - name: SMTP_PASS
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-smtp-pass
+                            key: latest
+                      - name: SMTP_HOST
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-smtp-host
+                            key: latest
+                      - name: SMTP_PORT
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-smtp-port
+                            key: latest
+                      - name: SMTP_FROM
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-smtp-user
+                            key: latest
+                      - name: R2_ACCOUNT_ID
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-r2-account-id
+                            key: latest
+                      - name: R2_ACCESS_KEY_ID
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-r2-access-key-id
+                            key: latest
+                      - name: R2_SECRET_ACCESS_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-r2-secret-access-key
+                            key: latest
+                      - name: R2_BUCKET
+                        valueFrom:
+                          secretKeyRef:
+                            name: api-r2-bucket
+                            key: latest
+                      - name: R2_PUBLIC_BASE_URL
+                        valueFrom:
+                          secretKeyRef:
+                            name: web-assets-url
+                            key: latest
+                      - name: PYTHON_API_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: python-api-key
+                            key: latest
+                      - name: PYTHON_SERVICE_URL
+                        valueFrom:
+                          secretKeyRef:
+                            name: python-service-url
+                            key: latest
+                      - name: WEB_BASE_URL
+                        valueFrom:
+                          secretKeyRef:
+                            name: web-base-url
+                            key: latest
+                  - name: collector
+                    image: $GMP_SIDECAR_IMAGE
+                    resources:
+                      limits:
+                        memory: 128Mi
+          EOF
+
+          gcloud run services replace cloud-run-api-service.yaml \
+            --project "$GCP_PROJECT_ID" \
+            --region "$REGION"
+
+          gcloud run services add-iam-policy-binding "$SERVICE_NAME" \
             --project "$GCP_PROJECT_ID" \
             --region "$REGION" \
-            --platform managed \
-            --service-account "${{ secrets.RUNTIME_SA }}" \
-            --allow-unauthenticated \
-            --execution-environment gen2 \
-            --no-cpu-throttling \
-            ${REMOVE_CONTAINERS_ARG:+$REMOVE_CONTAINERS_ARG} \
-            --container app \
-            --image "$IMAGE" \
-            --port 8080 \
-            --memory 512Mi \
-            --set-env-vars "^||^NODE_ENV=production||APP_ENV=qa||CORS_ORIGINS=${{ secrets.QA_API_CORS_ORIGINS }}" \
-            --set-secrets FIREBASE_PROJECT_ID=api-firebase-project-id:latest \
-            --set-secrets FIREBASE_ADMIN_JSON=api-firebase-admin-json:latest \
-            --set-secrets DATABASE_URL=api-database-url:latest \
-            --set-secrets TURNSTILE_SECRET=api-turnstile-secret:latest \
-            --set-secrets SMTP_USER=api-smtp-user:latest \
-            --set-secrets SMTP_PASS=api-smtp-pass:latest \
-            --set-secrets SMTP_HOST=api-smtp-host:latest \
-            --set-secrets SMTP_PORT=api-smtp-port:latest \
-            --set-secrets SMTP_FROM=api-smtp-user:latest \
-            --set-secrets R2_ACCOUNT_ID=api-r2-account-id:latest \
-            --set-secrets R2_ACCESS_KEY_ID=api-r2-access-key-id:latest \
-            --set-secrets R2_SECRET_ACCESS_KEY=api-r2-secret-access-key:latest \
-            --set-secrets R2_BUCKET=api-r2-bucket:latest \
-            --set-secrets R2_PUBLIC_BASE_URL=web-assets-url:latest \
-            --set-secrets PYTHON_API_KEY=python-api-key:latest \
-            --set-secrets PYTHON_SERVICE_URL=python-service-url:latest \
-            --set-secrets WEB_BASE_URL=web-base-url:latest \
-            --container collector \
-            --image "$GMP_SIDECAR_IMAGE" \
-            --depends-on app \
-            --memory 128Mi
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --quiet
 
         # Prints the service’s public URL
       - name: Show service URL
