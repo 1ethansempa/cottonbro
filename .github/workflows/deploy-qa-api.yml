@@ -119,6 +119,29 @@ jobs:
         run: |
           docker push "$IMAGE"
 
+      - name: Resolve existing Cloud Run containers
+        run: |
+          EXISTING_CONTAINERS="$(gcloud run services describe "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$REGION" \
+            --format='value(spec.template.spec.containers[].name)' 2>/dev/null || true)"
+
+          REMOVE_CONTAINERS=""
+          for container in $EXISTING_CONTAINERS; do
+            if [ "$container" != "app" ] && [ "$container" != "collector" ]; then
+              if [ -z "$REMOVE_CONTAINERS" ]; then
+                REMOVE_CONTAINERS="$container"
+              else
+                REMOVE_CONTAINERS="$REMOVE_CONTAINERS,$container"
+              fi
+            fi
+          done
+
+          if [ -n "$REMOVE_CONTAINERS" ]; then
+            echo "Removing stale Cloud Run containers: $REMOVE_CONTAINERS"
+            echo "REMOVE_CONTAINERS_ARG=--remove-containers=$REMOVE_CONTAINERS" >> "$GITHUB_ENV"
+          fi
+
       - name: Run database migrations (QA)
         run: |
           DATABASE_URL="$(gcloud secrets versions access latest \
@@ -143,6 +166,7 @@ jobs:
             --allow-unauthenticated \
             --execution-environment gen2 \
             --no-cpu-throttling \
+            ${REMOVE_CONTAINERS_ARG:+$REMOVE_CONTAINERS_ARG} \
             --container app \
             --image "$IMAGE" \
             --port 8080 \
@@ -168,8 +192,7 @@ jobs:
             --container collector \
             --image "$GMP_SIDECAR_IMAGE" \
             --depends-on app \
-            --memory 128Mi \
-            --port default
+            --memory 128Mi
 
         # Prints the service’s public URL
       - name: Show service URL
