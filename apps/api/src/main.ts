@@ -6,6 +6,10 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 //Allows the server to read request bodies.
 import { json, urlencoded } from "express";
+import {
+  prometheusMetricsHandler,
+  prometheusMetricsMiddleware,
+} from "./common/metrics/prometheus-metrics.js";
 
 //initializes and starts the server.
 async function bootstrap() {
@@ -15,6 +19,9 @@ async function bootstrap() {
 
   // Trust the ingress proxy so req.ip and forwarded protocol/host resolve correctly.
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
+
+  app.use("/metrics", prometheusMetricsHandler);
+  app.use(prometheusMetricsMiddleware);
 
   // Registers helmet as global middleware. Every HTTP response will include security headers.
   app.use(helmet());
