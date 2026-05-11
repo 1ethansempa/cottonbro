@@ -30,7 +30,6 @@ env:
   REGION: europe-west1
   # artifact registry for that region
   REGISTRY: europe-west1-docker.pkg.dev
-  GMP_SIDECAR_IMAGE: us-docker.pkg.dev/cloud-ops-agents-artifacts/cloud-run-gmp-sidecar/cloud-run-gmp-sidecar:1.2.0
 
 jobs:
   test:
@@ -126,8 +125,6 @@ jobs:
             --secret api-database-url)"
           DATABASE_URL="$DATABASE_URL" pnpm --filter @cottonbro/api db:migrate
 
-
-
       # RUNTIME_SA is the service account that your Cloud Run service runs as at runtime
       # Creates or updates a Cloud Run service named cottonbro-api
       # targets project called cottonbro-dev in region
@@ -142,25 +139,13 @@ jobs:
           kind: Service
           metadata:
             name: $SERVICE_NAME
-            annotations:
-              run.googleapis.com/launch-stage: ALPHA
-              run.googleapis.com/cpu-throttling: "false"
-              run.googleapis.com/secrets: api-prometheus-run-monitoring:projects/cottonbro-dev/secrets/api-prometheus-run-monitoring
           spec:
             template:
               metadata:
                 annotations:
                   run.googleapis.com/execution-environment: gen2
-                  run.googleapis.com/container-dependencies: '{"collector":["app"]}'
               spec:
                 serviceAccountName: ${{ secrets.RUNTIME_SA }}
-                volumes:
-                  - name: prometheus-config
-                    secret:
-                      secretName: api-prometheus-run-monitoring
-                      items:
-                        - key: latest
-                          path: config.yaml
                 containers:
                   - name: app
                     image: $IMAGE
@@ -174,8 +159,6 @@ jobs:
                         value: production
                       - name: APP_ENV
                         value: qa
-                      - name: PROMETHEUS_METRICS_ENABLED
-                        value: "true"
                       - name: CORS_ORIGINS
                         value: "${{ secrets.QA_API_CORS_ORIGINS }}"
                       - name: FIREBASE_PROJECT_ID
@@ -263,14 +246,6 @@ jobs:
                           secretKeyRef:
                             name: web-base-url
                             key: latest
-                  - name: collector
-                    image: $GMP_SIDECAR_IMAGE
-                    resources:
-                      limits:
-                        memory: 128Mi
-                    volumeMounts:
-                      - name: prometheus-config
-                        mountPath: /etc/rungmp
           EOF
 
           gcloud run services replace cloud-run-api-service.yaml \
