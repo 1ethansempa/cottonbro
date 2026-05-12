@@ -4,6 +4,8 @@ import {
   getAuth,
   setPersistence,
   browserLocalPersistence,
+  browserSessionPersistence,
+  inMemoryPersistence,
 } from "firebase/auth";
 
 let cachedAuth: Auth | null = null;
@@ -47,11 +49,14 @@ export function getClientAuth() {
 
   if (!persistenceConfigured && typeof window !== "undefined") {
     persistenceConfigured = true;
-    setPersistence(cachedAuth, browserLocalPersistence).catch((err) => {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("Failed to configure Firebase auth persistence", err);
-      }
-    });
+    setPersistence(cachedAuth, browserLocalPersistence)
+      .catch(() => setPersistence(cachedAuth!, browserSessionPersistence))
+      .catch(() => setPersistence(cachedAuth!, inMemoryPersistence))
+      .catch((err) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Failed to configure Firebase auth persistence", err);
+        }
+      });
   }
 
   return cachedAuth;

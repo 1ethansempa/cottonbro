@@ -15,10 +15,7 @@ import {
   signInWithCustomToken,
   signInWithPopup,
 } from "firebase/auth";
-import {
-  createNetworkRequest,
-  type NetworkRequest,
-} from "./network-request";
+import { createNetworkRequest, type NetworkRequest } from "./network-request";
 import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
 const DEFAULT_AUTH_BASE_URL = "/api/auth";
@@ -139,37 +136,33 @@ export const AuthProvider: React.FC<
   }, [authRoutes.session, readRole]);
 
   // Auth endpoints set/read HttpOnly cookies, so every request includes credentials.
-  const postJson = useCallback(
-    async (url: string, body?: unknown) => {
-      const headers: Record<string, string> = {
-        "content-type": "application/json",
-      };
+  const postJson = useCallback(async (url: string, body?: unknown) => {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
 
-      const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-        headers,
-        body: JSON.stringify(body ?? {}),
-      });
+    const res = await fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify(body ?? {}),
+    });
 
-      if (!res.ok) {
-        const raw = await res.text().catch(() => "");
-        throw new Error(
-          sanitizeBackendError(raw) ||
-            `Request failed with status ${res.status}`,
-        );
-      }
+    if (!res.ok) {
+      const raw = await res.text().catch(() => "");
+      throw new Error(
+        sanitizeBackendError(raw) || `Request failed with status ${res.status}`,
+      );
+    }
 
-      const contentType = res.headers.get("content-type");
+    const contentType = res.headers.get("content-type");
 
-      if (contentType?.includes("application/json")) {
-        return res.json();
-      }
+    if (contentType?.includes("application/json")) {
+      return res.json();
+    }
 
-      return undefined;
-    },
-    [],
-  );
+    return undefined;
+  }, []);
 
   // Centralizes action state so auth buttons do not each invent spinner/error rules.
   const runAuthAction = useCallback(async <T,>(action: () => Promise<T>) => {
@@ -365,6 +358,10 @@ export const AuthProvider: React.FC<
 
         const provider = new GoogleAuthProvider();
 
+        provider.setCustomParameters({
+          prompt: "select_account",
+        });
+
         const result = await signInWithPopup(auth, provider);
 
         await finishSignIn(result.user, agreements);
@@ -374,41 +371,42 @@ export const AuthProvider: React.FC<
 
   // Some API calls need Firebase bearer auth directly. Keep the token in memory
   // only, and refresh it once it is older than the backend's 20-minute policy.
-  const refreshIdToken = useCallback<
-    AuthContextValue["refreshIdToken"]
-  >(async (forceRefresh = false) => {
-    const currentUser = auth?.currentUser;
+  const refreshIdToken = useCallback<AuthContextValue["refreshIdToken"]>(
+    async (forceRefresh = false) => {
+      const currentUser = auth?.currentUser;
 
-    if (!currentUser) return null;
+      if (!currentUser) return null;
 
-    try {
-      const cached = bearerTokenCache.current;
-      if (
-        !forceRefresh &&
-        cached?.uid === currentUser.uid &&
-        Date.now() - cached.cachedAt < BEARER_TOKEN_CACHE_TTL_MS
-      ) {
-        return cached.token;
+      try {
+        const cached = bearerTokenCache.current;
+        if (
+          !forceRefresh &&
+          cached?.uid === currentUser.uid &&
+          Date.now() - cached.cachedAt < BEARER_TOKEN_CACHE_TTL_MS
+        ) {
+          return cached.token;
+        }
+
+        const idToken = await currentUser.getIdToken(true);
+        bearerTokenCache.current = {
+          token: idToken,
+          uid: currentUser.uid,
+          cachedAt: Date.now(),
+        };
+
+        const tokenInfo = await currentUser.getIdTokenResult();
+
+        if (mounted.current) {
+          setClaims(tokenInfo.claims);
+        }
+
+        return idToken;
+      } catch {
+        return null;
       }
-
-      const idToken = await currentUser.getIdToken(true);
-      bearerTokenCache.current = {
-        token: idToken,
-        uid: currentUser.uid,
-        cachedAt: Date.now(),
-      };
-
-      const tokenInfo = await currentUser.getIdTokenResult();
-
-      if (mounted.current) {
-        setClaims(tokenInfo.claims);
-      }
-
-      return idToken;
-    } catch {
-      return null;
-    }
-  }, [auth]);
+    },
+    [auth],
+  );
 
   const networkRequest = useMemo(
     () => createNetworkRequest(refreshIdToken),

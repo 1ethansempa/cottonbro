@@ -45,7 +45,10 @@ const DEFAULT_AUTH_REDIRECT = "/dashboard";
 function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number,
+  ) => {
     const v = e.target.value.replace(/[^0-9]/g, "");
     if (!v) {
       const newCode = value.split("");
@@ -53,7 +56,7 @@ function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
       onChange(newCode.join(""));
       return;
     }
-    
+
     // Support typing over an existing digit
     if (v.length > 1) {
       const lastChar = v[v.length - 1] ?? "";
@@ -69,13 +72,16 @@ function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
     const newCode = value.split("");
     newCode[index] = v;
     onChange(newCode.join(""));
-    
+
     if (index < 5 && v) {
       inputsRef.current[index + 1]?.focus();
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) => {
     if (e.key === "Backspace") {
       if (!value[index] && index > 0) {
         inputsRef.current[index - 1]?.focus();
@@ -96,7 +102,10 @@ function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 6);
     if (pasted) {
       onChange(pasted);
       const nextIndex = Math.min(pasted.length, 5);
@@ -134,8 +143,7 @@ function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
 }
 
 function LoginView() {
-  const { requestOtp, confirmOtp, googleSignIn, busy, error, user } =
-    useAuth();
+  const { requestOtp, confirmOtp, googleSignIn, busy, error, user } = useAuth();
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -346,177 +354,178 @@ function LoginView() {
           className="w-full max-w-md relative z-10"
         >
           <div className="bg-white px-5 py-8 sm:p-10 relative overflow-hidden border border-gray-200 rounded-3xl">
-          <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
-            Continue to Cotton Bro
-          </h1>
-          <p className="text-gray-500 text-[10px] text-center mb-10 font-bold tracking-[0.2em] uppercase">
-            Sign in or create an account to continue.
-          </p>
-
-          {/* Google Button */}
-          <div className="mb-8">
-            <GoogleButton
-              onClick={onGoogle}
-              disabled={busy}
-              className={secondaryButtonClass}
-            />
-          </div>
-
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest font-mono">
-              <span className="bg-white px-4 text-gray-400">Or use email</span>
-            </div>
-          </div>
-
-          {isRedirecting || isAuthenticated ? (
-            <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-2xl">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-black">
-                Taking you to your dashboard...
-              </p>
-            </div>
-          ) : !sent ? (
-            <form onSubmit={onSend} className="space-y-6" noValidate>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider ml-1">
-                  Email
-                </label>
-                <Input
-                  type="email"
-                  value={email}
-                  onBlur={(e) => {
-                    if (e.target.value) validateEmail(e.target.value);
-                  }}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (emailError) setEmailError(null);
-                  }}
-                  placeholder="name@example.com"
-                  aria-invalid={Boolean(emailError)}
-                  aria-describedby={emailError ? "email-error" : undefined}
-                  className="w-full bg-gray-50 border border-gray-200 text-primary placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black rounded-xl py-6 px-6 transition-all font-medium text-base h-14"
-                  required
-                />
-                {emailError && (
-                  <p
-                    id="email-error"
-                    className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-500"
-                  >
-                    {emailError}
-                  </p>
-                )}
-              </div>
-
-              {turnstileConfigured && (
-                <div className="mb-4 flex min-h-[65px] w-full justify-center overflow-hidden">
-                  <div
-                    ref={turnstileContainerRef}
-                    className="w-full"
-                  />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={!email.trim() || busy}
-                className={primaryButtonClass}
-              >
-                {busy ? "Sending..." : "Send Code"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={onConfirm} className="space-y-6" noValidate>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider ml-1">
-                  Enter 6-Digit Code
-                </label>
-                <div onBlur={() => {
-                  if (code.length === 6) validateOtp(code);
-                }}>
-                  <OtpInputFields 
-                    value={code} 
-                    onChange={(val) => {
-                      setCode(val);
-                      if (codeError) setCodeError(null);
-                    }} 
-                    hasError={Boolean(codeError)}
-                  />
-                </div>
-                {codeError && (
-                  <p
-                    id="code-error"
-                    className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-500"
-                  >
-                    {codeError}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={!isValidOtp(code) || busy}
-                className={primaryButtonClass}
-              >
-                {busy ? "Verifying..." : "Continue"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSent(false);
-                  setCode("");
-                  setEmailError(null);
-                  setCodeError(null);
-                }}
-                className="w-full text-[10px] font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em] cursor-pointer"
-              >
-                Use different email
-              </button>
-            </form>
-          )}
-
-          {/* Status Messages */}
-          {status && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-3 bg-gray-50 border border-gray-200 text-center rounded-lg"
-            >
-              <p className="text-xs font-bold text-black">{status}</p>
-            </motion.div>
-          )}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-3 bg-red-500/10 border border-red-500/20 text-center rounded-lg"
-            >
-              <p className="text-xs font-bold text-red-400">{error}</p>
-            </motion.div>
-          )}
-
-          {!isAuthenticated && (
-            <p className="mt-6 text-center text-[10px] font-bold uppercase tracking-[0.12em] leading-5 text-gray-400">
-              By continuing, you agree to the{" "}
-              <Link
-                href="#"
-                className="text-black border-b border-black hover:opacity-70 transition-opacity"
-              >
-                Privacy Policy
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="#"
-                className="text-black border-b border-black hover:opacity-70 transition-opacity"
-              >
-                Terms of Service
-              </Link>
-              .
+            <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
+              Continue to Cotton Bro
+            </h1>
+            <p className="text-gray-500 text-[10px] text-center mb-10 font-bold tracking-[0.2em] uppercase">
+              Sign in or create an account to continue.
             </p>
-          )}
-        </div>
+
+            {/* Google Button */}
+            <div className="mb-8">
+              <GoogleButton
+                onClick={onGoogle}
+                disabled={busy}
+                className={secondaryButtonClass}
+              />
+            </div>
+
+            <div className="relative mb-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest font-mono">
+                <span className="bg-white px-4 text-gray-400">
+                  Or use email
+                </span>
+              </div>
+            </div>
+
+            {isRedirecting || isAuthenticated ? (
+              <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-2xl">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-black">
+                  Taking you to your dashboard...
+                </p>
+              </div>
+            ) : !sent ? (
+              <form onSubmit={onSend} className="space-y-6" noValidate>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider ml-1">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onBlur={(e) => {
+                      if (e.target.value) validateEmail(e.target.value);
+                    }}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
+                    placeholder="name@example.com"
+                    aria-invalid={Boolean(emailError)}
+                    aria-describedby={emailError ? "email-error" : undefined}
+                    className="w-full bg-gray-50 border border-gray-200 text-primary placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black rounded-xl py-6 px-6 transition-all font-medium text-base h-14"
+                    required
+                  />
+                  {emailError && (
+                    <p
+                      id="email-error"
+                      className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-500"
+                    >
+                      {emailError}
+                    </p>
+                  )}
+                </div>
+
+                {turnstileConfigured && (
+                  <div className="mb-4 flex min-h-16.25 w-full justify-center overflow-hidden">
+                    <div ref={turnstileContainerRef} className="w-full" />
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!email.trim() || busy}
+                  className={primaryButtonClass}
+                >
+                  {busy ? "Sending..." : "Send Code"}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={onConfirm} className="space-y-6" noValidate>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider ml-1">
+                    Enter 6-Digit Code
+                  </label>
+                  <div
+                    onBlur={() => {
+                      if (code.length === 6) validateOtp(code);
+                    }}
+                  >
+                    <OtpInputFields
+                      value={code}
+                      onChange={(val) => {
+                        setCode(val);
+                        if (codeError) setCodeError(null);
+                      }}
+                      hasError={Boolean(codeError)}
+                    />
+                  </div>
+                  {codeError && (
+                    <p
+                      id="code-error"
+                      className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-500"
+                    >
+                      {codeError}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!isValidOtp(code) || busy}
+                  className={primaryButtonClass}
+                >
+                  {busy ? "Verifying..." : "Continue"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSent(false);
+                    setCode("");
+                    setEmailError(null);
+                    setCodeError(null);
+                  }}
+                  className="w-full text-[10px] font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em] cursor-pointer"
+                >
+                  Use different email
+                </button>
+              </form>
+            )}
+
+            {/* Status Messages */}
+            {status && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-3 bg-gray-50 border border-gray-200 text-center rounded-lg"
+              >
+                <p className="text-xs font-bold text-black">{status}</p>
+              </motion.div>
+            )}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-3 bg-red-500/10 border border-red-500/20 text-center rounded-lg"
+              >
+                <p className="text-xs font-bold text-red-400">{error}</p>
+              </motion.div>
+            )}
+
+            {!isAuthenticated && (
+              <p className="mt-6 text-center text-[10px] font-bold uppercase tracking-[0.12em] leading-5 text-gray-400">
+                By continuing, you agree to the{" "}
+                <Link
+                  href="#"
+                  className="text-black border-b border-black hover:opacity-70 transition-opacity"
+                >
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="#"
+                  className="text-black border-b border-black hover:opacity-70 transition-opacity"
+                >
+                  Terms of Service
+                </Link>
+                .
+              </p>
+            )}
+          </div>
 
           <div className="mt-8 text-center text-xs text-secondary">
             <Link href="#" className="hover:text-primary transition-colors">

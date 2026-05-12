@@ -5,11 +5,11 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight } from "@phosphor-icons/react";
+import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { Marquee } from "@/components/home/Marquee";
-import { ProfitCalculator } from "@/components/home/ProfitCalculator";
+import { Marquee } from "@/components/home/marquee";
+import { ProfitCalculator } from "@/components/home/profit-calculator";
 
 export default function LandingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -93,7 +93,7 @@ export default function LandingPage() {
     {
       n: "04",
       title: "Earn",
-      desc: "You earn profit on every sale, straight to your bank account.",
+      desc: "You earn profit on every sale, straight to your mobile money account.",
     },
   ];
 
@@ -104,7 +104,7 @@ export default function LandingPage() {
     },
     {
       q: "How do I get paid?",
-      a: "Profits are deposited weekly directly into your registered mobile money or bank account.",
+      a: "Profits are deposited weekly directly into your registered mobile money account.",
     },
     {
       q: "What if I don't have a design?",
@@ -123,7 +123,7 @@ export default function LandingPage() {
     <div
       className={`group cursor-pointer ${faded ? "opacity-80 hover:opacity-100 transition-opacity duration-300" : ""}`}
     >
-      <div className="relative aspect-[4/5] bg-[#f5f5f5] mb-3 overflow-hidden flex items-center justify-center rounded-2xl">
+      <div className="relative aspect-4/5 bg-[#f5f5f5] mb-3 overflow-hidden flex items-center justify-center rounded-2xl">
         <div className="relative w-full h-full mix-blend-multiply transition-transform duration-700 group-hover:scale-105">
           <Image src={item.img} alt={item.name} fill className="object-cover" />
         </div>
@@ -179,7 +179,7 @@ export default function LandingPage() {
                 className="group inline-flex items-center justify-center bg-black text-white hover:opacity-80 px-8 py-4 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
                 Start designing
-                <ArrowUpRight
+                <ArrowUpRightIcon
                   className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
                   weight="regular"
                   aria-hidden="true"
@@ -190,7 +190,7 @@ export default function LandingPage() {
                 className="group inline-flex items-center justify-center border border-gray-200 bg-white text-black hover:bg-gray-50 px-8 py-4 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
                 Go to dashboard
-                <ArrowUpRight
+                <ArrowUpRightIcon
                   className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
                   weight="regular"
                   aria-hidden="true"
@@ -208,7 +208,7 @@ export default function LandingPage() {
         </div>
 
         {/* Right: Image */}
-        <div className="flex-1 relative min-h-[450px] md:min-h-full bg-gray-50 overflow-hidden">
+        <div className="flex-1 relative min-h-112.5 md:min-h-full bg-gray-50 overflow-hidden">
           <Image
             src={`${assetsBaseUrl}/site-images/hero-new-2.png`}
             alt="Model wearing brand tee"
@@ -267,7 +267,7 @@ export default function LandingPage() {
       {/* ═══════ FROM VISION TO REALITY ═══════ */}
       <section
         id="how-it-works"
-        className="bg-[#111] text-white flex flex-col lg:flex-row items-stretch lg:min-h-[700px] scroll-mt-24"
+        className="bg-[#111] text-white flex flex-col lg:flex-row items-stretch lg:min-h-175 scroll-mt-24"
       >
         {/* Left: Steps */}
         <div className="flex-1 px-8 md:px-[8%] py-20 lg:py-28 flex flex-col justify-center">
@@ -306,7 +306,7 @@ export default function LandingPage() {
         </div>
 
         {/* Right: Image + Testimonial */}
-        <div className="flex-1 relative min-h-[360px] md:min-h-[420px] lg:min-h-full overflow-hidden">
+        <div className="flex-1 relative min-h-90 md:min-h-105 lg:min-h-full overflow-hidden">
           <div className="absolute inset-0 opacity-40">
             <Image
               src={`${assetsBaseUrl}/site-images/studio-lights.png`}
@@ -316,7 +316,7 @@ export default function LandingPage() {
             />
           </div>
 
-          <div className="absolute bottom-8 left-6 right-6 z-10 bg-white p-6 shadow-2xl border-l-4 border-[#e60000] sm:left-auto sm:right-10 sm:max-w-[300px]">
+          <div className="absolute bottom-8 left-6 right-6 z-10 bg-white p-6 shadow-2xl border-l-4 border-[#e60000] sm:left-auto sm:right-10 sm:max-w-75">
             <p className="text-xs font-semibold text-black/55 tracking-wide mb-2">
               Success story
             </p>
@@ -329,7 +329,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════ 4K SIMULATION + CREATIVE SPACE ═══════ */}
-      <section className="flex flex-col md:flex-row items-stretch bg-black min-h-[500px]">
+      <section className="flex flex-col md:flex-row items-stretch bg-black min-h-125">
         {/* Left: 4K Textile */}
         <div className="flex-1 flex flex-col relative overflow-hidden">
           <div className="absolute inset-0 z-0 opacity-50">
@@ -347,7 +347,7 @@ export default function LandingPage() {
               <br />
               simulation
             </h2>
-            <p className="text-xs font-medium text-white/60 leading-relaxed max-w-[260px]">
+            <p className="text-xs font-medium text-white/60 leading-relaxed max-w-65">
               Experience textures of physical swatch before buying a sample.
             </p>
           </div>
@@ -376,7 +376,7 @@ export default function LandingPage() {
               <br />
               space.
             </h2>
-            <p className="text-sm font-medium text-black/60 mb-10 max-w-[260px]">
+            <p className="text-sm font-medium text-black/60 mb-10 max-w-65">
               The best ideas start here. We give you the tools.
             </p>
             <Link
@@ -384,7 +384,7 @@ export default function LandingPage() {
               className="group inline-flex items-center justify-center bg-white text-black hover:opacity-80 px-8 py-4 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer border border-gray-200"
             >
               Start Designing
-              <ArrowUpRight
+              <ArrowUpRightIcon
                 className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
                 weight="regular"
                 aria-hidden="true"

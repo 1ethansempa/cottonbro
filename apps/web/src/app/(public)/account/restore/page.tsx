@@ -61,7 +61,7 @@ function RestoreAccountView() {
     <div className="min-h-screen bg-white font-sans text-black selection:bg-black selection:text-white">
       <SiteHeader theme="light" />
 
-      <main className="flex min-h-screen flex-col pt-[72px]">
+      <main className="flex min-h-screen flex-col pt-18">
         <section className="grid flex-1 grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="flex flex-col justify-center px-8 py-20 md:px-[8%]">
             <motion.div
@@ -117,7 +117,7 @@ function RestoreAccountView() {
             </motion.div>
           </div>
 
-          <div className="flex min-h-[420px] flex-col justify-end bg-[#111] p-6 text-white md:p-10 lg:min-h-full">
+          <div className="flex min-h-105 flex-col justify-end bg-[#111] p-6 text-white md:p-10 lg:min-h-full">
             <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
@@ -165,7 +165,7 @@ export default function RestoreAccountPage() {
       fallback={
         <div className="min-h-screen bg-white font-sans text-black">
           <SiteHeader theme="light" />
-          <main className="flex min-h-screen items-center justify-center px-6 pt-[72px]">
+          <main className="flex min-h-screen items-center justify-center px-6 pt-18">
             <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-black/55">
               <CircleNotchIcon
                 className="h-4 w-4 animate-spin"
