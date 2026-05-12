@@ -113,7 +113,7 @@ WEB_COOKIE_DOMAIN=
 
 ```bash
 corepack enable
-corepack prepare pnpm@10.11.1 --activate
+corepack prepare pnpm@10.17.1 --activate
 pnpm install
 ```
 

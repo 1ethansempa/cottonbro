@@ -10,6 +10,7 @@ on:
       - "packages/core/utils/**"
       - "apps/web/Dockerfile"
       - ".github/workflows/deploy-web-qa.yml"
+      - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
 
@@ -35,6 +36,8 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
+        with:
+          version: 10.17.1
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
