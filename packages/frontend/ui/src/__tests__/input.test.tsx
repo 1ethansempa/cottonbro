@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Input } from "../primitives/input";
 
@@ -14,7 +13,7 @@ describe("Input", () => {
     });
 
     it("handles change events", () => {
-        const handleChange = vi.fn();
+        const handleChange = jest.fn();
         render(<Input onChange={handleChange} />);
 
         const input = screen.getByRole("textbox");

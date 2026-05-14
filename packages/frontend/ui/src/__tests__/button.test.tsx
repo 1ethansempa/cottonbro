@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Button } from "../primitives/button";
 
@@ -29,7 +28,7 @@ describe("Button", () => {
     });
 
     it("handles click events", () => {
-        const handleClick = vi.fn();
+        const handleClick = jest.fn();
         render(<Button onClick={handleClick}>Clickable</Button>);
 
         fireEvent.click(screen.getByRole("button"));

@@ -185,13 +185,13 @@ export default function ProfilePage() {
       </div>
 
       {message && (
-        <p className="mb-8 rounded-[6px] border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-bold text-black">
+        <p className="mb-8 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-bold text-black">
           {message}
         </p>
       )}
 
       {error && (
-        <p className="mb-8 rounded-[6px] border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
+        <p className="mb-8 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
           {error}
         </p>
       )}
@@ -204,10 +204,10 @@ export default function ProfilePage() {
             </h2>
           </div>
 
-          <Card className="flex flex-col gap-6 lg:flex-row lg:items-center px-6 py-6 border-gray-200 shadow-sm bg-white rounded-[12px]">
+          <Card className="flex flex-col gap-6 lg:flex-row lg:items-center px-6 py-6 border-gray-200 shadow-sm bg-white rounded-xl">
             <div className="flex flex-col md:flex-row gap-6 md:items-center">
               <div
-                className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50 bg-cover bg-center"
+                className="flex h-18 w-18 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50 bg-cover bg-center"
                 style={
                   avatarUrl.trim()
                     ? { backgroundImage: `url("${avatarUrl.trim()}")` }
@@ -234,7 +234,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={loading || savingAvatar}
-                    className="bg-black text-white px-4 py-2 text-xs font-medium rounded-[6px] hover:opacity-80 transition-opacity"
+                    className="bg-black text-white px-4 py-2 text-xs font-medium rounded-md hover:opacity-80 transition-opacity"
                   >
                     Upload New
                   </button>
@@ -242,7 +242,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={onRemoveAvatar}
                     disabled={loading || savingAvatar || !avatarUrl.trim()}
-                    className="bg-white text-black border border-gray-200 px-4 py-2 text-xs font-medium rounded-[6px] hover:border-black transition-colors disabled:opacity-50"
+                    className="bg-white text-black border border-gray-200 px-4 py-2 text-xs font-medium rounded-md hover:border-black transition-colors disabled:opacity-50"
                   >
                     Remove
                   </button>
@@ -267,14 +267,18 @@ export default function ProfilePage() {
             </h2>
           </div>
 
-          <Card className="px-6 py-6 border-gray-200 shadow-sm bg-white rounded-[12px]">
+          <Card className="px-6 py-6 border-gray-200 shadow-sm bg-white rounded-xl">
             <form
               onSubmit={onSaveName}
               className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
             >
               <div className="flex flex-1 gap-5 items-center">
-                <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[8px] bg-gray-100 mb-0">
-                  <User className="h-5 w-5 text-gray-600" weight="regular" aria-hidden="true" />
+                <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100 mb-0">
+                  <User
+                    className="h-5 w-5 text-gray-600"
+                    weight="regular"
+                    aria-hidden="true"
+                  />
                 </div>
                 <div className="w-full">
                   <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">
@@ -286,7 +290,7 @@ export default function ProfilePage() {
                     disabled={loading || savingName}
                     maxLength={120}
                     placeholder="Your name"
-                    className="rounded-[6px] border-gray-200 bg-white shadow-none h-10 w-full"
+                    className="rounded-md border-gray-200 bg-white shadow-none h-10 w-full"
                   />
                 </div>
               </div>
@@ -295,9 +299,9 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={loading || savingName}
-                  className="w-full lg:w-auto bg-black text-white rounded-[6px] text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
+                  className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
                 >
-                  {savingName ? "SAVING..." : "SAVE NAME"}
+                  {savingName ? "SAVING..." : "SAVE"}
                 </button>
               </div>
             </form>
@@ -311,14 +315,18 @@ export default function ProfilePage() {
             </h2>
           </div>
 
-          <Card className="px-6 py-6 border-gray-200 shadow-sm bg-white rounded-[12px]">
+          <Card className="px-6 py-6 border-gray-200 shadow-sm bg-white rounded-xl">
             <form
               onSubmit={onSavePhone}
               className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
             >
               <div className="flex flex-1 gap-5 items-center">
-                <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[8px] bg-gray-100 mb-0">
-                  <PhoneIcon className="h-5 w-5 text-gray-600" weight="regular" aria-hidden="true" />
+                <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100 mb-0">
+                  <PhoneIcon
+                    className="h-5 w-5 text-gray-600"
+                    weight="regular"
+                    aria-hidden="true"
+                  />
                 </div>
                 <div className="w-full">
                   <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">
@@ -331,7 +339,7 @@ export default function ProfilePage() {
                     disabled={loading || savingPhone}
                     maxLength={32}
                     placeholder="+256 700 000000"
-                    className="rounded-[6px] border-gray-200 bg-white shadow-none h-10 w-full"
+                    className="rounded-md border-gray-200 bg-white shadow-none h-10 w-full"
                   />
                 </div>
               </div>
@@ -340,9 +348,9 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={loading || savingPhone}
-                  className="w-full lg:w-auto bg-black text-white rounded-[6px] text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
+                  className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
                 >
-                  {savingPhone ? "SAVING..." : "SAVE PHONE"}
+                  {savingPhone ? "SAVING..." : "SAVE"}
                 </button>
               </div>
             </form>
@@ -356,20 +364,26 @@ export default function ProfilePage() {
             </h2>
           </div>
 
-          <Card className="flex flex-col gap-6 px-6 py-6 border-gray-200 shadow-sm bg-white rounded-[12px]">
+          <Card className="flex flex-col gap-6 px-6 py-6 border-gray-200 shadow-sm bg-white rounded-xl">
             <div className="flex gap-5 items-center">
-              <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[8px] bg-gray-100">
-                <Mail className="h-5 w-5 text-gray-600" weight="regular" aria-hidden="true" />
+              <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100">
+                <Mail
+                  className="h-5 w-5 text-gray-600"
+                  weight="regular"
+                  aria-hidden="true"
+                />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">
-                  To update your email, we&apos;ll send a verification code to the new
+                  To update your email, we&apos;ll send a verification code to
+                  the new
                   <br className="hidden lg:block" />
                   address first. Your email must be unique.
                 </p>
                 {profile && (
                   <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.15em] text-gray-500">
-                    Current email: <span className="text-black">{profile.email}</span>
+                    Current email:{" "}
+                    <span className="text-black">{profile.email}</span>
                   </p>
                 )}
               </div>
@@ -390,16 +404,18 @@ export default function ProfilePage() {
                     setEmail(event.target.value);
                     resetEmailStep();
                   }}
-                  disabled={!canChangeEmail || loading || sendingCode || confirmingEmail}
+                  disabled={
+                    !canChangeEmail || loading || sendingCode || confirmingEmail
+                  }
                   placeholder="name@example.com"
-                  className="rounded-[6px] border-gray-200 bg-white shadow-none h-10 w-full"
+                  className="rounded-md border-gray-200 bg-white shadow-none h-10 w-full"
                 />
               </div>
               <div className="shrink-0">
                 <button
                   type="submit"
                   disabled={loading || sendingCode || confirmingEmail}
-                  className="w-full lg:w-auto bg-white text-black border border-gray-200 rounded-[6px] text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:border-black transition-colors"
+                  className="w-full lg:w-auto bg-white text-black border border-gray-200 rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:border-black transition-colors"
                 >
                   {sendingCode ? "SENDING..." : "SEND CODE"}
                 </button>
@@ -407,38 +423,37 @@ export default function ProfilePage() {
             </form>
 
             {canChangeEmail && emailStep === "code_sent" && (
-                <form
-                  onSubmit={onConfirmEmailChange}
-                  className="flex flex-col gap-6 lg:flex-row lg:items-end border-t border-gray-100 pt-6 mt-2"
-                >
-                  <div className="flex-1">
-                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">
-                      Verification code
-                    </label>
-                    <Input
-                      value={code}
-                      onChange={(event) => setCode(event.target.value)}
-                      disabled={confirmingEmail}
-                      inputMode="numeric"
-                      maxLength={6}
-                      placeholder="000000"
-                      className="rounded-[6px] border-gray-200 bg-white shadow-none h-10 w-full font-mono tracking-[0.2em]"
-                    />
-                  </div>
-                  <div className="shrink-0">
-                    <button
-                      type="submit"
-                      disabled={confirmingEmail}
-                      className="w-full lg:w-auto bg-black text-white rounded-[6px] text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:opacity-80 transition-opacity"
-                    >
-                      {confirmingEmail ? "VERIFYING..." : "CONFIRM EMAIL"}
-                    </button>
-                  </div>
-                </form>
-              )}
+              <form
+                onSubmit={onConfirmEmailChange}
+                className="flex flex-col gap-6 lg:flex-row lg:items-end border-t border-gray-100 pt-6 mt-2"
+              >
+                <div className="flex-1">
+                  <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">
+                    Verification code
+                  </label>
+                  <Input
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
+                    disabled={confirmingEmail}
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    className="rounded-md border-gray-200 bg-white shadow-none h-10 w-full font-mono tracking-[0.2em]"
+                  />
+                </div>
+                <div className="shrink-0">
+                  <button
+                    type="submit"
+                    disabled={confirmingEmail}
+                    className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:opacity-80 transition-opacity"
+                  >
+                    {confirmingEmail ? "VERIFYING..." : "CONFIRM EMAIL"}
+                  </button>
+                </div>
+              </form>
+            )}
           </Card>
         </section>
-
       </div>
     </div>
   );

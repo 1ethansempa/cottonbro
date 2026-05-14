@@ -17,8 +17,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "jest --config ./jest.config.ts",
+    "test:watch": "jest --config ./jest.config.ts --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/index.ts"
   },
@@ -28,13 +28,15 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
+    "@types/jest": "^30.0.0",
     "@types/react": "^19.1.15",
     "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.1.2",
+    "jest": "^30.4.0",
     "jsdom": "^27.3.0",
-    "vitest": "^4.0.15"
+    "ts-jest": "^29.4.9"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.4.0"
   }
