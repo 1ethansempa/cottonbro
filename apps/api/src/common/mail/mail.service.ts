@@ -1,12 +1,8 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  OnModuleInit,
-} from "@nestjs/common";
+import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { createTransport, type Transporter } from "nodemailer";
 
 @Injectable()
-export class MailService implements OnModuleInit {
+export class MailService {
   private readonly transporter: Transporter;
   private readonly fromAddress: string;
 
@@ -51,11 +47,6 @@ export class MailService implements OnModuleInit {
     });
   }
 
-  async onModuleInit() {
-    // Fail fast if credentials/host/port are wrong
-    await this.transporter.verify();
-  }
-
   async sendOtpEmail(to: string, code: string): Promise<void> {
     const safeTo = to.replace(/[\r\n]/g, "");
 
@@ -72,7 +63,7 @@ export class MailService implements OnModuleInit {
     } catch (err) {
       console.error("[MailService] Failed to send OTP email:", err);
       throw new InternalServerErrorException(
-        "Failed to send verification email"
+        "Failed to send verification email",
       );
     }
   }
@@ -98,7 +89,9 @@ export class MailService implements OnModuleInit {
         html: renderAccountReinstatementHtml(restoreUrl, expiryText),
       });
 
-      console.log(`[MailService] Account reinstatement email sent to ${safeTo}`);
+      console.log(
+        `[MailService] Account reinstatement email sent to ${safeTo}`,
+      );
     } catch (err) {
       console.error(
         "[MailService] Failed to send account reinstatement email:",
@@ -187,7 +180,10 @@ function renderWelcomeHtml(preferencesUrl: string) {
 </html>`;
 }
 
-function renderAccountReinstatementHtml(restoreUrl: string, expiryText: string) {
+function renderAccountReinstatementHtml(
+  restoreUrl: string,
+  expiryText: string,
+) {
   return `<!DOCTYPE html>
 <html>
 <head>

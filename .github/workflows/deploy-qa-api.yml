@@ -253,9 +253,18 @@ jobs:
                             key: latest
           EOF
 
-          gcloud run services replace cloud-run-api-service.yaml \
+          if ! gcloud run services replace cloud-run-api-service.yaml \
             --project "$GCP_PROJECT_ID" \
-            --region "$REGION"
+            --region "$REGION"; then
+            echo "::group::Recent Cloud Run logs"
+            gcloud logging read \
+              "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" \
+              --project "$GCP_PROJECT_ID" \
+              --limit 100 \
+              --format='value(timestamp,severity,textPayload)'
+            echo "::endgroup::"
+            exit 1
+          fi
 
           gcloud run services add-iam-policy-binding "$SERVICE_NAME" \
             --project "$GCP_PROJECT_ID" \
