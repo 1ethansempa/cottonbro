@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Plus } from "@phosphor-icons/react";
+import { ArrowUpRightIcon, PlusIcon } from "@phosphor-icons/react";
 
 type DashboardProduct = {
   id: string;
@@ -43,9 +43,9 @@ function CreateFirstProduct() {
               href="/create-product"
               className="group inline-flex items-center justify-center gap-3 bg-black px-7 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
             >
-              <Plus className="h-4 w-4" />
+              <PlusIcon className="h-4 w-4" />
               Create Product
-              <ArrowUpRight
+              <ArrowUpRightIcon
                 className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100"
                 weight="regular"
                 aria-hidden="true"
@@ -65,7 +65,10 @@ function CreateFirstProduct() {
 }
 
 function ProductsDashboard({ products }: { products: DashboardProduct[] }) {
-  const totalOrders = products.reduce((sum, product) => sum + product.orders, 0);
+  const totalOrders = products.reduce(
+    (sum, product) => sum + product.orders,
+    0,
+  );
 
   return (
     <div className="p-6 md:p-12">
@@ -86,7 +89,7 @@ function ProductsDashboard({ products }: { products: DashboardProduct[] }) {
           href="/create-product"
           className="inline-flex items-center justify-center gap-2 bg-black px-6 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <PlusIcon className="h-3.5 w-3.5" />
           New Product
         </Link>
       </div>

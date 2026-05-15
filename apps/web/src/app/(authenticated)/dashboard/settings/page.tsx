@@ -87,7 +87,8 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="text-sm font-medium text-gray-500">
-          Manage how CottonBro communicates with you and control your account access.
+          Manage how CottonBro communicates with you and control your account
+          access.
         </p>
       </div>
 
@@ -105,7 +106,7 @@ export default function SettingsPage() {
             </h2>
           </div>
 
-          <Card className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between px-6 py-6 border-gray-200 shadow-sm bg-white rounded-[12px]">
+          <Card className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between px-6 py-6 border-gray-200 shadow-sm bg-white rounded-xl">
             <div className="flex gap-5 items-center">
               <Mail
                 className="h-6 w-6 shrink-0 text-black"
@@ -114,7 +115,8 @@ export default function SettingsPage() {
               />
               <div>
                 <p className="text-sm font-medium text-gray-700">
-                  You&apos;ll receive marketing updates, creator inspiration, and weekly campaigns
+                  You&apos;ll receive marketing updates, creator inspiration,
+                  and weekly campaigns
                   <br className="hidden lg:block" />
                   featuring new merch designs and trends.
                 </p>
@@ -146,7 +148,7 @@ export default function SettingsPage() {
 
           <Card
             tone="danger"
-            className="flex flex-col gap-6 rounded-[12px] border-[#fde8e8] bg-[#fdf5f5] px-6 py-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+            className="flex flex-col gap-6 rounded-xl border-[#fde8e8] bg-[#fdf5f5] px-6 py-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
           >
             <div className="flex gap-5">
               <WarningCircleIcon
@@ -167,7 +169,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(true)}
-                className="inline-flex w-full items-center justify-center rounded-[6px] border-none bg-[#c81e1e] px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#a51a1a] sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-md border-none bg-[#c81e1e] px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#a51a1a] sm:w-auto"
               >
                 <TrashIcon
                   className="mr-2 h-4 w-4"

@@ -1,3 +1,6 @@
 packages:
   - "apps/*"
   - "packages/*/*"
+
+# Require npm packages to be at least 7 days old before pnpm can install them.
+minimumReleaseAge: 10080

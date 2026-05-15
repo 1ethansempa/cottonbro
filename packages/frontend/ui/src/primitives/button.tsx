@@ -1,38 +1,86 @@
 import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
 
-export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-  size?: "sm" | "md" | "lg";
-};
+const buttonVariants = cva(
+  [
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap",
+    "rounded-md border font-medium",
+    "transition-[background-color,border-color,color,opacity,transform]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "active:scale-[0.98]",
+    "motion-reduce:transition-none motion-reduce:active:scale-100",
+  ],
+  {
+    variants: {
+      variant: {
+        primary: "border-black bg-black text-white hover:opacity-85",
+        secondary: "border-gray-300 bg-white text-black hover:bg-gray-50",
+        outline:
+          "border-black bg-white text-black hover:bg-black hover:text-white",
+        ghost: "border-transparent bg-transparent text-black hover:bg-gray-100",
+        danger: "border-red-600 bg-red-600 text-white hover:bg-red-700",
+      },
+      size: {
+        sm: "h-9 px-4 text-xs",
+        md: "h-11 px-5 text-sm",
+        lg: "h-12 px-6 text-sm",
+        icon: "size-10 p-0",
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
+      size: "md",
+    },
+  },
+);
+
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+    loading?: boolean;
+    leftIcon?: React.ReactNode;
+    rightIcon?: React.ReactNode;
+  };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "primary", size = "md", className = "", type, ...props }, ref) => {
-  const base =
-    "inline-flex cursor-pointer flex-row items-center justify-center gap-2 whitespace-nowrap rounded-full border text-center font-bold uppercase tracking-[0.18em] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:cursor-not-allowed disabled:border-black/25 disabled:bg-white disabled:text-black/35 disabled:hover:bg-white disabled:hover:text-black/35 disabled:hover:opacity-100";
-
-  const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
-    primary: "border-black bg-black text-white hover:opacity-80",
-    secondary: "border-gray-200 bg-white text-black hover:bg-gray-50",
-    outline: "border-black bg-white text-black hover:bg-black hover:text-white",
-    ghost: "border-transparent bg-transparent text-black hover:bg-gray-100",
-    danger:
-      "border-red-600 bg-red-600 text-white hover:bg-white hover:text-red-600",
-  };
-
-  const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
-    sm: "px-4 py-2 text-[10px]",
-    md: "px-6 py-4 text-[10px]",
-    lg: "px-8 py-5 text-xs",
-  };
-
+  (
+    {
+      className,
+      variant,
+      size,
+      type = "button",
+      disabled,
+      loading = false,
+      leftIcon,
+      rightIcon,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <button
         ref={ref}
-        type={type ?? "button"}
-        className={cn(base, variants[variant], sizes[size], className)}
+        type={type}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        className={cn(buttonVariants({ variant, size }), className)}
         {...props}
-      />
+      >
+        {loading ? (
+          <span
+            aria-hidden="true"
+            className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+          />
+        ) : (
+          leftIcon
+        )}
+
+        {children}
+
+        {!loading && rightIcon}
+      </button>
     );
   },
 );

@@ -3,7 +3,7 @@
   "description": "",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@10.11.1",
+  "packageManager": "pnpm@10.17.1",
   "workspaces": [
     "apps/*",
     "packages/*/*"

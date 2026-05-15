@@ -13,7 +13,7 @@ WORKDIR /app
 
 # Enable pnpm using Node's built-in package manager wrapper (corepack).
 # corepack ensures the correct pnpm version is used.
-RUN corepack enable && corepack prepare pnpm@10.11.1 --activate
+RUN corepack enable && corepack prepare pnpm@10.17.1 --activate
 
 
 # -------- DEPENDENCIES STAGE --------

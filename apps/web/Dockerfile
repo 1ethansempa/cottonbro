@@ -14,8 +14,8 @@ WORKDIR /app
 
 # Enable pnpm via Node's built-in package manager wrapper (corepack).
 # Node 24 includes corepack which manages package manager versions.
-# This ensures the container always uses pnpm v10.11.1.
-RUN corepack enable && corepack prepare pnpm@10.11.1 --activate
+# This ensures the container always uses pnpm v10.17.1.
+RUN corepack enable && corepack prepare pnpm@10.17.1 --activate
 
 
 # ---------- Dependencies stage ----------

@@ -12,6 +12,15 @@ build/
 .next/
 out/
 
+# Test outputs
+playwright-report/
+test-results/
+blob-report/
+apps/web/playwright-report/
+apps/**/playwright-report/
+apps/**/test-results/
+apps/**/blob-report/
+
 # TypeScript
 *.tsbuildinfo
 
