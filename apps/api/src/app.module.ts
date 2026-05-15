@@ -4,7 +4,14 @@ import { Module } from "@nestjs/common";
 // Instead of attaching a guard to each controller manually: you register it once globally
 import { APP_GUARD, Reflector } from "@nestjs/core";
 // ThrottlerModule → configures rate limiting, ThrottlerGuard → actually enforces the limits
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import {
+  getOptionsToken,
+  getStorageToken,
+  ThrottlerGuard,
+  ThrottlerModule,
+  type ThrottlerModuleOptions,
+  type ThrottlerStorage,
+} from "@nestjs/throttler";
 import { MailModule } from "./common/mail/mail.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { ImagesModule } from "./images/images.module.js";
@@ -33,7 +40,12 @@ import { AuthGuard } from "./auth/auth.guard.js";
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useFactory: (
+        options: ThrottlerModuleOptions,
+        storage: ThrottlerStorage,
+        reflector: Reflector,
+      ) => new ThrottlerGuard(options, storage, reflector),
+      inject: [getOptionsToken(), getStorageToken(), Reflector],
     },
   ],
 })
