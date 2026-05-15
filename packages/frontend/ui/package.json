@@ -32,6 +32,7 @@
     "@types/react": "^19.1.15",
     "@types/react-dom": "^19.1.9",
     "jest": "^30.4.0",
+    "jest-environment-jsdom": "^30.4.0",
     "jsdom": "^27.3.0",
     "ts-jest": "^29.4.9"
   },
