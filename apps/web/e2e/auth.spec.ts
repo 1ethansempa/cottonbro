@@ -5,52 +5,63 @@ test.describe("Auth Page", () => {
     await page.goto("/auth/login");
   });
 
-  test("should display the login page title", async ({ page }) => {
-    await expect(page.getByText(/Sign In/i)).toBeVisible();
+  test("should display the current sign-in experience", async ({ page }) => {
+    await expect(
+      page.getByRole("heading", { name: /continue to cotton bro/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/sign in or create an account to continue/i),
+    ).toBeVisible();
   });
 
   test("should have email input field", async ({ page }) => {
-    const emailInput = page.getByPlaceholder(/email/i);
+    const emailInput = page.getByPlaceholder("name@example.com");
     await expect(emailInput).toBeVisible();
   });
 
-  test("should have a submit button", async ({ page }) => {
-    // Look for the Send Code or Continue button
-    const submitButton = page.getByRole("button", { name: /send code|continue/i });
+  test("should have a disabled send-code button until an email is entered", async ({
+    page,
+  }) => {
+    const submitButton = page.getByRole("button", { name: /send code/i });
     await expect(submitButton).toBeVisible();
+    await expect(submitButton).toBeDisabled();
   });
 
-  test("should show validation error for empty email", async ({ page }) => {
-    // Click submit without entering email
-    const submitButton = page.getByRole("button", { name: /send code|continue/i });
+  test("should show validation error for invalid email", async ({ page }) => {
+    await page.getByPlaceholder("name@example.com").fill("not-an-email");
+
+    const submitButton = page.getByRole("button", { name: /send code/i });
     await submitButton.click();
-    
-    // Should show some form of validation (either browser or custom)
-    const emailInput = page.getByPlaceholder(/email/i);
-    await expect(emailInput).toBeVisible();
+
+    await expect(
+      page.getByText(/please enter a valid email address/i),
+    ).toBeVisible();
   });
 
   test("should have Google Sign In option", async ({ page }) => {
-    const googleButton = page.getByRole("button", { name: /google/i });
+    const googleButton = page.getByRole("button", {
+      name: /continue with google/i,
+    });
     await expect(googleButton).toBeVisible();
   });
 
-  test("should have dark theme styling", async ({ page }) => {
-    // Check that the page has dark background
-    const body = page.locator("body");
-    await expect(body).toBeVisible();
+  test("should link to legal pages from the auth card", async ({ page }) => {
+    await expect(
+      page.getByRole("link", { name: /privacy policy/i }),
+    ).toHaveCount(2);
+    await expect(
+      page.getByRole("link", { name: /terms of service/i }),
+    ).toHaveCount(2);
   });
 
   test("should have site header", async ({ page }) => {
-    // Check header is present
     const header = page.locator("header");
     await expect(header).toBeVisible();
+    await expect(header.getByRole("link", { name: /login/i })).toBeVisible();
   });
 
   test("should have site footer", async ({ page }) => {
-    // Check footer is present
     const footer = page.locator("footer");
     await expect(footer).toBeVisible();
   });
 });
-

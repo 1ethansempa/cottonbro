@@ -30,6 +30,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    environment: qa
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -50,6 +51,53 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Write web QA env file
+        run: |
+          load_secret() {
+            env_name="$1"
+            secret_name="$2"
+            if ! value="$(gcloud secrets versions access latest --project="$GCP_PROJECT_ID" --secret="$secret_name")"; then
+              echo "::error::Unable to access Secret Manager secret $secret_name"
+              exit 1
+            fi
+            if [ -z "$value" ]; then
+              echo "::error::Secret Manager secret $secret_name is empty"
+              exit 1
+            fi
+            printf '%s=%s\n' "$env_name" "$value" >> apps/web/.env.local
+          }
+
+          {
+            echo "APP_ENV=qa"
+            echo "NEXT_PUBLIC_APP_ENV=qa"
+            echo "API_BASE_URL=${{ secrets.QA_WEB_API_BASE_URL }}"
+            echo "NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.QA_WEB_TURNSTILE_SITE_KEY }}"
+          } > apps/web/.env.local
+
+          load_secret NEXT_PUBLIC_FIREBASE_API_KEY web-firebase-api-key
+          load_secret NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN web-firebase-auth-domain
+          load_secret NEXT_PUBLIC_FIREBASE_PROJECT_ID web-firebase-project-id
+          load_secret NEXT_PUBLIC_FIREBASE_APP_ID web-firebase-app-id
+          load_secret NEXT_PUBLIC_ASSETS_BASE_URL web-assets-url
+          load_secret NEXT_PUBLIC_FALLBACK_AVATAR_URL web-fallback-avatar-url
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @cottonbro/web exec playwright install --with-deps chromium
+
+      - name: Run web e2e tests
+        run: pnpm --filter @cottonbro/web test:e2e
 
   deploy-qa-web:
     runs-on: ubuntu-latest
