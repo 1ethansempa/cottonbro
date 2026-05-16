@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRightIcon, PlusIcon } from "@phosphor-icons/react";
+import { ArrowUpRight, Plus } from "lucide-react";
 
 type DashboardProduct = {
   id: string;
@@ -41,19 +41,18 @@ function CreateFirstProduct() {
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/create-product"
-              className="group inline-flex items-center justify-center gap-3 bg-black px-7 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
+              className="group inline-flex cursor-pointer items-center justify-center gap-3 bg-black px-7 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
             >
-              <PlusIcon className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               Create Product
-              <ArrowUpRightIcon
+              <ArrowUpRight
                 className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100"
-                weight="regular"
                 aria-hidden="true"
               />
             </Link>
             <Link
               href="/design"
-              className="inline-flex items-center justify-center border border-gray-200 bg-white px-7 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-colors hover:border-black rounded-full"
+              className="inline-flex cursor-pointer items-center justify-center border border-gray-200 bg-white px-7 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-colors hover:border-black rounded-full"
             >
               Open design tools
             </Link>
@@ -87,9 +86,9 @@ function ProductsDashboard({ products }: { products: DashboardProduct[] }) {
         </div>
         <Link
           href="/create-product"
-          className="inline-flex items-center justify-center gap-2 bg-black px-6 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 bg-black px-6 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
         >
-          <PlusIcon className="h-3.5 w-3.5" />
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           New Product
         </Link>
       </div>

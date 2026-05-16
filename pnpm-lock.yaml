@@ -144,7 +144,7 @@ importers:
         version: 30.4.0(@types/node@24.5.2)(ts-node@10.9.2(@types/node@24.5.2)(typescript@5.9.3))
       ts-jest:
         specifier: ^29.4.9
-        version: 29.4.9(@babel/core@7.28.5)(@jest/transform@30.4.0)(@jest/types@30.4.0)(babel-jest@30.4.0(@babel/core@7.28.5))(esbuild@0.23.1)(jest-util@30.4.0)(jest@30.4.0(@types/node@24.5.2))(typescript@5.9.3)
+        version: 29.4.9(@babel/core@7.28.5)(@jest/transform@30.4.0)(@jest/types@30.4.0)(babel-jest@30.4.0(@babel/core@7.28.5))(esbuild@0.23.1)(jest-util@30.4.0)(jest@30.4.0(@types/node@24.5.2)(ts-node@10.9.2(@types/node@24.5.2)(typescript@5.9.3)))(typescript@5.9.3)
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@24.5.2)(typescript@5.9.3)
@@ -193,6 +193,9 @@ importers:
       jspdf:
         specifier: ^3.0.4
         version: 3.0.4
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.14.0(react@19.2.1)
       nanoid:
         specifier: ^5.1.6
         version: 5.1.6
@@ -334,7 +337,7 @@ importers:
         version: 27.3.0(postcss@8.5.14)
       ts-jest:
         specifier: ^29.4.9
-        version: 29.4.9(@babel/core@7.28.5)(@jest/transform@30.4.0)(@jest/types@30.4.0)(babel-jest@30.4.0(@babel/core@7.28.5))(esbuild@0.23.1)(jest-util@30.4.0)(jest@30.4.0(@types/node@24.5.2))(typescript@5.9.3)
+        version: 29.4.9(@babel/core@7.28.5)(@jest/transform@30.4.0)(@jest/types@30.4.0)(babel-jest@30.4.0(@babel/core@7.28.5))(esbuild@0.23.1)(jest-util@30.4.0)(jest@30.4.0(@types/node@24.5.2)(ts-node@10.9.2(@types/node@24.5.2)(typescript@5.9.3)))(typescript@5.9.3)
 
 packages:
 
@@ -5782,6 +5785,11 @@ packages:
 
   lru-memoizer@2.3.0:
     resolution: {integrity: sha512-GXn7gyHAMhO13WSKrIiNfztwxodVsP8IoZ3XfrJV4yH2x0/OeTO/FIaAHTY5YekdGgW94njfuKmyyt1E0mR6Ug==}
+
+  lucide-react@1.14.0:
+    resolution: {integrity: sha512-+1mdWcfSJVUsaTIjN9zoezmUhfXo5l0vP7ekBMPo3jcS/aIkxHnXqAPsByszMZx/Y8oQBRJxJx5xg+RH3urzxA==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -14033,6 +14041,10 @@ snapshots:
       lodash.clonedeep: 4.5.0
       lru-cache: 6.0.0
 
+  lucide-react@1.14.0(react@19.2.1):
+    dependencies:
+      react: 19.2.1
+
   lz-string@1.5.0: {}
 
   maath@0.10.8(@types/three@0.184.1)(three@0.181.2):
@@ -15273,7 +15285,7 @@ snapshots:
     dependencies:
       typescript: 5.9.2
 
-  ts-jest@29.4.9(@babel/core@7.28.5)(@jest/transform@30.4.0)(@jest/types@30.4.0)(babel-jest@30.4.0(@babel/core@7.28.5))(esbuild@0.23.1)(jest-util@30.4.0)(jest@30.4.0(@types/node@24.5.2))(typescript@5.9.3):
+  ts-jest@29.4.9(@babel/core@7.28.5)(@jest/transform@30.4.0)(@jest/types@30.4.0)(babel-jest@30.4.0(@babel/core@7.28.5))(esbuild@0.23.1)(jest-util@30.4.0)(jest@30.4.0(@types/node@24.5.2)(ts-node@10.9.2(@types/node@24.5.2)(typescript@5.9.3)))(typescript@5.9.3):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0

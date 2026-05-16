@@ -2,11 +2,11 @@
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
-  CircleNotchIcon,
-  EnvelopeIcon as Mail,
-  PhoneIcon,
-  UserCircleIcon as User,
-} from "@phosphor-icons/react";
+  CircleUser as User,
+  LoaderCircle,
+  Mail,
+  Phone,
+} from "lucide-react";
 import { isValidEmail, normalizeEmail } from "@cottonbro/utils";
 import { Card, Input } from "@cottonbro/ui";
 import { useUserStore } from "@/stores/user-store";
@@ -217,7 +217,6 @@ export default function ProfilePage() {
                 {!avatarUrl.trim() && (
                   <User
                     className="h-8 w-8 text-gray-400"
-                    weight="regular"
                     aria-hidden="true"
                   />
                 )}
@@ -234,7 +233,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={loading || savingAvatar}
-                    className="bg-black text-white px-4 py-2 text-xs font-medium rounded-md hover:opacity-80 transition-opacity"
+                    className="cursor-pointer bg-black text-white px-4 py-2 text-xs font-medium rounded-md hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Upload New
                   </button>
@@ -242,7 +241,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={onRemoveAvatar}
                     disabled={loading || savingAvatar || !avatarUrl.trim()}
-                    className="bg-white text-black border border-gray-200 px-4 py-2 text-xs font-medium rounded-md hover:border-black transition-colors disabled:opacity-50"
+                    className="cursor-pointer bg-white text-black border border-gray-200 px-4 py-2 text-xs font-medium rounded-md hover:border-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Remove
                   </button>
@@ -276,7 +275,6 @@ export default function ProfilePage() {
                 <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100 mb-0">
                   <User
                     className="h-5 w-5 text-gray-600"
-                    weight="regular"
                     aria-hidden="true"
                   />
                 </div>
@@ -299,7 +297,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={loading || savingName}
-                  className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
+                  className="w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingName ? "SAVING..." : "SAVE"}
                 </button>
@@ -322,9 +320,8 @@ export default function ProfilePage() {
             >
               <div className="flex flex-1 gap-5 items-center">
                 <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100 mb-0">
-                  <PhoneIcon
+                  <Phone
                     className="h-5 w-5 text-gray-600"
-                    weight="regular"
                     aria-hidden="true"
                   />
                 </div>
@@ -348,7 +345,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={loading || savingPhone}
-                  className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
+                  className="w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingPhone ? "SAVING..." : "SAVE"}
                 </button>
@@ -369,7 +366,6 @@ export default function ProfilePage() {
               <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100">
                 <Mail
                   className="h-5 w-5 text-gray-600"
-                  weight="regular"
                   aria-hidden="true"
                 />
               </div>
@@ -415,7 +411,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={loading || sendingCode || confirmingEmail}
-                  className="w-full lg:w-auto bg-white text-black border border-gray-200 rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:border-black transition-colors"
+                  className="w-full cursor-pointer lg:w-auto bg-white text-black border border-gray-200 rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:border-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {sendingCode ? "SENDING..." : "SEND CODE"}
                 </button>
@@ -445,7 +441,7 @@ export default function ProfilePage() {
                   <button
                     type="submit"
                     disabled={confirmingEmail}
-                    className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:opacity-80 transition-opacity"
+                    className="w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {confirmingEmail ? "VERIFYING..." : "CONFIRM EMAIL"}
                   </button>
@@ -476,9 +472,8 @@ function DashboardPageLoader({ label }: { label: string }) {
   return (
     <div className="flex min-h-[55vh] items-center justify-center p-6 md:p-12">
       <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-gray-500">
-        <CircleNotchIcon
+        <LoaderCircle
           className="h-4 w-4 animate-spin"
-          weight="regular"
           aria-hidden="true"
         />
         {label}

@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import {
-  CircleNotchIcon,
-  EnvelopeIcon as Mail,
-  TrashIcon,
-  WarningCircleIcon,
-} from "@phosphor-icons/react";
+  CircleAlert,
+  LoaderCircle,
+  Mail,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@cottonbro/auth-react";
 import { Card, ConfirmDialog, Switch } from "@cottonbro/ui";
@@ -110,7 +110,6 @@ export default function SettingsPage() {
             <div className="flex gap-5 items-center">
               <Mail
                 className="h-6 w-6 shrink-0 text-black"
-                weight="regular"
                 aria-hidden="true"
               />
               <div>
@@ -151,9 +150,8 @@ export default function SettingsPage() {
             className="flex flex-col gap-6 rounded-xl border-[#fde8e8] bg-[#fdf5f5] px-6 py-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
           >
             <div className="flex gap-5">
-              <WarningCircleIcon
+              <CircleAlert
                 className="h-6 w-6 shrink-0 text-red-700"
-                weight="regular"
                 aria-hidden="true"
               />
               <div>
@@ -169,11 +167,10 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(true)}
-                className="inline-flex w-full items-center justify-center rounded-md border-none bg-[#c81e1e] px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#a51a1a] sm:w-auto"
+                className="inline-flex w-full cursor-pointer items-center justify-center rounded-md border-none bg-[#c81e1e] px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#a51a1a] sm:w-auto"
               >
-                <TrashIcon
+                <Trash2
                   className="mr-2 h-4 w-4"
-                  weight="regular"
                   aria-hidden="true"
                 />
                 Delete Account
@@ -223,9 +220,8 @@ function DashboardPageLoader({ label }: { label: string }) {
   return (
     <div className="flex min-h-[55vh] items-center justify-center p-6 md:p-12">
       <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-gray-500">
-        <CircleNotchIcon
+        <LoaderCircle
           className="h-4 w-4 animate-spin"
-          weight="regular"
           aria-hidden="true"
         />
         {label}

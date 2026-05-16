@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { getSafeAuthRedirectPath } from "@/lib/auth-redirect";
 
 // declare Turnstile’s HTML widget callbacks
 declare global {
@@ -39,8 +40,6 @@ type OtpInputProps = {
   onChange: (value: string) => void;
   hasError?: boolean;
 };
-
-const DEFAULT_AUTH_REDIRECT = "/dashboard";
 
 function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
@@ -161,7 +160,7 @@ function LoginView() {
 
   const searchParams = useSearchParams();
   // Send users back to the protected page that redirected them here.
-  const redirect = getSafeRedirectPath(searchParams?.get("redirect"));
+  const redirect = getSafeAuthRedirectPath(searchParams?.get("redirect"));
   const isAuthenticated = Boolean(user);
   const primaryButtonClass =
     "w-full rounded-full bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
@@ -384,7 +383,7 @@ function LoginView() {
             {isRedirecting || isAuthenticated ? (
               <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-2xl">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-black">
-                  Taking you to your dashboard...
+                  Redirecting...
                 </p>
               </div>
             ) : !sent ? (
@@ -540,14 +539,6 @@ function LoginView() {
       </div>
     </div>
   );
-}
-
-function getSafeRedirectPath(value: string | null | undefined) {
-  if (!value) return DEFAULT_AUTH_REDIRECT;
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return DEFAULT_AUTH_REDIRECT;
-  }
-  return value;
 }
 
 export default function LoginPage() {

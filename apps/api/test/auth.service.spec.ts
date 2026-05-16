@@ -16,6 +16,7 @@ import {
   verifyOtp,
   signInOrCreateUser,
   mintCustomToken,
+  adminAuth,
 } from "@cottonbro/auth-server";
 
 // Type the mocked functions
@@ -28,6 +29,11 @@ const mockedSignInOrCreateUser = signInOrCreateUser as MockedFn<
 const mockedMintCustomToken = mintCustomToken as MockedFn<
   typeof mintCustomToken
 >;
+const mockedAdminAuth = adminAuth as {
+  createSessionCookie: jest.Mock<(idToken: string, options: any) => Promise<string>>;
+  getUser: jest.Mock<(uid: string) => Promise<any>>;
+  verifyIdToken: jest.Mock<(idToken: string, checkRevoked?: boolean) => Promise<any>>;
+};
 
 describe("AuthService", () => {
   let authService: AuthService;
@@ -169,4 +175,86 @@ describe("AuthService", () => {
       ).rejects.toThrow(InternalServerErrorException);
     });
   });
+
+  describe("createSessionCookie", () => {
+    it("should throw BadRequestException when id token is missing", async () => {
+      const res = createMockResponse();
+
+      await expect(authService.createSessionCookie("", res)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+
+    it("should verify the Firebase ID token and set the HttpOnly session cookie", async () => {
+      const res = createMockResponse();
+      mockedAdminAuth.verifyIdToken.mockResolvedValueOnce({
+        uid: "user-123",
+      });
+      mockedAdminAuth.getUser.mockResolvedValueOnce({
+        uid: "user-123",
+        email: "test@example.com",
+        emailVerified: true,
+      });
+      mockedAdminAuth.createSessionCookie.mockResolvedValueOnce(
+        "session-cookie",
+      );
+
+      await authService.createSessionCookie("id-token", res);
+
+      expect(mockedAdminAuth.verifyIdToken).toHaveBeenCalledWith(
+        "id-token",
+        true,
+      );
+      expect(mockedAdminAuth.createSessionCookie).toHaveBeenCalledWith(
+        "id-token",
+        { expiresIn: 14 * 24 * 60 * 60 * 1000 },
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        "__session",
+        "session-cookie",
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: "lax",
+          path: "/",
+        }),
+      );
+    });
+
+    it("should throw UnauthorizedException and avoid setting a cookie when Firebase rejects the token", async () => {
+      const res = createMockResponse();
+      mockedAdminAuth.verifyIdToken.mockRejectedValueOnce(
+        new Error("invalid_token"),
+      );
+
+      await expect(
+        authService.createSessionCookie("bad-id-token", res),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("logoutAndRevoke", () => {
+    it("should clear the backend session cookie", async () => {
+      const res = createMockResponse();
+
+      await authService.logoutAndRevoke(res);
+
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        "__session",
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: "lax",
+          path: "/",
+        }),
+      );
+    });
+  });
 });
+
+function createMockResponse() {
+  return {
+    cookie: jest.fn(),
+    clearCookie: jest.fn(),
+  } as any;
+}
