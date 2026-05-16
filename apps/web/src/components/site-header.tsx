@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@cottonbro/auth-react";
-import { ArrowUpRight, List as Menu, X } from "@phosphor-icons/react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 
 interface SiteHeaderProps {
     theme?: "light" | "dark";
@@ -127,10 +127,10 @@ export function SiteHeader({ theme = "dark", disableLinks = false, position = "f
                                         className={`inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:opacity-80 ${theme === "light"
                                                 ? "bg-black text-white"
                                                 : "bg-white text-black"
-                                                }`}
+                                        }`}
                                     >
                                         Start Designing
-                                        <ArrowUpRight className="h-3.5 w-3.5" weight="regular" aria-hidden="true" />
+                                        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                                     </MaybeLink>
                                 </>
                             ) : (
@@ -211,7 +211,7 @@ export function SiteHeader({ theme = "dark", disableLinks = false, position = "f
                                         className="mt-2 inline-flex items-center gap-2 bg-white px-7 py-4 text-[11px] font-black uppercase tracking-[0.18em] text-black transition-all hover:bg-zinc-100"
                                     >
                                         Start Designing
-                                        <ArrowUpRight className="h-4 w-4" weight="regular" aria-hidden="true" />
+                                        <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                                     </MaybeLink>
                                 </>
                             ) : (

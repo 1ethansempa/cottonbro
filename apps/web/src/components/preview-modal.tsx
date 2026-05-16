@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { ArrowsOutCardinal as Move, X } from "@phosphor-icons/react";
+import { Move, X } from "lucide-react";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 
 interface PreviewModalProps {
@@ -17,7 +17,9 @@ export function PreviewModal({ onClose, getDesignImage }: PreviewModalProps) {
     const [designUrl, setDesignUrl] = useState<string | null>(null);
     const [selectedProduct, setSelectedProduct] =
         useState<ProductType>("t-shirt");
-    const [selectedColor, setSelectedColor] = useState<string>("");
+    const [selectedColor, setSelectedColor] = useState<string>(
+        () => PRODUCTS["t-shirt"].colors[0]?.value || "",
+    );
     const [designPosition, setDesignPosition] = useState({
         left: 0,
         top: 0,
@@ -35,9 +37,7 @@ export function PreviewModal({ onClose, getDesignImage }: PreviewModalProps) {
     useEffect(() => {
         const url = getDesignImage();
         setDesignUrl(url);
-        // Set default color
-        setSelectedColor(currentProduct.colors[0]?.value || "");
-    }, []);
+    }, [getDesignImage]);
 
     // Initialize Fabric canvas
     useEffect(() => {
@@ -138,7 +138,7 @@ export function PreviewModal({ onClose, getDesignImage }: PreviewModalProps) {
                 fabricCanvasRef.current = null;
             }
         };
-    }, [designUrl, selectedProduct, selectedColor]);
+    }, [currentColor?.mockup, currentProduct.assets.front, designUrl]);
 
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/95 backdrop-blur-sm animate-in fade-in duration-200 font-urbanist selection:bg-gray-200 selection:text-black">

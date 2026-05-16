@@ -12,7 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { getSafeAuthRedirectPath } from "@/lib/auth-redirect";
+import { safeRedirect } from "@/lib/auth-redirect";
 
 // declare Turnstile’s HTML widget callbacks
 declare global {
@@ -160,7 +160,7 @@ function LoginView() {
 
   const searchParams = useSearchParams();
   // Send users back to the protected page that redirected them here.
-  const redirect = getSafeAuthRedirectPath(searchParams?.get("redirect"));
+  const redirect = safeRedirect(searchParams?.get("redirect"));
   const isAuthenticated = Boolean(user);
   const primaryButtonClass =
     "w-full rounded-full bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";

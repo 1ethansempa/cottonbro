@@ -1,33 +1,34 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
-  TextT as Type,
-  DownloadSimple as Download,
-  Trash as Trash2,
-  TextAlignLeft as AlignLeft,
-  TextAlignCenter as AlignCenter,
-  TextAlignRight as AlignRight,
-  TextB as Bold,
-  TextItalic as Italic,
-  Upload,
-  ArrowCounterClockwise as Undo2,
-  ArrowClockwise as Redo2,
-  X,
-  Minus,
-  Plus,
-  CloudArrowUp as CloudUpload,
-  Copy,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   ArrowUp,
   ArrowDown,
-  Image as ImageIcon,
+  Bold,
   Circle,
+  CloudUpload,
+  Copy,
+  Download,
   Eye,
-  MagicWand as Wand2,
-  SpinnerGap as Loader2,
   FolderOpen,
-} from "@phosphor-icons/react";
+  ImageIcon,
+  Italic,
+  Loader2,
+  Minus,
+  Plus,
+  Redo2,
+  Trash2,
+  Type,
+  Undo2,
+  Upload,
+  Wand2,
+  X,
+} from "lucide-react";
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";
@@ -228,6 +229,14 @@ export default function FabricEditor() {
   const [fontSearch, setFontSearch] = useState("");
   const [fontLoadCount, setFontLoadCount] = useState(15);
   const fontListRef = useRef<HTMLDivElement>(null);
+  const textStyleRef = useRef({
+    bold,
+    fill,
+    fontFamily,
+    fontSize,
+    italic,
+    textAlign,
+  });
 
   // Navigation State
   const isPanningRef = useRef(false);
@@ -255,6 +264,52 @@ export default function FabricEditor() {
     renderCanvas();
     saveHistorySnapshot();
   };
+
+  useEffect(() => {
+    textStyleRef.current = {
+      bold,
+      fill,
+      fontFamily,
+      fontSize,
+      italic,
+      textAlign,
+    };
+  }, [bold, fill, fontFamily, fontSize, italic, textAlign]);
+
+  const addTextAtPoint = useCallback(
+    async (point: { x: number; y: number }, sub: string = "Heading") => {
+      const c = fabricCanvasRef.current;
+      if (!c) return;
+
+      const { Textbox } = (await import("fabric")) as any;
+      const textStyle = textStyleRef.current;
+
+      const text = new Textbox(sub, {
+        left: point.x,
+        top: point.y,
+        fontSize: textStyle.fontSize,
+        fontFamily: textStyle.fontFamily,
+        fill: textStyle.fill,
+        textAlign: textStyle.textAlign,
+        fontWeight: textStyle.bold ? "bold" : "normal",
+        fontStyle: textStyle.italic ? "italic" : "normal",
+        width: 300,
+        splitByGrapheme: true,
+        originX: "center",
+        originY: "center",
+      });
+
+      c.add(text);
+      c.setActiveObject(text);
+      text.enterEditing();
+      text.selectAll();
+      c.defaultCursor = "default";
+      c.selection = true;
+
+      c.__saveHistory && c.__saveHistory();
+    },
+    [],
+  );
 
   // --- Preload Fonts on Mount ---
   useEffect(() => {
@@ -684,7 +739,7 @@ export default function FabricEditor() {
       disposed = true;
       cleanup?.();
     };
-  }, []); // Run once on mount
+  }, [addTextAtPoint]);
 
   // Preload popular fonts on mount
   useEffect(() => {
@@ -727,40 +782,6 @@ export default function FabricEditor() {
   }, [canvasReady]);
 
   // --- Helper Functions (Same as before) ---
-  const addTextAtPoint = async (
-    point: { x: number; y: number },
-    sub: string = "Heading",
-  ) => {
-    const c = fabricCanvasRef.current;
-    if (!c) return;
-
-    const { Textbox } = (await import("fabric")) as any;
-
-    const text = new Textbox(sub, {
-      left: point.x,
-      top: point.y,
-      fontSize: fontSize,
-      fontFamily: fontFamily,
-      fill: fill,
-      textAlign: textAlign,
-      fontWeight: bold ? "bold" : "normal",
-      fontStyle: italic ? "italic" : "normal",
-      width: 300,
-      splitByGrapheme: true,
-      originX: "center",
-      originY: "center",
-    });
-
-    c.add(text);
-    c.setActiveObject(text);
-    text.enterEditing();
-    text.selectAll();
-    c.defaultCursor = "default";
-    c.selection = true;
-
-    c.__saveHistory && c.__saveHistory();
-  };
-
   const applyTextPreset = async (preset: (typeof TEXT_PRESETS)[number]) => {
     const c = fabricCanvasRef.current;
     if (!c) return;
@@ -1375,10 +1396,13 @@ export default function FabricEditor() {
                           onClick={() => addUploadedImageToCanvas(img.src)}
                           className="group relative aspect-square bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:border-black transition-all"
                         >
-                          <img
+                          <Image
                             src={img.src}
                             alt={img.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            fill
+                            sizes="96px"
+                            unoptimized
+                            className="object-cover transition-transform group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Plus className="w-8 h-8 text-black bg-white rounded-full p-1.5 shadow-xl" />

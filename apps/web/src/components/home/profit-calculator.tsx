@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowUpRightIcon } from "@phosphor-icons/react";
+import { ArrowUpRight } from "lucide-react";
 
 export function ProfitCalculator() {
   const [productType, setProductType] = useState<string>("heavyweight");
@@ -196,9 +196,8 @@ export function ProfitCalculator() {
         {/* CTA */}
         <button className="group flex w-full items-center justify-center bg-black hover:opacity-80 transition-all text-white py-6 font-bold text-[10px] tracking-[0.2em] uppercase cursor-pointer">
           START YOUR BRAND
-          <ArrowUpRightIcon
+          <ArrowUpRight
             className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:ml-2"
-            weight="regular"
             aria-hidden="true"
           />
         </button>

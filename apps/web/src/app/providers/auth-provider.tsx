@@ -2,7 +2,6 @@
 
 import React from "react";
 import type { Auth } from "firebase/auth";
-import { IconContext } from "@phosphor-icons/react";
 import { AuthProvider, useAuth } from "@cottonbro/auth-react";
 import { getClientAuth } from "@/lib/firebase-client";
 
@@ -39,10 +38,8 @@ export default function WebAuthProvider({
   });
 
   return (
-    <IconContext.Provider value={{ weight: "duotone" }}>
-      <AuthProvider auth={clientAuth}>
-        <AuthBootGate>{children}</AuthBootGate>
-      </AuthProvider>
-    </IconContext.Provider>
+    <AuthProvider auth={clientAuth}>
+      <AuthBootGate>{children}</AuthBootGate>
+    </AuthProvider>
   );
 }

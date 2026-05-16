@@ -4,13 +4,13 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Upload,
-  Check,
-  ArrowRight,
   ArrowLeft,
-  Warning as AlertTriangle,
-  ArrowsOutCardinal as Move,
-} from "@phosphor-icons/react";
+  ArrowRight,
+  Check,
+  Move,
+  TriangleAlert as AlertTriangle,
+  Upload,
+} from "lucide-react";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { Canvas, FabricImage } from "fabric";
 import { Logo } from "@cottonbro/ui";
@@ -69,6 +69,8 @@ export default function DesignWizard({
   const currentProduct = PRODUCTS[selectedProduct];
   const currentColor =
     currentProduct.colors[selectedColorIndex] || currentProduct.colors[0];
+  const currentMockup = currentColor?.mockup;
+  const currentPrintArea = currentProduct.printArea;
 
   const handleFileSelect = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -114,7 +116,7 @@ export default function DesignWizard({
       step !== "preview" ||
       !canvasElRef.current ||
       !uploadedImage ||
-      !currentColor
+      !currentMockup
     )
       return;
 
@@ -134,7 +136,7 @@ export default function DesignWizard({
     fabricCanvasRef.current = canvas;
 
     // Load mockup as background
-    FabricImage.fromURL(currentColor.mockup).then((mockupImg) => {
+    FabricImage.fromURL(currentMockup).then((mockupImg) => {
       if (!mockupImg || !canvas) return;
 
       // Scale mockup to fit canvas
@@ -157,7 +159,7 @@ export default function DesignWizard({
         if (!designImg) return;
 
         // Position in print area
-        const printArea = currentProduct.printArea;
+        const printArea = currentPrintArea;
         const designScale =
           Math.min(
             (printArea.width * scale) / (designImg.width || 1),
@@ -201,17 +203,27 @@ export default function DesignWizard({
       canvas.dispose();
       fabricCanvasRef.current = null;
     };
-  }, [step, uploadedImage, currentColor?.mockup, selectedProduct]);
+  }, [
+    step,
+    uploadedImage,
+    currentMockup,
+    currentPrintArea,
+    designPosition.angle,
+    designPosition.left,
+    designPosition.scaleX,
+    designPosition.scaleY,
+    designPosition.top,
+  ]);
 
   useEffect(() => {
-    if (step !== "preview" || !fabricCanvasRef.current || !currentColor) return;
+    if (step !== "preview" || !fabricCanvasRef.current || !currentMockup) return;
 
     const canvas = fabricCanvasRef.current;
     const objects = canvas.getObjects();
     const mockup = objects.find((obj) => obj !== designObjRef.current);
 
     if (mockup) {
-      FabricImage.fromURL(currentColor.mockup).then((newMockup) => {
+      FabricImage.fromURL(currentMockup).then((newMockup) => {
         if (!newMockup) return;
 
         const scale = Math.min(
@@ -232,7 +244,7 @@ export default function DesignWizard({
         canvas.requestRenderAll();
       });
     }
-  }, [currentColor?.mockup, step]);
+  }, [currentMockup, step]);
 
   // Guard after all hooks
   if (!currentColor) return null;
@@ -253,15 +265,15 @@ export default function DesignWizard({
             <span className={step === "choice" ? "text-black font-bold" : ""}>
               Start
             </span>
-            <ArrowRight className="w-3 h-3" weight="regular" />
+            <ArrowRight className="w-3 h-3" />
             <span className={step === "upload" ? "text-black font-bold" : ""}>
               Upload
             </span>
-            <ArrowRight className="w-3 h-3" weight="regular" />
+            <ArrowRight className="w-3 h-3" />
             <span className={step === "preview" ? "text-black font-bold" : ""}>
               Preview
             </span>
-            <ArrowRight className="w-3 h-3" weight="regular" />
+            <ArrowRight className="w-3 h-3" />
             <span className={step === "confirm" ? "text-black font-bold" : ""}>
               Confirm
             </span>
@@ -304,7 +316,7 @@ export default function DesignWizard({
               onClick={() => setStep("choice")}
               className="flex items-center gap-2 text-gray-400 hover:text-black mb-8 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" weight="regular" /> Back
+              <ArrowLeft className="w-4 h-4" /> Back
             </button>
 
             <h2 className="text-4xl font-black mb-4 tracking-tight">
@@ -355,7 +367,7 @@ export default function DesignWizard({
               onClick={() => setStep("upload")}
               className="flex items-center gap-2 text-gray-400 hover:text-primary mb-8 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" weight="regular" /> Back
+              <ArrowLeft className="w-4 h-4" /> Back
             </button>
 
             {/* Quality Warning */}
@@ -377,7 +389,7 @@ export default function DesignWizard({
 
             {qualityPassed === true && (
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-8 flex items-center gap-3">
-                <Check className="w-5 h-5 text-emerald-500" weight="fill" />
+                <Check className="w-5 h-5 text-emerald-500" />
                 <p className="text-emerald-700 font-medium">
                   Great! Your image ({imageDimensions?.width}×
                   {imageDimensions?.height}px) meets quality requirements.
@@ -479,7 +491,7 @@ export default function DesignWizard({
         {step === "confirm" && uploadedImage && (
           <div className="text-center max-w-2xl mx-auto">
             <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-emerald-100">
-              <Check className="w-10 h-10 text-emerald-500" weight="fill" />
+              <Check className="w-10 h-10 text-emerald-500" />
             </div>
             <h2 className="text-5xl font-black mb-6 tracking-tight">
               Ready to <span className="text-gray-400">launch</span>!
