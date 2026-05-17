@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
+  Check,
   CircleUser as User,
   LoaderCircle,
   Mail,
@@ -10,6 +11,21 @@ import {
 import { isValidEmail, normalizeEmail } from "@cottonbro/utils";
 import { Card, Input } from "@cottonbro/ui";
 import { useUserStore } from "@/stores/user-store";
+
+/** Briefly flash a "saved" state on a button, then revert. */
+function useSavedFlash(ms = 1500) {
+  const [saved, setSaved] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
+  function flash() {
+    setSaved(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setSaved(false), ms);
+  }
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return { saved, flash } as const;
+}
 
 export default function ProfilePage() {
   const {
@@ -21,7 +37,6 @@ export default function ProfilePage() {
     sendingCode,
     confirmingEmail,
     emailStep,
-    profileMessage: message,
     profileError: error,
     loadProfile,
     updateName,
@@ -44,6 +59,10 @@ export default function ProfilePage() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const canChangeEmail = profile?.canChangeEmail ?? false;
+
+  const nameSaved = useSavedFlash();
+  const phoneSaved = useSavedFlash();
+  const emailConfirmed = useSavedFlash();
 
   useEffect(() => {
     let cancelled = false;
@@ -70,10 +89,10 @@ export default function ProfilePage() {
   }, [loadProfile]);
 
   useEffect(() => {
-    if (message || error) {
+    if (error) {
       scrollDashboardToTop();
     }
-  }, [error, message]);
+  }, [error]);
 
   async function onSaveName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,6 +105,7 @@ export default function ProfilePage() {
     const nextProfile = await updateName(nextName);
     if (nextProfile) {
       setName(nextProfile.name ?? "");
+      nameSaved.flash();
     }
   }
 
@@ -94,6 +114,7 @@ export default function ProfilePage() {
     const nextProfile = await updatePhone(phoneNumber.trim());
     if (nextProfile) {
       setPhoneNumber(nextProfile.phoneNumber ?? "");
+      phoneSaved.flash();
     }
   }
 
@@ -163,12 +184,18 @@ export default function ProfilePage() {
     if (nextProfile) {
       setEmail(nextProfile.email);
       setCode("");
+      emailConfirmed.flash();
     }
   }
 
   if (!pageReady) {
     return <DashboardPageLoader label="Loading profile ...." />;
   }
+
+  const saveButtonClass =
+    "w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-all disabled:cursor-not-allowed disabled:opacity-50";
+  const savedButtonClass =
+    "w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none opacity-100";
 
   return (
     <div className="p-6 md:p-12 pb-24">
@@ -183,12 +210,6 @@ export default function ProfilePage() {
           Manage the details connected to your CottonBro account.
         </p>
       </div>
-
-      {message && (
-        <p className="mb-8 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-bold text-black">
-          {message}
-        </p>
-      )}
 
       {error && (
         <p className="mb-8 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
@@ -294,13 +315,22 @@ export default function ProfilePage() {
               </div>
 
               <div className="shrink-0">
-                <button
-                  type="submit"
-                  disabled={loading || savingName}
-                  className="w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {savingName ? "SAVING..." : "SAVE"}
-                </button>
+                {nameSaved.saved ? (
+                  <span className={savedButtonClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      SAVED
+                    </span>
+                  </span>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading || savingName}
+                    className={saveButtonClass}
+                  >
+                    {savingName ? "SAVING..." : "SAVE"}
+                  </button>
+                )}
               </div>
             </form>
           </Card>
@@ -342,13 +372,22 @@ export default function ProfilePage() {
               </div>
 
               <div className="shrink-0">
-                <button
-                  type="submit"
-                  disabled={loading || savingPhone}
-                  className="w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {savingPhone ? "SAVING..." : "SAVE"}
-                </button>
+                {phoneSaved.saved ? (
+                  <span className={savedButtonClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      SAVED
+                    </span>
+                  </span>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading || savingPhone}
+                    className={saveButtonClass}
+                  >
+                    {savingPhone ? "SAVING..." : "SAVE"}
+                  </button>
+                )}
               </div>
             </form>
           </Card>
@@ -438,13 +477,22 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="shrink-0">
-                  <button
-                    type="submit"
-                    disabled={confirmingEmail}
-                    className="w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {confirmingEmail ? "VERIFYING..." : "CONFIRM EMAIL"}
-                  </button>
+                  {emailConfirmed.saved ? (
+                    <span className={savedButtonClass}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                        UPDATED
+                      </span>
+                    </span>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={confirmingEmail}
+                      className={saveButtonClass}
+                    >
+                      {confirmingEmail ? "VERIFYING..." : "CONFIRM EMAIL"}
+                    </button>
+                  )}
                 </div>
               </form>
             )}

@@ -119,11 +119,6 @@ export default function SettingsPage() {
                   <br className="hidden lg:block" />
                   featuring new merch designs and trends.
                 </p>
-                {savingMarketing && (
-                  <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.15em] text-gray-400">
-                    Saving preference...
-                  </p>
-                )}
               </div>
             </div>
 
