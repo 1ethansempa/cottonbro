@@ -23,6 +23,7 @@
     "@cottonplug/auth-react": "workspace:*",
     "@cottonplug/ui": "workspace:*",
     "@cottonplug/utils": "workspace:*",
+    "@iconify/react": "^6.0.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
     "@tailwindcss/postcss": "^4.2.4",
