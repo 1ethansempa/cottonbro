@@ -146,10 +146,12 @@ async function main() {
     );
   }
 
+  await adminAuth.revokeRefreshTokens(user.firebaseUid);
+
   console.log(
     `done — db role=${updatedUser.role}, firebase role=${verifiedFirebaseRole}`,
   );
-  console.log("user should re-login to pick up new claims");
+  console.log("existing sessions revoked — user must re-login");
 }
 
 function die(msg: string): never {

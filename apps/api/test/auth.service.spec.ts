@@ -2,10 +2,12 @@ import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 import { Test, TestingModule } from "@nestjs/testing";
 import {
   BadRequestException,
+  ForbiddenException,
   UnauthorizedException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { AuthService } from "../src/auth/auth.service.js";
+import { AuthService, USERS_REPOSITORY } from "../src/auth/auth.service.js";
+import type { AppUser, UsersRepositoryPort } from "../src/auth/users.repository.js";
 
 import { MailService } from "../src/common/mail/mail.service.js";
 import { R2StorageService } from "../src/common/storage/r2-storage.service.js";
@@ -250,7 +252,168 @@ describe("AuthService", () => {
       );
     });
   });
+
+  describe("role-protected account settings", () => {
+    it("should allow regular users to read account settings", async () => {
+      const repository = createUsersRepository({
+        findByFirebaseUidOrEmail: jest
+          .fn()
+          .mockResolvedValueOnce(createActiveUser({ role: "user" })),
+      });
+      const service = await createAuthService({ repository });
+
+      await expect(
+        service.getAccountSettings({
+          uid: "user-123",
+          email: "test@example.com",
+        }),
+      ).resolves.toMatchObject({
+        marketingEmailsEnabled: false,
+      });
+    });
+
+    it("should reject partners reading account settings", async () => {
+      const repository = createUsersRepository({
+        findByFirebaseUidOrEmail: jest
+          .fn()
+          .mockResolvedValueOnce(createActiveUser({ role: "partner" })),
+      });
+      const service = await createAuthService({ repository });
+
+      await expect(
+        service.getAccountSettings({
+          uid: "user-123",
+          email: "test@example.com",
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("should reject admins updating marketing settings", async () => {
+      const repository = createUsersRepository({
+        findByFirebaseUidOrEmail: jest
+          .fn()
+          .mockResolvedValueOnce(createActiveUser({ role: "admin" })),
+        updateMarketingEmailConsent: jest.fn(),
+      });
+      const service = await createAuthService({ repository });
+
+      await expect(
+        service.updateMarketingEmailConsent(
+          {
+            uid: "user-123",
+            email: "test@example.com",
+          },
+          true,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.updateMarketingEmailConsent).not.toHaveBeenCalled();
+    });
+
+    it("should reject partners deleting an account", async () => {
+      const repository = createUsersRepository({
+        findByFirebaseUidOrEmail: jest
+          .fn()
+          .mockResolvedValueOnce(createActiveUser({ role: "partner" })),
+        softDeleteUser: jest.fn(),
+      });
+      const service = await createAuthService({ repository });
+
+      await expect(
+        service.deleteAccount(
+          {
+            uid: "user-123",
+            email: "test@example.com",
+          },
+          createMockResponse(),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.softDeleteUser).not.toHaveBeenCalled();
+    });
+  });
 });
+
+async function createAuthService({
+  repository,
+}: {
+  repository: jest.Mocked<UsersRepositoryPort>;
+}) {
+  const module = await Test.createTestingModule({
+    providers: [
+      AuthService,
+      {
+        provide: MailService,
+        useValue: {
+          sendOtpEmail: jest.fn<() => Promise<void>>().mockResolvedValue(
+            undefined,
+          ),
+          sendAccountReinstatementEmail: jest
+            .fn<() => Promise<void>>()
+            .mockResolvedValue(undefined),
+          sendWelcomeEmail: jest.fn<() => Promise<void>>().mockResolvedValue(
+            undefined,
+          ),
+        },
+      },
+      {
+        provide: R2StorageService,
+        useValue: {
+          uploadBase64Image: jest.fn(),
+          deleteObject: jest.fn(),
+        },
+      },
+      {
+        provide: USERS_REPOSITORY,
+        useValue: repository,
+      },
+    ],
+  }).compile();
+
+  return module.get<AuthService>(AuthService);
+}
+
+function createUsersRepository(
+  overrides: Partial<jest.Mocked<UsersRepositoryPort>> = {},
+): jest.Mocked<UsersRepositoryPort> {
+  return {
+    findByEmail: jest.fn(),
+    findByFirebaseUidOrEmail: jest.fn(),
+    upsertFromFirebaseUser: jest.fn(),
+    updateMarketingEmailConsent: jest.fn(),
+    updateName: jest.fn(),
+    updatePhoneNumber: jest.fn(),
+    updateAvatarUrl: jest.fn(),
+    updateEmail: jest.fn(),
+    softDeleteUser: jest.fn(),
+    createAccountReinstatementToken: jest.fn(),
+    restoreDeletedUserByTokenHash: jest.fn(),
+    ...overrides,
+  };
+}
+
+function createActiveUser(overrides: Partial<AppUser> = {}): AppUser {
+  const now = new Date();
+  return {
+    id: "local-user-123",
+    firebaseUid: "user-123",
+    email: "test@example.com",
+    emailVerified: true,
+    phoneNumber: null,
+    name: null,
+    avatarUrl: null,
+    avatarObjectKey: null,
+    status: "active",
+    role: "user",
+    privacyPolicyAcceptedAt: now,
+    termsAcceptedAt: now,
+    marketingEmailsOptedInAt: null,
+    marketingEmailsOptedOutAt: null,
+    deletedAt: null,
+    lastLoginAt: now,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
 
 function createMockResponse() {
   return {

@@ -79,6 +79,31 @@ describe("AuthGuard", () => {
     });
   });
 
+  it("should prefer the database role over stale Firebase session claims", async () => {
+    const request = {
+      headers: {},
+      cookies: { __session: "session-cookie" },
+    };
+    mockedAdminAuth.verifySessionCookie.mockResolvedValueOnce({
+      uid: "user-123",
+      email: "test@example.com",
+      role: "user",
+    });
+    repository.findByFirebaseUidOrEmail.mockResolvedValueOnce(
+      createActiveUser({ role: "admin" }),
+    );
+
+    await expect(guard.canActivate(createContext(request))).resolves.toBe(true);
+
+    expect(request).toMatchObject({
+      user: {
+        uid: "user-123",
+        email: "test@example.com",
+        role: "admin",
+      },
+    });
+  });
+
   it("should reject invalid session cookies", async () => {
     mockedAdminAuth.verifySessionCookie.mockRejectedValueOnce(
       new Error("invalid_session"),
