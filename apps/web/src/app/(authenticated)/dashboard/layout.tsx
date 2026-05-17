@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useAuth } from "@cottonbro/auth-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useAuth } from "@cottonplug/auth-react";
 import {
-  ArrowUpRightIcon,
-  GearSixIcon,
-  PlusIcon,
-  SignOutIcon,
-  UserCircleIcon,
-} from "@phosphor-icons/react";
-import { Logo } from "@cottonbro/ui";
+  ArrowUpRight,
+  LogOut,
+  Palette,
+  Plus,
+  Settings,
+  UserCircle,
+} from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -18,19 +19,30 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
   const { logout, role } = useAuth();
   const showUserSettings = role === "user" || role === undefined;
 
   const navItems = [
+    {
+      href: "/dashboard/create",
+      label: "Create",
+      icon: (
+        <Palette
+          className="h-4 w-4"
+          aria-hidden="true"
+        />
+      ),
+    },
     ...(showUserSettings
       ? [
           {
             href: "/dashboard/settings",
             label: "Settings",
             icon: (
-              <GearSixIcon
+              <Settings
                 className="h-4 w-4"
-                weight="regular"
                 aria-hidden="true"
               />
             ),
@@ -41,14 +53,25 @@ export default function DashboardLayout({
       href: "/dashboard/profile",
       label: "Profile",
       icon: (
-        <UserCircleIcon
+        <UserCircle
           className="h-4 w-4"
-          weight="regular"
           aria-hidden="true"
         />
       ),
     },
   ];
+
+  async function handleLogout() {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      router.push("/auth/login?redirect=/dashboard");
+      router.refresh();
+    }
+  }
 
   return (
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#f9f9f9] font-sans text-black selection:bg-black selection:text-white md:h-screen md:overflow-hidden md:flex-row">
@@ -57,26 +80,32 @@ export default function DashboardLayout({
         <div>
           {/* Logo Area */}
           <div className="p-6 md:p-8 flex items-center justify-between md:justify-start">
-            <Link href="/" className="hover:opacity-70 transition-opacity">
-              <Logo size="md" color="black" />
+            <Link
+              href="/"
+              className="group flex cursor-pointer items-center transition-transform duration-300 hover:scale-105"
+            >
+              <div className="flex items-baseline text-xl font-black uppercase leading-none tracking-tighter">
+                <span className="text-black">COTTONPL</span>
+                <span className="text-[#e60000]">UG</span>
+                <span className="ml-1 h-2 w-2 rounded-full bg-[#e60000]" />
+              </div>
             </Link>
           </div>
 
           {/* Main Action */}
           <div className="px-6 md:px-8 pb-8">
             <Link
-              href="/create-product"
-              className="group flex items-center justify-between w-full bg-black text-white px-5 py-4 text-[10px] font-bold tracking-[0.2em] uppercase transition-all hover:opacity-80 rounded-full"
+              href="/dashboard/create"
+              className="group flex cursor-pointer items-center justify-between w-full bg-black text-white px-5 py-4 text-[10px] font-bold tracking-[0.2em] uppercase transition-all hover:opacity-80 rounded-full"
             >
               <span className="flex items-center gap-2 whitespace-nowrap">
-                <PlusIcon
+                <Plus
                   className="h-3.5 w-3.5"
-                  weight="regular"
                   aria-hidden="true"
                 />
                 Create Product
               </span>
-              <ArrowUpRightIcon className="h-3.5 w-3.5 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" weight="regular" aria-hidden="true" />
+              <ArrowUpRight className="h-3.5 w-3.5 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" aria-hidden="true" />
             </Link>
           </div>
 
@@ -91,7 +120,7 @@ export default function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-6 md:px-8 py-3 text-[11px] font-bold tracking-[0.15em] transition-colors ${
+                  className={`flex cursor-pointer items-center gap-3 px-6 md:px-8 py-3 text-[11px] font-bold tracking-[0.15em] transition-colors ${
                     isActive 
                       ? "text-black border-l-[3px] border-black" 
                       : "text-gray-500 border-l-[3px] border-transparent hover:text-black"
@@ -108,16 +137,18 @@ export default function DashboardLayout({
         {/* Footer Actions */}
         <div className="p-6 md:p-8 border-t border-gray-200">
           <button
-            onClick={() => logout()}
-            className="group flex items-center justify-between w-full text-left"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="group flex cursor-pointer items-center justify-between w-full text-left disabled:cursor-not-allowed disabled:opacity-60"
           >
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-white text-xs font-bold">C</div>
-              <span className="text-[10px] font-bold tracking-[0.15em] text-gray-500 group-hover:text-black transition-colors">Logout</span>
+              <span className="text-[10px] font-bold tracking-[0.15em] text-gray-500 group-hover:text-black transition-colors">
+                {loggingOut ? "Logging out..." : "Logout"}
+              </span>
             </div>
-            <SignOutIcon
+            <LogOut
               className="h-4 w-4 text-gray-500 transition-colors group-hover:text-black"
-              weight="regular"
               aria-hidden="true"
             />
           </button>

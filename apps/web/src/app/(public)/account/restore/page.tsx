@@ -5,11 +5,11 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowUpRightIcon,
-  CheckCircleIcon,
-  CircleNotchIcon,
-  WarningCircleIcon,
-} from "@phosphor-icons/react";
+  ArrowUpRight,
+  CheckCircle,
+  CircleAlert,
+  LoaderCircle,
+} from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useUserStore } from "@/stores/user-store";
@@ -32,11 +32,11 @@ function RestoreAccountView() {
     loading: {
       eyebrow: "Account restoration",
       title: "Restoring your account.",
-      body: "Give us a moment while we bring your Cotton Bro account back.",
+      body: "Give us a moment while we bring your Cotton Plug account back.",
       status: "Checking restore link",
       accent: "bg-black text-white",
       icon: (
-        <CircleNotchIcon className="h-5 w-5 animate-spin" aria-hidden="true" />
+        <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
       ),
     },
     success: {
@@ -45,7 +45,7 @@ function RestoreAccountView() {
       body: "You can sign in again and continue where you left off.",
       status: "Ready to sign in",
       accent: "bg-black text-white",
-      icon: <CheckCircleIcon className="h-5 w-5" aria-hidden="true" />,
+      icon: <CheckCircle className="h-5 w-5" aria-hidden="true" />,
     },
     error: {
       eyebrow: "Restore unavailable",
@@ -53,7 +53,7 @@ function RestoreAccountView() {
       body: "The link may have expired or already been used. Request a new restore email from the sign-in page.",
       status: "Link unavailable",
       accent: "bg-[#e60000] text-white",
-      icon: <WarningCircleIcon className="h-5 w-5" aria-hidden="true" />,
+      icon: <CircleAlert className="h-5 w-5" aria-hidden="true" />,
     },
   }[restoreAccountStatus];
 
@@ -87,9 +87,8 @@ function RestoreAccountView() {
                     className="group inline-flex cursor-pointer items-center justify-center rounded-full bg-black px-8 py-4 text-xs font-semibold tracking-wide text-white transition-all hover:opacity-80"
                   >
                     Go to sign in
-                    <ArrowUpRightIcon
+                    <ArrowUpRight
                       className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:ml-2 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100"
-                      weight="regular"
                       aria-hidden="true"
                     />
                   </Link>
@@ -98,16 +97,15 @@ function RestoreAccountView() {
                     className="group inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white px-8 py-4 text-xs font-semibold tracking-wide text-black transition-all hover:bg-gray-50"
                   >
                     Back home
-                    <ArrowUpRightIcon
+                    <ArrowUpRight
                       className="h-3.5 w-0 -translate-x-2 opacity-0 transition-all duration-300 group-hover:ml-2 group-hover:w-3.5 group-hover:translate-x-0 group-hover:opacity-100"
-                      weight="regular"
                       aria-hidden="true"
                     />
                   </Link>
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-black/55">
-                  <CircleNotchIcon
+                  <LoaderCircle
                     className="h-4 w-4 animate-spin"
                     aria-hidden="true"
                   />
@@ -138,7 +136,7 @@ function RestoreAccountView() {
                       Account
                     </p>
                     <p className="mt-2 text-sm font-semibold text-white">
-                      Cotton Bro access
+                      Cotton Plug access
                     </p>
                   </div>
                   <span className="h-2.5 w-2.5 rounded-full bg-[#e60000]" />
@@ -167,7 +165,7 @@ export default function RestoreAccountPage() {
           <SiteHeader theme="light" />
           <main className="flex min-h-screen items-center justify-center px-6 pt-18">
             <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-black/55">
-              <CircleNotchIcon
+              <LoaderCircle
                 className="h-4 w-4 animate-spin"
                 aria-hidden="true"
               />

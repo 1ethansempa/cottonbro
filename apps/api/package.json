@@ -1,5 +1,5 @@
 {
-  "name": "@cottonbro/api",
+  "name": "@cottonplug/api",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "set-user-role": "node --import tsx src/scripts/set-user-role.ts",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -16,8 +17,8 @@
     "node": "24.x"
   },
   "dependencies": {
-    "@cottonbro/auth-server": "workspace:*",
-    "@cottonbro/utils": "workspace:*",
+    "@cottonplug/auth-server": "workspace:*",
+    "@cottonplug/utils": "workspace:*",
     "@neondatabase/serverless": "^1.1.0",
     "@nestjs/common": "^11.1.19",
     "@nestjs/core": "^11.1.19",

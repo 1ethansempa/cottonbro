@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Auth | Cotton Bro",
+  title: "Auth | Cotton Plug",
 };
 
 import { SiteHeader } from "@/components/site-header";

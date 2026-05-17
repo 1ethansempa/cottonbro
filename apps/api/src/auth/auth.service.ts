@@ -17,8 +17,8 @@ import {
   verifyOtp,
   signInOrCreateUser,
   mintCustomToken,
-} from "@cottonbro/auth-server";
-import { normalizeEmail } from "@cottonbro/utils";
+} from "@cottonplug/auth-server";
+import { normalizeEmail } from "@cottonplug/utils";
 import { MailService } from "../common/mail/mail.service.js";
 import { R2StorageService } from "../common/storage/r2-storage.service.js";
 import type {
@@ -189,15 +189,8 @@ export class AuthService {
   }
 
   async getAccountSettings(claims: RequestUser) {
-    const { uid, email } = this.readRequestUser(claims);
-    const user = await this.usersRepository?.findByFirebaseUidOrEmail(
-      uid,
-      email,
-    );
-
-    if (!user) {
-      throw new NotFoundException("account_not_found");
-    }
+    const user = await this.getRequestUserRecord(claims);
+    this.assertCanAccessAccountSettings(user);
 
     return {
       marketingEmailsEnabled: isMarketingEmailEnabled(user),
@@ -387,6 +380,9 @@ export class AuthService {
 
   async updateMarketingEmailConsent(claims: RequestUser, enabled: boolean) {
     const { uid, email } = this.readRequestUser(claims);
+    const existingUser = await this.getRequestUserRecord(claims);
+    this.assertCanAccessAccountSettings(existingUser);
+
     const user = await this.usersRepository?.updateMarketingEmailConsent({
       uid,
       email,
@@ -406,6 +402,9 @@ export class AuthService {
 
   async deleteAccount(claims: RequestUser, res: Response): Promise<void> {
     const { uid, email } = this.readRequestUser(claims);
+    const existingUser = await this.getRequestUserRecord(claims);
+    this.assertCanAccessAccountSettings(existingUser);
+
     const user = await this.usersRepository?.softDeleteUser({ uid, email });
 
     if (!user) {
@@ -570,6 +569,12 @@ export class AuthService {
   private assertCanChangeEmail(user: AppUser): void {
     if (user.role !== "user") {
       throw new ForbiddenException("email_change_forbidden");
+    }
+  }
+
+  private assertCanAccessAccountSettings(user: AppUser): void {
+    if (user.role !== "user") {
+      throw new ForbiddenException("settings_forbidden");
     }
   }
 

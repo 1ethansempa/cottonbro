@@ -2,14 +2,39 @@
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
-  CircleNotchIcon,
-  EnvelopeIcon as Mail,
-  PhoneIcon,
-  UserCircleIcon as User,
-} from "@phosphor-icons/react";
-import { isValidEmail, normalizeEmail } from "@cottonbro/utils";
-import { Card, Input } from "@cottonbro/ui";
+  Check,
+  CircleUser as User,
+  LoaderCircle,
+  Mail,
+  Phone,
+} from "lucide-react";
+import { isValidEmail, normalizeEmail } from "@cottonplug/utils";
+import { Card, Input } from "@cottonplug/ui";
 import { useUserStore } from "@/stores/user-store";
+
+/** Briefly flash a "saved" state on a button, then revert. */
+function useSavedFlash(ms = 1500) {
+  const [saved, setSaved] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function flash() {
+    setSaved(true);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => setSaved(false), ms);
+  }
+
+  useEffect(
+    () => () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    },
+    [],
+  );
+  return { saved, flash } as const;
+}
 
 export default function ProfilePage() {
   const {
@@ -21,7 +46,6 @@ export default function ProfilePage() {
     sendingCode,
     confirmingEmail,
     emailStep,
-    profileMessage: message,
     profileError: error,
     loadProfile,
     updateName,
@@ -44,6 +68,10 @@ export default function ProfilePage() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const canChangeEmail = profile?.canChangeEmail ?? false;
+
+  const nameSaved = useSavedFlash();
+  const phoneSaved = useSavedFlash();
+  const emailConfirmed = useSavedFlash();
 
   useEffect(() => {
     let cancelled = false;
@@ -70,10 +98,10 @@ export default function ProfilePage() {
   }, [loadProfile]);
 
   useEffect(() => {
-    if (message || error) {
+    if (error) {
       scrollDashboardToTop();
     }
-  }, [error, message]);
+  }, [error]);
 
   async function onSaveName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,6 +114,7 @@ export default function ProfilePage() {
     const nextProfile = await updateName(nextName);
     if (nextProfile) {
       setName(nextProfile.name ?? "");
+      nameSaved.flash();
     }
   }
 
@@ -94,6 +123,7 @@ export default function ProfilePage() {
     const nextProfile = await updatePhone(phoneNumber.trim());
     if (nextProfile) {
       setPhoneNumber(nextProfile.phoneNumber ?? "");
+      phoneSaved.flash();
     }
   }
 
@@ -163,12 +193,18 @@ export default function ProfilePage() {
     if (nextProfile) {
       setEmail(nextProfile.email);
       setCode("");
+      emailConfirmed.flash();
     }
   }
 
   if (!pageReady) {
     return <DashboardPageLoader label="Loading profile ...." />;
   }
+
+  const saveButtonClass =
+    "w-full cursor-pointer lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-all disabled:cursor-not-allowed disabled:opacity-50";
+  const savedButtonClass =
+    "w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none opacity-100";
 
   return (
     <div className="p-6 md:p-12 pb-24">
@@ -180,15 +216,9 @@ export default function ProfilePage() {
           Profile
         </h1>
         <p className="text-sm font-medium text-gray-500">
-          Manage the details connected to your CottonBro account.
+          Manage the details connected to your Cotton Plug account.
         </p>
       </div>
-
-      {message && (
-        <p className="mb-8 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-bold text-black">
-          {message}
-        </p>
-      )}
 
       {error && (
         <p className="mb-8 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
@@ -217,7 +247,6 @@ export default function ProfilePage() {
                 {!avatarUrl.trim() && (
                   <User
                     className="h-8 w-8 text-gray-400"
-                    weight="regular"
                     aria-hidden="true"
                   />
                 )}
@@ -234,7 +263,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={loading || savingAvatar}
-                    className="bg-black text-white px-4 py-2 text-xs font-medium rounded-md hover:opacity-80 transition-opacity"
+                    className="cursor-pointer bg-black text-white px-4 py-2 text-xs font-medium rounded-md hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Upload New
                   </button>
@@ -242,7 +271,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={onRemoveAvatar}
                     disabled={loading || savingAvatar || !avatarUrl.trim()}
-                    className="bg-white text-black border border-gray-200 px-4 py-2 text-xs font-medium rounded-md hover:border-black transition-colors disabled:opacity-50"
+                    className="cursor-pointer bg-white text-black border border-gray-200 px-4 py-2 text-xs font-medium rounded-md hover:border-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Remove
                   </button>
@@ -276,7 +305,6 @@ export default function ProfilePage() {
                 <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100 mb-0">
                   <User
                     className="h-5 w-5 text-gray-600"
-                    weight="regular"
                     aria-hidden="true"
                   />
                 </div>
@@ -296,13 +324,22 @@ export default function ProfilePage() {
               </div>
 
               <div className="shrink-0">
-                <button
-                  type="submit"
-                  disabled={loading || savingName}
-                  className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
-                >
-                  {savingName ? "SAVING..." : "SAVE"}
-                </button>
+                {nameSaved.saved ? (
+                  <span className={savedButtonClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      SAVED
+                    </span>
+                  </span>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading || savingName}
+                    className={saveButtonClass}
+                  >
+                    {savingName ? "SAVING..." : "SAVE"}
+                  </button>
+                )}
               </div>
             </form>
           </Card>
@@ -322,9 +359,8 @@ export default function ProfilePage() {
             >
               <div className="flex flex-1 gap-5 items-center">
                 <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100 mb-0">
-                  <PhoneIcon
+                  <Phone
                     className="h-5 w-5 text-gray-600"
-                    weight="regular"
                     aria-hidden="true"
                   />
                 </div>
@@ -345,13 +381,22 @@ export default function ProfilePage() {
               </div>
 
               <div className="shrink-0">
-                <button
-                  type="submit"
-                  disabled={loading || savingPhone}
-                  className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide border-none hover:opacity-80 transition-opacity"
-                >
-                  {savingPhone ? "SAVING..." : "SAVE"}
-                </button>
+                {phoneSaved.saved ? (
+                  <span className={savedButtonClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      SAVED
+                    </span>
+                  </span>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading || savingPhone}
+                    className={saveButtonClass}
+                  >
+                    {savingPhone ? "SAVING..." : "SAVE"}
+                  </button>
+                )}
               </div>
             </form>
           </Card>
@@ -369,7 +414,6 @@ export default function ProfilePage() {
               <div className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-lg bg-gray-100">
                 <Mail
                   className="h-5 w-5 text-gray-600"
-                  weight="regular"
                   aria-hidden="true"
                 />
               </div>
@@ -415,7 +459,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={loading || sendingCode || confirmingEmail}
-                  className="w-full lg:w-auto bg-white text-black border border-gray-200 rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:border-black transition-colors"
+                  className="w-full cursor-pointer lg:w-auto bg-white text-black border border-gray-200 rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:border-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {sendingCode ? "SENDING..." : "SEND CODE"}
                 </button>
@@ -442,13 +486,22 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="shrink-0">
-                  <button
-                    type="submit"
-                    disabled={confirmingEmail}
-                    className="w-full lg:w-auto bg-black text-white rounded-md text-[10px] px-6 h-10 font-bold uppercase tracking-wide hover:opacity-80 transition-opacity"
-                  >
-                    {confirmingEmail ? "VERIFYING..." : "CONFIRM EMAIL"}
-                  </button>
+                  {emailConfirmed.saved ? (
+                    <span className={savedButtonClass}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                        UPDATED
+                      </span>
+                    </span>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={confirmingEmail}
+                      className={saveButtonClass}
+                    >
+                      {confirmingEmail ? "VERIFYING..." : "CONFIRM EMAIL"}
+                    </button>
+                  )}
                 </div>
               </form>
             )}
@@ -476,9 +529,8 @@ function DashboardPageLoader({ label }: { label: string }) {
   return (
     <div className="flex min-h-[55vh] items-center justify-center p-6 md:p-12">
       <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-gray-500">
-        <CircleNotchIcon
+        <LoaderCircle
           className="h-4 w-4 animate-spin"
-          weight="regular"
           aria-hidden="true"
         />
         {label}

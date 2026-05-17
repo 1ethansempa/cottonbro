@@ -8,7 +8,7 @@ import {
   Optional,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { adminAuth } from "@cottonbro/auth-server";
+import { adminAuth } from "@cottonplug/auth-server";
 import { IS_PUBLIC_KEY } from "./public.decorator.js";
 import { USERS_REPOSITORY } from "./auth.service.js";
 import type { UsersRepositoryPort } from "./users.repository.js";

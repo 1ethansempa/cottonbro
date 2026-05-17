@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@cottonbro/auth-react";
+import { useAuth } from "@cottonplug/auth-react";
 
 export default function AuthenticatedLayout({
   children,

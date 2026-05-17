@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@cottonbro/auth-react": ["packages/frontend/auth-react/src"]
+      "@cottonplug/auth-react": ["packages/frontend/auth-react/src"]
     }
   }
 }

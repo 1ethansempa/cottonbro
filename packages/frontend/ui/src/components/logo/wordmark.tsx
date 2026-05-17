@@ -8,7 +8,7 @@ function cn(...p: Array<string | false | null | undefined>) {
 }
 
 export type WordmarkProps = {
-  /** Text to display, defaults to CottonBro */
+  /** Text to display, defaults to CottonPlug */
   text?: string;
   /** Text color: white, black, or current */
   color?: "white" | "black" | "current";
@@ -35,7 +35,7 @@ const sizes: Record<NonNullable<WordmarkProps["size"]>, string> = {
 };
 
 export function Wordmark({
-  text = "CottonBro",
+  text = "CottonPlug",
   color = "white",
   size = "lg",
   weight = "semibold",

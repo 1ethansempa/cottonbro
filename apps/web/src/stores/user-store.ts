@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { sessionNetworkRequest } from "@cottonbro/auth-react";
+import { sessionNetworkRequest } from "@cottonplug/auth-react";
 
 export type AccountProfile = {
   name: string | null;
@@ -29,7 +29,6 @@ type UserStore = {
   sendingCode: boolean;
   confirmingEmail: boolean;
   emailStep: EmailChangeStep;
-  profileMessage: string | null;
   profileError: string | null;
   loadProfile: () => Promise<AccountProfile | null>;
   updateName: (name: string) => Promise<AccountProfile | null>;
@@ -41,7 +40,7 @@ type UserStore = {
     code: string,
   ) => Promise<AccountProfile | null>;
   resetEmailStep: () => void;
-  clearProfileMessages: () => void;
+  clearProfileError: () => void;
   setProfileError: (error: string) => void;
 
   settings: AccountSettings | null;
@@ -69,7 +68,6 @@ const initialState = {
   sendingCode: false,
   confirmingEmail: false,
   emailStep: "idle" as EmailChangeStep,
-  profileMessage: null,
   profileError: null,
 
   settings: null,
@@ -85,7 +83,7 @@ export const useUserStore = create<UserStore>((set) => ({
   ...initialState,
 
   async loadProfile() {
-    set({ profileLoading: true, profileError: null, profileMessage: null });
+    set({ profileLoading: true, profileError: null });
     try {
       const response = await sessionNetworkRequest("/api/auth/profile");
       if (!response.ok) {
@@ -105,7 +103,7 @@ export const useUserStore = create<UserStore>((set) => ({
   },
 
   async updateName(name) {
-    set({ savingName: true, profileError: null, profileMessage: null });
+    set({ savingName: true, profileError: null });
     try {
       const response = await sessionNetworkRequest("/api/auth/profile/name", {
         method: "POST",
@@ -118,11 +116,7 @@ export const useUserStore = create<UserStore>((set) => ({
       }
 
       const profile = (await response.json()) as AccountProfile;
-      set({
-        profile,
-        savingName: false,
-        profileMessage: "Your name has been updated.",
-      });
+      set({ profile, savingName: false });
       return profile;
     } catch {
       set({
@@ -134,7 +128,7 @@ export const useUserStore = create<UserStore>((set) => ({
   },
 
   async updatePhone(phoneNumber) {
-    set({ savingPhone: true, profileError: null, profileMessage: null });
+    set({ savingPhone: true, profileError: null });
     try {
       const response = await sessionNetworkRequest("/api/auth/profile/phone", {
         method: "POST",
@@ -147,11 +141,7 @@ export const useUserStore = create<UserStore>((set) => ({
       }
 
       const profile = (await response.json()) as AccountProfile;
-      set({
-        profile,
-        savingPhone: false,
-        profileMessage: "Your phone number has been updated.",
-      });
+      set({ profile, savingPhone: false });
       return profile;
     } catch {
       set({
@@ -163,7 +153,7 @@ export const useUserStore = create<UserStore>((set) => ({
   },
 
   async updateAvatar(imageBase64) {
-    set({ savingAvatar: true, profileError: null, profileMessage: null });
+    set({ savingAvatar: true, profileError: null });
     try {
       const response = await sessionNetworkRequest("/api/auth/profile/avatar", {
         method: "POST",
@@ -176,13 +166,7 @@ export const useUserStore = create<UserStore>((set) => ({
       }
 
       const profile = (await response.json()) as AccountProfile;
-      set({
-        profile,
-        savingAvatar: false,
-        profileMessage: imageBase64.trim()
-          ? "Your profile picture has been updated."
-          : "Your profile picture has been removed.",
-      });
+      set({ profile, savingAvatar: false });
       return profile;
     } catch {
       set({
@@ -195,7 +179,7 @@ export const useUserStore = create<UserStore>((set) => ({
   },
 
   async startEmailChange(email) {
-    set({ sendingCode: true, profileError: null, profileMessage: null });
+    set({ sendingCode: true, profileError: null });
     try {
       const response = await sessionNetworkRequest(
         "/api/auth/profile/email/start",
@@ -210,11 +194,7 @@ export const useUserStore = create<UserStore>((set) => ({
         throw new Error(await readError(response));
       }
 
-      set({
-        sendingCode: false,
-        emailStep: "code_sent",
-        profileMessage: "We sent a verification code to your new email.",
-      });
+      set({ sendingCode: false, emailStep: "code_sent" });
       return true;
     } catch (err) {
       set({
@@ -229,7 +209,7 @@ export const useUserStore = create<UserStore>((set) => ({
   },
 
   async confirmEmailChange(email, code) {
-    set({ confirmingEmail: true, profileError: null, profileMessage: null });
+    set({ confirmingEmail: true, profileError: null });
     try {
       const response = await sessionNetworkRequest(
         "/api/auth/profile/email/confirm",
@@ -245,12 +225,7 @@ export const useUserStore = create<UserStore>((set) => ({
       }
 
       const profile = (await response.json()) as AccountProfile;
-      set({
-        profile,
-        confirmingEmail: false,
-        emailStep: "idle",
-        profileMessage: "Your email has been updated.",
-      });
+      set({ profile, confirmingEmail: false, emailStep: "idle" });
       return profile;
     } catch (err) {
       set({
@@ -265,12 +240,12 @@ export const useUserStore = create<UserStore>((set) => ({
     set({ emailStep: "idle" });
   },
 
-  clearProfileMessages() {
-    set({ profileError: null, profileMessage: null });
+  clearProfileError() {
+    set({ profileError: null });
   },
 
   setProfileError(error) {
-    set({ profileError: error, profileMessage: null });
+    set({ profileError: error });
   },
 
   async loadSettings() {

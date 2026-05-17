@@ -59,19 +59,19 @@ COPY apps ./apps
 # Build shared workspace packages first.
 # These packages export from dist/, so the API compiler cannot resolve them
 # until their TypeScript output exists inside the Docker build context.
-RUN pnpm --filter @cottonbro/utils build
-RUN pnpm --filter @cottonbro/auth-server build
+RUN pnpm --filter @cottonplug/utils build
+RUN pnpm --filter @cottonplug/auth-server build
 
 # Build the NestJS API application.
 # NestJS compiles TypeScript into JavaScript in the dist/ folder.
-RUN pnpm --filter @cottonbro/api build
+RUN pnpm --filter @cottonplug/api build
 
 # Prepare a minimal deployment directory.
 # pnpm deploy copies only:
 #   - the built application
 #   - production node_modules
 # This reduces final image size and removes dev dependencies.
-RUN pnpm deploy --filter @cottonbro/api --prod --legacy /app/deploy
+RUN pnpm deploy --filter @cottonplug/api --prod --legacy /app/deploy
 
 
 # -------- RUNTIME STAGE --------

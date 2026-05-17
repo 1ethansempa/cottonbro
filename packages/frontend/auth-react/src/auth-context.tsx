@@ -18,6 +18,14 @@ import {
 import { createNetworkRequest, type NetworkRequest } from "./network-request";
 import { toUserMessage, sanitizeBackendError } from "./auth-errors";
 
+declare const process:
+  | {
+      env?: {
+        NEXT_PUBLIC_E2E_AUTH?: string;
+      };
+    }
+  | undefined;
+
 const DEFAULT_AUTH_BASE_URL = "/api/auth";
 const BEARER_TOKEN_CACHE_TTL_MS = 20 * 60 * 1000;
 
@@ -70,10 +78,36 @@ export interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const E2E_AUTH_STORAGE_KEY = "__cottonplug_e2e_auth_role";
 
 export const AuthProvider: React.FC<
   React.PropsWithChildren<AuthContextConfig>
 > = ({ auth, onSession, onLogout, children }) => {
+  if (isE2EAuthEnabled()) {
+    return (
+      <E2EAuthProvider onLogout={onLogout}>
+        {children}
+      </E2EAuthProvider>
+    );
+  }
+
+  return (
+    <FirebaseAuthProvider
+      auth={auth}
+      onSession={onSession}
+      onLogout={onLogout}
+    >
+      {children}
+    </FirebaseAuthProvider>
+  );
+};
+
+function FirebaseAuthProvider({
+  auth,
+  onSession,
+  onLogout,
+  children,
+}: React.PropsWithChildren<AuthContextConfig>) {
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<IdTokenResult["claims"] | null>(null);
   const [sessionRole, setSessionRole] = useState<AuthRole>(undefined);
@@ -474,7 +508,7 @@ export const AuthProvider: React.FC<
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}
 
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
@@ -484,6 +518,88 @@ export function useAuth(): AuthContextValue {
   }
 
   return context;
+}
+
+function E2EAuthProvider({
+  children,
+  onLogout,
+}: React.PropsWithChildren<{
+  onLogout?: AuthContextConfig["onLogout"];
+}>) {
+  const [role, setRole] = useState<AuthRole>(() => readE2ERole());
+
+  useEffect(() => {
+    setRole(readE2ERole());
+  }, []);
+
+  const user = useMemo(() => {
+    if (!role) return null;
+
+    return {
+      uid: "e2e-user",
+      email: "e2e@cottonplug.test",
+      emailVerified: true,
+      getIdToken: async () => "e2e-token",
+      getIdTokenResult: async () => ({
+        claims: { role },
+      }),
+    } as unknown as User;
+  }, [role]);
+
+  const networkRequest = useMemo<NetworkRequest>(
+    () => async (input, init) => {
+      const { protected: _protected, token: _token, ...requestInit } =
+        init ?? {};
+
+      return fetch(input, {
+        ...requestInit,
+        credentials: requestInit.credentials ?? "include",
+      });
+    },
+    [],
+  );
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      loading: false,
+      busy: false,
+      error: null,
+      claims: role ? { role } : null,
+      role,
+      refreshIdToken: async () => (role ? "e2e-token" : null),
+      networkRequest,
+      requestOtp: async () => {},
+      confirmOtp: async () => {},
+      googleSignIn: async () => {},
+      logout: async () => {
+        window.localStorage.removeItem(E2E_AUTH_STORAGE_KEY);
+        setRole(undefined);
+        onLogout?.();
+      },
+    }),
+    [networkRequest, onLogout, role, user],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function readE2ERole(): AuthRole {
+  if (typeof window === "undefined") return undefined;
+
+  const value = window.localStorage.getItem(E2E_AUTH_STORAGE_KEY);
+  if (value === "admin" || value === "user" || value === "partner") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function isE2EAuthEnabled() {
+  return (
+    typeof process !== "undefined" &&
+    process.env?.NEXT_PUBLIC_E2E_AUTH === "1"
+  );
 }
 
 /**

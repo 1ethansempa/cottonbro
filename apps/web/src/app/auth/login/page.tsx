@@ -1,17 +1,18 @@
 "use client";
 
-import { useAuth } from "@cottonbro/auth-react";
+import { useAuth } from "@cottonplug/auth-react";
 import {
   isValidEmail,
   isValidOtp,
   normalizeEmail,
   normalizeOtp,
-} from "@cottonbro/utils";
-import { Input, GoogleButton } from "@cottonbro/ui";
+} from "@cottonplug/utils";
+import { Input, GoogleButton } from "@cottonplug/ui";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { safeRedirect } from "@/lib/auth-redirect";
 
 // declare Turnstile’s HTML widget callbacks
 declare global {
@@ -39,8 +40,6 @@ type OtpInputProps = {
   onChange: (value: string) => void;
   hasError?: boolean;
 };
-
-const DEFAULT_AUTH_REDIRECT = "/dashboard";
 
 function OtpInputFields({ value, onChange, hasError }: OtpInputProps) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
@@ -161,7 +160,7 @@ function LoginView() {
 
   const searchParams = useSearchParams();
   // Send users back to the protected page that redirected them here.
-  const redirect = getSafeRedirectPath(searchParams?.get("redirect"));
+  const redirect = safeRedirect(searchParams?.get("redirect"));
   const isAuthenticated = Boolean(user);
   const primaryButtonClass =
     "w-full rounded-full bg-black px-4 py-5 sm:px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer";
@@ -355,7 +354,7 @@ function LoginView() {
         >
           <div className="bg-white px-5 py-8 sm:p-10 relative overflow-hidden border border-gray-200 rounded-3xl">
             <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
-              Continue to Cotton Bro
+              Continue to Cotton Plug
             </h1>
             <p className="text-gray-500 text-[10px] text-center mb-10 font-bold tracking-[0.2em] uppercase">
               Sign in or create an account to continue.
@@ -384,7 +383,7 @@ function LoginView() {
             {isRedirecting || isAuthenticated ? (
               <div className="bg-gray-50 border border-gray-200 p-6 text-center rounded-2xl">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-black">
-                  Taking you to your dashboard...
+                  Redirecting...
                 </p>
               </div>
             ) : !sent ? (
@@ -540,14 +539,6 @@ function LoginView() {
       </div>
     </div>
   );
-}
-
-function getSafeRedirectPath(value: string | null | undefined) {
-  if (!value) return DEFAULT_AUTH_REDIRECT;
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return DEFAULT_AUTH_REDIRECT;
-  }
-  return value;
 }
 
 export default function LoginPage() {
