@@ -8,8 +8,8 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
-import { isValidEmail, normalizeEmail } from "@cottonbro/utils";
-import { Card, Input } from "@cottonbro/ui";
+import { isValidEmail, normalizeEmail } from "@cottonplug/utils";
+import { Card, Input } from "@cottonplug/ui";
 import { useUserStore } from "@/stores/user-store";
 
 /** Briefly flash a "saved" state on a button, then revert. */
@@ -216,7 +216,7 @@ export default function ProfilePage() {
           Profile
         </h1>
         <p className="text-sm font-medium text-gray-500">
-          Manage the details connected to your CottonBro account.
+          Manage the details connected to your Cotton Plug account.
         </p>
       </div>
 

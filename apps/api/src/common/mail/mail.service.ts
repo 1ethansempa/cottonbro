@@ -52,10 +52,10 @@ export class MailService {
 
     try {
       await this.transporter.sendMail({
-        from: `"Cotton Bro" <${this.fromAddress}>`,
+        from: `"Cotton Plug" <${this.fromAddress}>`,
         to: safeTo,
         subject: "Your login code",
-        text: `Use ${code} to continue to Cotton Bro.\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, you can ignore this email.\n\n— Cotton Bro`,
+        text: `Use ${code} to continue to Cotton Plug.\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, you can ignore this email.\n\n— Cotton Plug`,
         html: renderOtpHtml(code),
       });
 
@@ -82,10 +82,10 @@ export class MailService {
 
     try {
       await this.transporter.sendMail({
-        from: `"Cotton Bro" <${this.fromAddress}>`,
+        from: `"Cotton Plug" <${this.fromAddress}>`,
         to: safeTo,
-        subject: "Restore your Cotton Bro account",
-        text: `We received a request to restore a deleted Cotton Bro account.\n\nRestore your account here: ${restoreUrl}\n\nThis restore link is available until ${expiryText}.\n\nIf you didn't request this, you can ignore this email. Your account will remain deleted.\n\n— Cotton Bro`,
+        subject: "Restore your Cotton Plug account",
+        text: `We received a request to restore a deleted Cotton Plug account.\n\nRestore your account here: ${restoreUrl}\n\nThis restore link is available until ${expiryText}.\n\nIf you didn't request this, you can ignore this email. Your account will remain deleted.\n\n— Cotton Plug`,
         html: renderAccountReinstatementHtml(restoreUrl, expiryText),
       });
 
@@ -108,10 +108,10 @@ export class MailService {
 
     try {
       await this.transporter.sendMail({
-        from: `"Cotton Bro" <${this.fromAddress}>`,
+        from: `"Cotton Plug" <${this.fromAddress}>`,
         to: safeTo,
-        subject: "Welcome to Cotton Bro",
-        text: `Welcome to Cotton Bro.\n\nYour account is ready. You can manage whether you receive marketing updates, creator inspiration, and campaign ideas here: ${preferencesUrl}\n\nMarketing emails are optional. You can opt in or change your preference anytime.\n\n— Cotton Bro`,
+        subject: "Welcome to Cotton Plug",
+        text: `Welcome to Cotton Plug.\n\nYour account is ready. You can manage whether you receive marketing updates, creator inspiration, and campaign ideas here: ${preferencesUrl}\n\nMarketing emails are optional. You can opt in or change your preference anytime.\n\n— Cotton Plug`,
         html: renderWelcomeHtml(preferencesUrl),
       });
 
@@ -149,7 +149,7 @@ function renderWelcomeHtml(preferencesUrl: string) {
                 Account ready
               </p>
               <h2 style="margin: 0; max-width: 470px; font-family: 'Urbanist', Arial, sans-serif; font-size: 54px; font-weight: 700; letter-spacing: 0; line-height: 0.92; color: #000000;">
-                Welcome to Cotton Bro.
+                Welcome to Cotton Plug.
               </h2>
               <p style="margin: 26px 0 0 0; max-width: 430px; font-size: 15px; font-weight: 500; line-height: 1.75; color: #5f5f5f;">
                 Your account is ready. Marketing emails are optional, and you can choose whether to receive product updates, inspiration, and campaign ideas.
@@ -269,7 +269,7 @@ function renderOtpHtml(code: string) {
                 Secure account access
               </p>
               <h2 style="margin: 0; max-width: 470px; font-family: 'Urbanist', Arial, sans-serif; font-size: 56px; font-weight: 700; letter-spacing: 0; line-height: 0.92; color: #000000;">
-                Continue to Cotton Bro.
+                Continue to Cotton Plug.
               </h2>
               <p style="margin: 24px 0 0 0; max-width: 410px; font-size: 15px; font-weight: 500; line-height: 1.75; color: #5f5f5f;">
                 Use this one-time code to sign in or create your account.
@@ -297,7 +297,7 @@ function renderOtpHtml(code: string) {
                 </tr>
               </table>
               <p style="margin: 22px 0 0 0; font-size: 13px; font-weight: 500; color: #d4d4d4; line-height: 1.7;">
-                Enter this code to continue to your Cotton Bro account.
+                Enter this code to continue to your Cotton Plug account.
               </p>
             </td>
           </tr>
@@ -314,7 +314,7 @@ function renderOtpHtml(code: string) {
                 <tr>
                   <td style="padding: 0 0 18px 0; border-bottom: 1px solid #e5e5e5;">
                     <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #000000;">
-                      This code can be used once to sign in to Cotton Bro.
+                      This code can be used once to sign in to Cotton Plug.
                     </p>
                   </td>
                 </tr>
@@ -330,7 +330,7 @@ function renderOtpHtml(code: string) {
           </tr>
         </table>
         <p style="margin: 28px 0 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; color: #a3a3a3;">
-          Cottonbro.com
+          cottonbro.com
         </p>
       </td>
     </tr>

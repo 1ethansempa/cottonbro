@@ -17,8 +17,8 @@ import {
   verifyOtp,
   signInOrCreateUser,
   mintCustomToken,
-} from "@cottonbro/auth-server";
-import { normalizeEmail } from "@cottonbro/utils";
+} from "@cottonplug/auth-server";
+import { normalizeEmail } from "@cottonplug/utils";
 import { MailService } from "../common/mail/mail.service.js";
 import { R2StorageService } from "../common/storage/r2-storage.service.js";
 import type {

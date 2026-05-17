@@ -78,7 +78,7 @@ export interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-const E2E_AUTH_STORAGE_KEY = "__cottonbro_e2e_auth_role";
+const E2E_AUTH_STORAGE_KEY = "__cottonplug_e2e_auth_role";
 
 export const AuthProvider: React.FC<
   React.PropsWithChildren<AuthContextConfig>
@@ -537,7 +537,7 @@ function E2EAuthProvider({
 
     return {
       uid: "e2e-user",
-      email: "e2e@cottonbro.test",
+      email: "e2e@cottonplug.test",
       emailVerified: true,
       getIdToken: async () => "e2e-token",
       getIdTokenResult: async () => ({

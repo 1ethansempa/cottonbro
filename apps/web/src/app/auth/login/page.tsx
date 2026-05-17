@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuth } from "@cottonbro/auth-react";
+import { useAuth } from "@cottonplug/auth-react";
 import {
   isValidEmail,
   isValidOtp,
   normalizeEmail,
   normalizeOtp,
-} from "@cottonbro/utils";
-import { Input, GoogleButton } from "@cottonbro/ui";
+} from "@cottonplug/utils";
+import { Input, GoogleButton } from "@cottonplug/ui";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -354,7 +354,7 @@ function LoginView() {
         >
           <div className="bg-white px-5 py-8 sm:p-10 relative overflow-hidden border border-gray-200 rounded-3xl">
             <h1 className="text-3xl font-black text-black mb-2 text-center tracking-[-0.02em] uppercase">
-              Continue to Cotton Bro
+              Continue to Cotton Plug
             </h1>
             <p className="text-gray-500 text-[10px] text-center mb-10 font-bold tracking-[0.2em] uppercase">
               Sign in or create an account to continue.

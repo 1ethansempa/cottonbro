@@ -60,10 +60,10 @@ importers:
 
   apps/api:
     dependencies:
-      '@cottonbro/auth-server':
+      '@cottonplug/auth-server':
         specifier: workspace:*
         version: link:../../packages/backend/auth-server
-      '@cottonbro/utils':
+      '@cottonplug/utils':
         specifier: workspace:*
         version: link:../../packages/core/utils
       '@neondatabase/serverless':
@@ -154,13 +154,13 @@ importers:
 
   apps/web:
     dependencies:
-      '@cottonbro/auth-react':
+      '@cottonplug/auth-react':
         specifier: workspace:*
         version: link:../../packages/frontend/auth-react
-      '@cottonbro/ui':
+      '@cottonplug/ui':
         specifier: workspace:*
         version: link:../../packages/frontend/ui
-      '@cottonbro/utils':
+      '@cottonplug/utils':
         specifier: workspace:*
         version: link:../../packages/core/utils
       '@react-three/drei':

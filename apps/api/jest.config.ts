@@ -17,9 +17,9 @@ const config: Config = {
   testEnvironment: "node",
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
-    "^@cottonbro/auth-server$": "<rootDir>/__mocks__/@cottonbro/auth-server.ts",
-    "^@cottonbro/utils$": "<rootDir>/../../packages/core/utils/dist/index.js",
-    "^@cottonbro/(.*)$": "<rootDir>/../../packages/*/$1/dist/index.js",
+    "^@cottonplug/auth-server$": "<rootDir>/__mocks__/@cottonplug/auth-server.ts",
+    "^@cottonplug/utils$": "<rootDir>/../../packages/core/utils/dist/index.js",
+    "^@cottonplug/(.*)$": "<rootDir>/../../packages/*/$1/dist/index.js",
   },
   extensionsToTreatAsEsm: [".ts"],
   transformIgnorePatterns: [],

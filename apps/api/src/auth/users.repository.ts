@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
-import { normalizeEmail } from "@cottonbro/utils";
+import { normalizeEmail } from "@cottonplug/utils";
 import { db } from "../common/db/sql.js";
 import { accountReinstatementTokens, users } from "../common/db/schema.js";
 

@@ -32,7 +32,7 @@ function RestoreAccountView() {
     loading: {
       eyebrow: "Account restoration",
       title: "Restoring your account.",
-      body: "Give us a moment while we bring your Cotton Bro account back.",
+      body: "Give us a moment while we bring your Cotton Plug account back.",
       status: "Checking restore link",
       accent: "bg-black text-white",
       icon: (
@@ -136,7 +136,7 @@ function RestoreAccountView() {
                       Account
                     </p>
                     <p className="mt-2 text-sm font-semibold text-white">
-                      Cotton Bro access
+                      Cotton Plug access
                     </p>
                   </div>
                   <span className="h-2.5 w-2.5 rounded-full bg-[#e60000]" />

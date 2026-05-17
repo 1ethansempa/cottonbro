@@ -4,11 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
-import { useAuth } from "@cottonbro/auth-react";
+import { useAuth } from "@cottonplug/auth-react";
 
 const baseLinks = [
   { href: "/shop", label: "Shop" },
-  { href: "/products/new", label: "Create Product" },
+  { href: "/dashboard/create", label: "Create Product" },
 ];
 
 export default function Sidebar({
@@ -90,7 +90,7 @@ export default function Sidebar({
           >
             <Image
               src="/white-logo.png"
-              alt="Cotton Bro"
+              alt="Cotton Plug"
               width={144}
               height={48}
               className="h-12 w-auto"
@@ -125,7 +125,7 @@ export default function Sidebar({
 
         {/* Footer */}
         <div className="border-t border-white/10 px-6 py-4 text-[11px] leading-none text-gray-400">
-          Cottonbro © {new Date().getFullYear()}
+          Cotton Plug © {new Date().getFullYear()}
         </div>
       </div>
     </aside>

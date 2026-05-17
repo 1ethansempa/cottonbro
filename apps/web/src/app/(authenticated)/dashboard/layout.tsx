@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAuth } from "@cottonbro/auth-react";
+import { useAuth } from "@cottonplug/auth-react";
 import {
   ArrowUpRight,
   LogOut,
+  Palette,
   Plus,
   Settings,
   UserCircle,
 } from "lucide-react";
-import { Logo } from "@cottonbro/ui";
 
 export default function DashboardLayout({
   children,
@@ -25,6 +25,16 @@ export default function DashboardLayout({
   const showUserSettings = role === "user" || role === undefined;
 
   const navItems = [
+    {
+      href: "/dashboard/create",
+      label: "Create",
+      icon: (
+        <Palette
+          className="h-4 w-4"
+          aria-hidden="true"
+        />
+      ),
+    },
     ...(showUserSettings
       ? [
           {
@@ -72,16 +82,20 @@ export default function DashboardLayout({
           <div className="p-6 md:p-8 flex items-center justify-between md:justify-start">
             <Link
               href="/"
-              className="cursor-pointer hover:opacity-70 transition-opacity"
+              className="group flex cursor-pointer items-center transition-transform duration-300 hover:scale-105"
             >
-              <Logo size="md" color="black" />
+              <div className="flex items-baseline text-xl font-black uppercase leading-none tracking-tighter">
+                <span className="text-black">COTTONPL</span>
+                <span className="text-[#e60000]">UG</span>
+                <span className="ml-1 h-2 w-2 rounded-full bg-[#e60000]" />
+              </div>
             </Link>
           </div>
 
           {/* Main Action */}
           <div className="px-6 md:px-8 pb-8">
             <Link
-              href="/create-product"
+              href="/dashboard/create"
               className="group flex cursor-pointer items-center justify-between w-full bg-black text-white px-5 py-4 text-[10px] font-bold tracking-[0.2em] uppercase transition-all hover:opacity-80 rounded-full"
             >
               <span className="flex items-center gap-2 whitespace-nowrap">

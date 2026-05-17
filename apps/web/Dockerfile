@@ -34,17 +34,17 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.js
 COPY packages ./packages
 
 # Copy the web app's package.json so pnpm knows what dependencies
-# @cottonbro/web requires without copying the entire source code yet.
+# @cottonplug/web requires without copying the entire source code yet.
 COPY apps/web/package.json ./apps/web/package.json
 
-# Download all dependencies for @cottonbro/web and its dependency graph.
+# Download all dependencies for @cottonplug/web and its dependency graph.
 # pnpm fetch stores them in the pnpm store without installing yet.
-RUN pnpm fetch --filter @cottonbro/web... --prod=false
+RUN pnpm fetch --filter @cottonplug/web... --prod=false
 
 # Install dependencies using the lockfile only.
 # --offline ensures no network requests are made during install.
 # --frozen-lockfile guarantees the lockfile is not modified.
-RUN pnpm install --filter @cottonbro/web... --offline --prod=false --frozen-lockfile
+RUN pnpm install --filter @cottonplug/web... --offline --prod=false --frozen-lockfile
 
 
 # ---------- Build stage ----------
@@ -83,11 +83,11 @@ COPY apps/web ./apps/web
 
 # Build shared packages that the web app depends on.
 # These produce compiled outputs used by the Next.js build.
-RUN pnpm --filter @cottonbro/utils build && pnpm --filter @cottonbro/ui build && pnpm --filter @cottonbro/auth-react build
+RUN pnpm --filter @cottonplug/utils build && pnpm --filter @cottonplug/ui build && pnpm --filter @cottonplug/auth-react build
 
 # Build the Next.js application.
 # next build compiles the app into the .next directory.
-RUN pnpm --filter @cottonbro/web exec next build
+RUN pnpm --filter @cottonplug/web exec next build
 
 
 # ---------- Runtime stage ----------

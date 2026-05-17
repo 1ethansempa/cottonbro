@@ -7,7 +7,7 @@ test.describe("Auth Page", () => {
 
   test("should display the current sign-in experience", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { name: /continue to cotton bro/i }),
+      page.getByRole("heading", { name: /continue to cotton plug/i }),
     ).toBeVisible();
     await expect(
       page.getByText(/sign in or create an account to continue/i),

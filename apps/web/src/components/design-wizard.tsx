@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { Canvas, FabricImage } from "fabric";
-import { Logo } from "@cottonbro/ui";
+import { Logo } from "@cottonplug/ui";
 
 type WizardStep = "choice" | "upload" | "preview" | "confirm";
 

@@ -1,5 +1,5 @@
 """
-Cotton Bro Python Services
+Cotton Plug Python Services
 FastAPI application for image processing
 """
 
@@ -13,8 +13,8 @@ from .routers import images
 load_dotenv()
 
 app = FastAPI(
-    title="Cotton Bro Python Services",
-    description="Image processing APIs for Cotton Bro platform",
+    title="Cotton Plug Python Services",
+    description="Image processing APIs for Cotton Plug platform",
     version="1.0.0",
 )
 

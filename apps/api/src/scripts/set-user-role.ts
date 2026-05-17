@@ -70,7 +70,7 @@ async function main() {
   // If the script imported them at the top, they might read env vars
   // before dotenv loaded the right files.
   const { db } = await import("../common/db/sql.js");
-  const { adminAuth } = await import("@cottonbro/auth-server");
+  const { adminAuth } = await import("@cottonplug/auth-server");
 
   // Look up by UID directly, or try both email and UID columns.
   const where = flags.uid

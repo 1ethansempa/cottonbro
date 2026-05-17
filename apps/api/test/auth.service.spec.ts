@@ -19,7 +19,7 @@ import {
   signInOrCreateUser,
   mintCustomToken,
   adminAuth,
-} from "@cottonbro/auth-server";
+} from "@cottonplug/auth-server";
 
 // Type the mocked functions
 type MockedFn<T extends (...args: any[]) => any> = jest.Mock<T>;

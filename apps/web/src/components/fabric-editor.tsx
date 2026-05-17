@@ -32,7 +32,7 @@ import {
 import { POPULAR_GOOGLE_FONTS, loadGoogleFont } from "../lib/fonts";
 import { PRODUCTS, ProductType, ProductDefinition } from "../config/products";
 import { PreviewModal } from "./preview-modal";
-import { useAuth } from "@cottonbro/auth-react";
+import { useAuth } from "@cottonplug/auth-react";
 
 const ARTBOARD = { w: 500, h: 500 }; // “shirt design area” units
 
@@ -1033,7 +1033,7 @@ export default function FabricEditor() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `cottonbro-design-${Date.now()}.svg`;
+    a.download = `cottonplug-design-${Date.now()}.svg`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1108,7 +1108,7 @@ export default function FabricEditor() {
     pdf.addImage(dataUrl, "PNG", 0, 0, mmWidth, mmHeight);
 
     // Download
-    pdf.save(`cottonbro-design-${Date.now()}.pdf`);
+    pdf.save(`cottonplug-design-${Date.now()}.pdf`);
   };
 
   const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1927,7 +1927,7 @@ export default function FabricEditor() {
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `cottonbro-design-${Date.now()}.json`;
+                  a.download = `cottonplug-design-${Date.now()}.json`;
                   a.click();
                   URL.revokeObjectURL(url);
                 }}

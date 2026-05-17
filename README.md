@@ -1,6 +1,6 @@
-# Cottonbro
+# Cotton Plug
 
-Cottonbro is a merch creation platform. The current monorepo contains a Next.js web app, a NestJS API, a FastAPI image-processing service, and a small set of shared TypeScript packages.
+Cotton Plug is a merch creation platform. The current monorepo contains a Next.js web app, a NestJS API, a FastAPI image-processing service, and a small set of shared TypeScript packages.
 
 ## Tech Stack
 
@@ -19,7 +19,7 @@ Cottonbro is a merch creation platform. The current monorepo contains a Next.js 
 ## Repository Layout
 
 ```text
-cottonbro/
+cottonplug/
 ├── apps/
 │   ├── api/              # NestJS API: auth, health, image proxy
 │   ├── web/              # Next.js app: public site, auth, design/editor UI
@@ -141,8 +141,8 @@ pnpm dev
 Run individual services:
 
 ```bash
-pnpm --filter @cottonbro/web dev
-pnpm --filter @cottonbro/api dev
+pnpm --filter @cottonplug/web dev
+pnpm --filter @cottonplug/api dev
 cd apps/python-services && source venv/bin/activate && uvicorn src.main:app --reload --port 8000
 ```
 
@@ -170,16 +170,16 @@ Useful package commands:
 
 | Purpose | Command |
 | --- | --- |
-| Web dev | `pnpm --filter @cottonbro/web dev` |
-| Web QA dev | `pnpm --filter @cottonbro/web dev:qa` |
-| Web build | `pnpm --filter @cottonbro/web build` |
-| Web E2E | `pnpm --filter @cottonbro/web test:e2e` |
-| API dev | `pnpm --filter @cottonbro/api dev` |
-| API tests | `pnpm --filter @cottonbro/api test` |
-| API generate DB migrations | `pnpm --filter @cottonbro/api db:generate` |
-| API run DB migrations | `pnpm --filter @cottonbro/api db:migrate` |
-| API open Drizzle Studio | `pnpm --filter @cottonbro/api db:studio` |
-| UI package tests | `pnpm --filter @cottonbro/ui test` |
+| Web dev | `pnpm --filter @cottonplug/web dev` |
+| Web QA dev | `pnpm --filter @cottonplug/web dev:qa` |
+| Web build | `pnpm --filter @cottonplug/web build` |
+| Web E2E | `pnpm --filter @cottonplug/web test:e2e` |
+| API dev | `pnpm --filter @cottonplug/api dev` |
+| API tests | `pnpm --filter @cottonplug/api test` |
+| API generate DB migrations | `pnpm --filter @cottonplug/api db:generate` |
+| API run DB migrations | `pnpm --filter @cottonplug/api db:migrate` |
+| API open Drizzle Studio | `pnpm --filter @cottonplug/api db:studio` |
+| UI package tests | `pnpm --filter @cottonplug/ui test` |
 
 Drizzle configuration lives in `apps/api/drizzle.config.ts`. Table definitions live in `apps/api/src/common/db/schema.ts`, generated migrations are written to `apps/api/drizzle/`, and the API exports Neon/Drizzle clients from `apps/api/src/common/db/sql.ts`.
 
@@ -224,11 +224,11 @@ NestJS /metrics
 Useful PromQL queries:
 
 ```promql
-cottonbro_api_up
+cottonplug_api_up
 ```
 
 ```promql
-sum(rate(cottonbro_api_http_request_duration_seconds_count[15m]))
+sum(rate(cottonplug_api_http_request_duration_seconds_count[15m]))
 ```
 
 ```promql
@@ -236,20 +236,20 @@ sum(rate(cottonbro_api_http_request_duration_seconds_count[15m]))
 histogram_quantile(
   0.95,
   sum by (le, method, route) (
-    rate(cottonbro_api_http_request_duration_seconds_bucket[1h])
+    rate(cottonplug_api_http_request_duration_seconds_bucket[1h])
   )
 )
 ```
 
 ```promql
 100 *
-sum(rate(cottonbro_api_http_request_duration_seconds_count{statusCode=~"5.."}[15m]))
+sum(rate(cottonplug_api_http_request_duration_seconds_count{statusCode=~"5.."}[15m]))
 /
-sum(rate(cottonbro_api_http_request_duration_seconds_count[15m]))
+sum(rate(cottonplug_api_http_request_duration_seconds_count[15m]))
 ```
 
 ```promql
-cottonbro_api_memory_bytes{type="heap_used"} / 1024 / 1024
+cottonplug_api_memory_bytes{type="heap_used"} / 1024 / 1024
 ```
 
 For low QA traffic, prefer `[15m]` or `[1h]` windows so p95 and request-rate charts are not too sparse. A `5m` scrape interval keeps QA ingestion low; temporarily lower it to `60s` when actively debugging performance.
@@ -269,19 +269,19 @@ docker build -f apps/web/Dockerfile \
   --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id \
   --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=your-firebase-app-id \
   --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-turnstile-site-key \
-  -t cottonbro-web:qa .
+  -t cottonplug-web:qa .
 ```
 
 Build the API image:
 
 ```bash
-docker build -f apps/api/Dockerfile -t cottonbro-api:qa .
+docker build -f apps/api/Dockerfile -t cottonplug-api:qa .
 ```
 
 Build the Python services image:
 
 ```bash
-docker build -f apps/python-services/Dockerfile -t cottonbro-python-services:qa apps/python-services
+docker build -f apps/python-services/Dockerfile -t cottonplug-python-services:qa apps/python-services
 ```
 
 ## CI/CD

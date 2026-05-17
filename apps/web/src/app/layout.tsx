@@ -15,7 +15,7 @@ const urbanist = Urbanist({
   weight: ["400", "500", "700", "900"],
 });
 
-export const metadata: Metadata = { title: "Cotton Bro", description: "" };
+export const metadata: Metadata = { title: "Cotton Plug", description: "" };
 
 export default function RootLayout({
   children,

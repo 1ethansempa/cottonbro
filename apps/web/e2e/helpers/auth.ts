@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 
 export type DashboardRole = "admin" | "user" | "partner";
 
-const e2eAuthStorageKey = "__cottonbro_e2e_auth_role";
+const e2eAuthStorageKey = "__cottonplug_e2e_auth_role";
 
 export async function authenticateAs(page: Page, role: DashboardRole) {
   await page.addInitScript(
@@ -35,7 +35,7 @@ export async function authenticateAs(page: Page, role: DashboardRole) {
       contentType: "application/json",
       body: JSON.stringify({
         name: "E2E User",
-        email: "e2e@cottonbro.test",
+        email: "e2e@cottonplug.test",
         emailVerified: true,
         phoneNumber: null,
         avatarUrl: null,

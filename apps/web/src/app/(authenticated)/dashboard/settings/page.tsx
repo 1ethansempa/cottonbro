@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { CircleAlert, LoaderCircle, Mail, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@cottonbro/auth-react";
-import { Card, ConfirmDialog, Switch } from "@cottonbro/ui";
+import { useAuth } from "@cottonplug/auth-react";
+import { Card, ConfirmDialog, Switch } from "@cottonplug/ui";
 import { useUserStore } from "@/stores/user-store";
 
 export default function SettingsPage() {
@@ -82,7 +82,7 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="text-sm font-medium text-gray-500">
-          Manage how CottonBro communicates with you and control your account
+          Manage how Cotton Plug communicates with you and control your account
           access.
         </p>
       </div>

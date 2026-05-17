@@ -20,7 +20,7 @@ export type LogoProps = {
 };
 
 export function Logo({
-  name = "CottonBro",
+  name = "CottonPlug",
   color = "white",
   size = "lg",
   weight = "semibold",

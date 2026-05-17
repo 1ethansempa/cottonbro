@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { Auth } from "firebase/auth";
-import { AuthProvider, useAuth } from "@cottonbro/auth-react";
+import { AuthProvider, useAuth } from "@cottonplug/auth-react";
 import { getClientAuth } from "@/lib/firebase-client";
 
 function AuthBootGate({ children }: { children: React.ReactNode }) {

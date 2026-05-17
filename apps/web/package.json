@@ -1,5 +1,5 @@
 {
-  "name": "@cottonbro/web",
+  "name": "@cottonplug/web",
   "private": true,
   "type": "module",
   "version": "0.1.0",
@@ -20,9 +20,9 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@cottonbro/auth-react": "workspace:*",
-    "@cottonbro/ui": "workspace:*",
-    "@cottonbro/utils": "workspace:*",
+    "@cottonplug/auth-react": "workspace:*",
+    "@cottonplug/ui": "workspace:*",
+    "@cottonplug/utils": "workspace:*",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
     "@tailwindcss/postcss": "^4.2.4",

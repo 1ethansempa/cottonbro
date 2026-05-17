@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from "@nestjs/common";
-import { adminAuth } from "@cottonbro/auth-server";
+import { adminAuth } from "@cottonplug/auth-server";
 import { AuthGuard } from "../src/auth/auth.guard.js";
 import type { AppUser, UsersRepositoryPort } from "../src/auth/users.repository.js";
 

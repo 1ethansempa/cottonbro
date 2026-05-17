@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { sessionNetworkRequest } from "@cottonbro/auth-react";
+import { sessionNetworkRequest } from "@cottonplug/auth-react";
 
 export type AccountProfile = {
   name: string | null;

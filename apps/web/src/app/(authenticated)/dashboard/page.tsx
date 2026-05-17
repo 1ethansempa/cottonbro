@@ -40,7 +40,7 @@ function CreateFirstProduct() {
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/create-product"
+              href="/dashboard/create"
               className="group inline-flex cursor-pointer items-center justify-center gap-3 bg-black px-7 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -85,7 +85,7 @@ function ProductsDashboard({ products }: { products: DashboardProduct[] }) {
           </p>
         </div>
         <Link
-          href="/create-product"
+          href="/dashboard/create"
           className="inline-flex cursor-pointer items-center justify-center gap-2 bg-black px-6 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-80 rounded-full"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
