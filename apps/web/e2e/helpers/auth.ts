@@ -29,4 +29,19 @@ export async function authenticateAs(page: Page, role: DashboardRole) {
       }),
     });
   });
+
+  await page.route("**/api/auth/profile", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        name: "E2E User",
+        email: "e2e@cottonbro.test",
+        emailVerified: true,
+        phoneNumber: null,
+        avatarUrl: null,
+        role,
+        canChangeEmail: role === "user",
+      }),
+    });
+  });
 }

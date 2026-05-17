@@ -15,15 +15,24 @@ import { useUserStore } from "@/stores/user-store";
 /** Briefly flash a "saved" state on a button, then revert. */
 function useSavedFlash(ms = 1500) {
   const [saved, setSaved] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function flash() {
     setSaved(true);
-    clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = setTimeout(() => setSaved(false), ms);
   }
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(
+    () => () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    },
+    [],
+  );
   return { saved, flash } as const;
 }
 
