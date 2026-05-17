@@ -7,7 +7,13 @@ import type { UserRole } from "../auth/users.repository.js";
 const ROLES = ["admin", "user", "partner"] as const;
 const ENVS = ["local", "qa", "prod"] as const;
 
+// This is a CLI admin script for changing a user’s role in two places:
+// The app database, in the users.role column.
+// Firebase Auth custom claims, in customClaims.role
+
 async function main() {
+  // The script accepts these flags
+  // It requires exactly one identifier: either --email or --uid.
   const { values: flags } = parseArgs({
     args: process.argv.slice(2),
     options: {
@@ -20,11 +26,13 @@ async function main() {
     strict: true,
   });
 
+  // validates env
   const env = flags.env as (typeof ENVS)[number];
   if (!env || !ENVS.includes(env)) {
     die("--env must be local, qa, or prod");
   }
 
+  // validates role
   const role = flags.role as UserRole;
   if (!role || !ROLES.includes(role as (typeof ROLES)[number])) {
     die("--role must be admin, user, or partner");
@@ -57,16 +65,17 @@ async function main() {
     }
   }
 
+  // That is intentional.
+  //  Both modules initialize from environment variables at import time.
+  // If the script imported them at the top, they might read env vars
+  // before dotenv loaded the right files.
   const { db } = await import("../common/db/sql.js");
   const { adminAuth } = await import("@cottonbro/auth-server");
 
   // Look up by UID directly, or try both email and UID columns.
   const where = flags.uid
     ? eq(users.firebaseUid, flags.uid)
-    : or(
-        eq(users.email, email!),
-        eq(users.firebaseUid, flags.email!),
-      );
+    : or(eq(users.email, email!), eq(users.firebaseUid, flags.email!));
 
   const rows = await db.select().from(users).where(where).limit(2);
 
