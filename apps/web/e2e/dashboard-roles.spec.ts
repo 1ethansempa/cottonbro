@@ -1,35 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
-
-type DashboardRole = "admin" | "user" | "partner";
-
-const e2eAuthStorageKey = "__cottonbro_e2e_auth_role";
-
-async function authenticateAs(page: Page, role: DashboardRole) {
-  await page.addInitScript(
-    ({ key, value }) => {
-      window.localStorage.setItem(key, value);
-    },
-    { key: e2eAuthStorageKey, value: role },
-  );
-
-  await page.route("**/api/auth/session", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ claims: { role } }),
-    });
-  });
-
-  await page.route("**/api/auth/settings", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        marketingEmailsEnabled: true,
-        marketingEmailsOptedInAt: "2026-01-01T00:00:00.000Z",
-        marketingEmailsOptedOutAt: null,
-      }),
-    });
-  });
-}
+import { expect, test } from "@playwright/test";
+import { authenticateAs } from "./helpers/auth";
 
 test.describe("Dashboard role access", () => {
   test("shows settings navigation and allows settings access for regular users", async ({
