@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  CircleAlert,
-  LoaderCircle,
-  Mail,
-  Trash2,
-} from "lucide-react";
+import { CircleAlert, LoaderCircle, Mail, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@cottonbro/auth-react";
 import { Card, ConfirmDialog, Switch } from "@cottonbro/ui";
@@ -164,10 +159,7 @@ export default function SettingsPage() {
                 onClick={() => setShowDeleteModal(true)}
                 className="inline-flex w-full cursor-pointer items-center justify-center rounded-md border-none bg-[#c81e1e] px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#a51a1a] sm:w-auto"
               >
-                <Trash2
-                  className="mr-2 h-4 w-4"
-                  aria-hidden="true"
-                />
+                <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
                 Delete Account
               </button>
             </div>
@@ -215,10 +207,7 @@ function DashboardPageLoader({ label }: { label: string }) {
   return (
     <div className="flex min-h-[55vh] items-center justify-center p-6 md:p-12">
       <div className="inline-flex items-center gap-3 text-xs font-semibold tracking-wide text-gray-500">
-        <LoaderCircle
-          className="h-4 w-4 animate-spin"
-          aria-hidden="true"
-        />
+        <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
         {label}
       </div>
     </div>
